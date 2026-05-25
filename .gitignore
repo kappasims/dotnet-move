@@ -1,0 +1,12 @@
+# Local test subjects — full clones for testing, never part of this repo
+test-subjects/
+
+# PowerShell / dotnet test artifacts
+*.log
+TestResults/
+.vs/
+bin/
+obj/
+
+# Claude Code runtime lock (per-session; not for version control)
+.claude/scheduled_tasks.lock

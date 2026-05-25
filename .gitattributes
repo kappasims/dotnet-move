@@ -1,0 +1,8 @@
+# Normalize line endings; keep PowerShell sources CRLF in the working tree on Windows.
+* text=auto
+*.ps1   text eol=crlf
+*.psm1  text eol=crlf
+*.psd1  text eol=crlf
+
+# Keep source ASCII-friendly: Windows PowerShell 5.1 reads .ps1 without a BOM as ANSI,
+# so non-ASCII (e.g. em-dashes) in a UTF-8 file corrupts parsing. Prefer ASCII in sources.

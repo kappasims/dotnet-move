@@ -1,0 +1,97 @@
+function Move-PowerShellModule {
+    <#
+    .SYNOPSIS
+        Move a PowerShell module folder and reconcile its manifest, delegating manifest
+        edits to Update-ModuleManifest rather than hand-editing the .psd1.
+
+    .DESCRIPTION
+        Moves a module directory (git mv when tracked), then rewrites RootModule,
+        NestedModules and FileList in the .psd1 via Update-ModuleManifest so relative
+        references stay valid. Validates the result with Test-ModuleManifest.
+
+        Limits (warned, not fixed): dot-sourced relative paths inside .psm1/.ps1 files,
+        and any path computed at runtime, cannot be reconciled automatically.
+
+    .PARAMETER ModulePath
+        Path to the module folder, or directly to its .psd1 manifest.
+
+    .PARAMETER Destination
+        New module folder.
+
+    .PARAMETER Force
+        Proceed with a plain file move when git is unavailable instead of aborting. A plain
+        move does not preserve git history.
+
+    .OUTPUTS
+        DotnetMove.ModuleMoveResult with Engine, Source, Destination, Performed, SkippedCount, and Manifest.
+
+    .EXAMPLE
+        Move-PowerShellModule -ModulePath ./tools/Mayo -Destination ./modules/Mayo
+
+        Moves the module and rewrites RootModule, NestedModules, and FileList in its .psd1.
+    #>
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+    param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [Alias('FullName', 'Path', 'PSPath')]
+        [ValidateNotNullOrEmpty()]
+        [string]$ModulePath,
+
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Destination,
+        [switch]$Force
+    )
+
+    process {
+    $src = Resolve-FullPath $ModulePath
+    if ($src -match '\.psd1$') {
+        $manifestName = Split-Path -Leaf $src
+        $moduleDir    = Split-Path -Parent $src
+    } else {
+        $moduleDir = $src
+        $manifest  = Get-ChildItem -LiteralPath $moduleDir -Filter '*.psd1' | Select-Object -First 1
+        if (-not $manifest) { throw "No .psd1 manifest found in $moduleDir" }
+        $manifestName = $manifest.Name
+    }
+
+    $newDir = [System.IO.Path]::GetFullPath($Destination)
+    if (Test-Path -LiteralPath $newDir) { throw "Destination already exists: $newDir" }
+
+    Write-Verbose "Plan: move module $manifestName  $moduleDir -> $newDir"
+    $newManifest = Join-Path $newDir $manifestName
+
+    $performed = $false
+    $skippedCount = 0
+
+    if ($PSCmdlet.ShouldProcess("$moduleDir -> $newDir", 'Move PowerShell module and reconcile manifest')) {
+        $ctx = Resolve-MoveContext -Cmdlet $PSCmdlet -Force:$Force -TargetForError $moduleDir
+        if (-not $ctx) { return }
+
+        # The manifest refresh + validate happens after the move (reads the new layout).
+        $manifestFix = {
+            param($NewDir, $NewManifest)
+            $files = Get-ChildItem -LiteralPath $NewDir -Recurse -File |
+                ForEach-Object { $_.FullName.Substring($NewDir.Length).TrimStart('\', '/') }
+            try { Update-ModuleManifest -Path $NewManifest -FileList $files; Write-Verbose "Manifest FileList refreshed ($($files.Count) files)." }
+            catch { Write-Warning "Update-ModuleManifest failed: $_" }
+            $r = Test-ModuleManifest -Path $NewManifest -ErrorAction SilentlyContinue
+            if ($r) { Write-Verbose "Test-ModuleManifest OK: $($r.Name) $($r.Version)" }
+            else { Write-Warning "Test-ModuleManifest reported problems for $NewManifest" }
+        }
+        $items = @( New-MoveItem -Description "refresh manifest $manifestName (FileList + validate)" -Reattach $manifestFix -ReattachArgs @($newDir, $newManifest) )
+
+        $move = { param($UseGit, $Src, $Dst, $Repo) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repo }
+        $repoRoot = Get-RepoRoot -StartPath $moduleDir
+        $planResult = Invoke-MovePlan -Caption "Move module $manifestName" -Items $items -Move $move `
+            -MoveArgs @($ctx.UseGit, $moduleDir, $newDir, $repoRoot)
+        $performed = $true
+        $skippedCount = $planResult.Skipped
+
+        Write-Warning "Reminder: dot-sourced relative paths inside .psm1/.ps1 are not auto-fixed. Grep the module for '. \$PSScriptRoot' style references if depth changed."
+    }
+
+    New-MoveResult -TypeName 'DotnetMove.ModuleMoveResult' -Engine 'powershell' -Source $moduleDir -Destination $newDir `
+        -Performed $performed -SkippedCount $skippedCount -Extra @{ Manifest = $manifestName }
+    }
+}

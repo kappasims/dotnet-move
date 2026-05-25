@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # DotnetMove delegates to the dotnet CLI and uses .slnx (SDK 9+); tests build net10 fixtures.
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # ubuntu-latest / windows-latest both ship PowerShell 7 (pwsh). build.ps1 installs Pester.
+      - name: Run tests
+        shell: pwsh
+        run: ./build.ps1 -Task Test
+
+  lint:
+    name: PSScriptAnalyzer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Analyze
+        shell: pwsh
+        run: ./build.ps1 -Task Analyze
+
+  # The cross-platform managed cmdlets must ALSO work on Windows PowerShell 5.1 (Desktop).
+  test-windows-powershell:
+    name: Test (Windows PowerShell 5.1)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Run tests on Windows PowerShell 5.1
+        shell: powershell
+        run: ./build.ps1 -Task Test

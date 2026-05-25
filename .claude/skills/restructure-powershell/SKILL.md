@@ -1,0 +1,63 @@
+---
+name: restructure-powershell
+description: Use when moving, relocating, or restructuring PowerShell code: moving a .ps1 script, relocating a PowerShell module (its folder or .psd1 manifest), or reorganizing a module layout. Triggers on "move this script", "relocate the module", "restructure the PowerShell module". Cross-platform. For .NET projects (.csproj/.sln) use restructure-dotnet; for native C++ use restructure-native.
+---
+
+# Restructuring PowerShell code (scripts + modules, cross-platform)
+
+These cmdlets are **cross-platform** (PowerShell 7 on Windows/Linux/macOS, and Windows
+PowerShell 5.1) and need only git. The hazard is **relative references that break when a file
+moves**. Unlike a .NET project, there is no manifest/CLI that reconciles every kind:
+
+- **Scripts**: `. path` (dot-source) and `& path` (call) of other scripts, often
+  `$PSScriptRoot`-relative. Move the script and those paths no longer resolve.
+- **Modules**: the `.psd1` manifest's `RootModule` / `NestedModules` / `FileList`.
+
+Use the installed `DotnetMove` module (`Import-Module DotnetMove`; if it is not installed, point
+the user to the project's install steps and let them run them, never auto-install). The single
+front door is **`Move-PowerShell`**. It routes a `.ps1` to the script mover and a `.psd1`/module
+folder to the module mover. Always dry-run with `-WhatIf` first.
+
+```powershell
+Import-Module DotnetMove
+
+# Script (fixes dot-source/call references via the PowerShell AST):
+Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -WhatIf
+Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1
+
+# Module (reconciles the .psd1 manifest via Update-ModuleManifest, then Test-ModuleManifest):
+Move-PowerShell -Path ./tools/Mayo -Destination ./modules/Mayo
+```
+
+You can also call the specialists directly: `Move-PowerShellScript` and `Move-PowerShellModule`.
+
+## Heuristic limit: reported, not silently guessed
+
+Script reference fixing is AST-based, so it only resolves what it can prove:
+
+- Literal and `$PSScriptRoot`-based string paths → rewritten (style preserved).
+- A path built with **other variables** (e.g. `"$dir\x.ps1"`) whose leaf matches → **reported**
+  as a possible dynamic reference to verify by hand.
+- A path built entirely from an expression (e.g. `Join-Path ...`) is not a string node and
+  **cannot be detected**. Grep to be sure.
+
+Treat the result as "fixed what could be proven," not "guaranteed complete."
+
+## Module limits (warned, not fixed)
+
+- Dot-sourced relative paths *inside* `.psm1`/`.ps1` files in the module are not reconciled by
+  the manifest refresh; verify them.
+- Any path computed at runtime.
+
+## Do not
+
+- Hand-edit the `.psd1` to repoint paths; let `Update-ModuleManifest` do it.
+- Move a `.ps1` with a plain `git mv` and assume its callers still work; references break silently.
+
+## The `git dotnetmv` verb (optional; ask first)
+
+The same routing is also an opt-in git verb: `git dotnetmv <src> <dst> [--whatif]`. It needs a
+one-time alias that `Register-DotnetMvGitAlias` writes to the user's git config. If you suggest
+it or want to use it, prompt the user first and let them register it; do not edit their git
+config for them. Never auto-install anything (git, the dotnet SDK, or these modules): if a
+prerequisite is missing, tell the user the install command and let them run it.

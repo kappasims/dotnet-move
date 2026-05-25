@@ -1,0 +1,55 @@
+---
+name: restructure-unity
+description: Use when moving, relocating, or restructuring assets/folders in a Unity project (including mobile - iOS/Android). Triggers on moving a Unity asset, folder, or .asmdef; reorganizing an Assets/ or Packages/ layout; or any file move inside a Unity project. Cross-platform. Do not move Unity files without their .meta. For pure .NET/.csproj use restructure-dotnet; for native C++ use restructure-native.
+---
+
+# Restructuring Unity projects (cross-platform, incl. mobile)
+
+Unity's move hazard is the inverse of .NET's. It is not path-fixing:
+
+- asmdef references are by **name or "GUID:..."**, not paths - moving a folder does not
+  break them (so you never edit other asmdefs).
+- but every asset and folder has a sibling `<name>.meta` carrying a stable **GUID**, and
+  scene/prefab/asmdef references resolve by that GUID. **Move files on disk without their
+  `.meta` and Unity regenerates fresh GUIDs - every reference to them breaks.**
+
+So the rule: **never move a Unity asset/folder without its `.meta`.** A folder's meta is a
+*sibling* (`Assets/Tarragon.meta` for folder `Assets/Tarragon`); descendant metas live inside the folder.
+
+## Use Move-UnityAsset
+
+`Import-Module DotnetMove` loads the Unity engine (install it first if needed; never
+auto-install).
+
+```powershell
+Import-Module DotnetMove
+Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/Tarragon -WhatIf
+```
+
+Moves the asset/folder + its `.meta` (git mv when tracked). When moving an `.asmdef` it
+reports which asmdefs reference it - informational only, since name/GUID refs survive.
+
+Mobile/all targets: asmdef `includePlatforms`/`excludePlatforms` (iOS, Android, ...) are
+plain fields untouched by a move, so platform layouts are preserved.
+
+## Validate integrity
+
+```powershell
+Test-UnityMetaIntegrity -Root ./Assets            # warns on problems
+Test-UnityMetaIntegrity -Root ./Assets -Strict    # non-terminating errors
+```
+Reports `MissingMeta` (asset with no `.meta`) and `OrphanMeta` (`.meta` with no asset) - the
+Unity analog of dangling references.
+
+## Do not
+
+- Hand-edit generated `Assembly-CSharp*.csproj` / the `.sln` - Unity regenerates them.
+- Move only the `.cs`/asset and leave the `.meta` (or vice versa).
+
+## The `git dotnetmv` verb (optional; ask first)
+
+The same routing is also an opt-in git verb: `git dotnetmv <src> <dst> [--whatif]`. It needs a
+one-time alias that `Register-DotnetMvGitAlias` writes to the user's git config. If you suggest
+it or want to use it, prompt the user first and let them register it; do not edit their git
+config for them. Never auto-install anything (git, the dotnet SDK, or these modules): if a
+prerequisite is missing, tell the user the install command and let them run it.
