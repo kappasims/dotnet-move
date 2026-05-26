@@ -24,8 +24,8 @@
         # on purpose - that wrapper exists precisely to pass dotnet args through positionally.
         'PSAvoidUsingPositionalParameters'
 
-        # False positive: Test-DirectoryBuildInheritance uses $RepoRoot inside a nested
-        # function (_chain) via closure, which the analyzer does not see as a use.
+        # False positive: some functions use a param only inside a nested helper via closure
+        # (which the analyzer does not see as a use), and ShouldProcess-only params.
         'PSReviewUnusedParameter'
     )
 }

@@ -102,8 +102,10 @@ Level 3, specialists, when you want one specific reconciliation:
 | `Move-PowerShellModule` | a module folder | `Update-ModuleManifest` (`RootModule`/`NestedModules`/`FileList`) |
 
 `Move-UnityAsset` moves the asset together with its `.meta`, so the GUIDs scenes and prefabs
-reference are preserved (nothing to rewrite). `Directory.Build.props/.targets` inheritance is the
-one thing no move can fix, because it changes with folder depth; it is detected and reported.
+reference are preserved (nothing to rewrite). `Directory.Build.props/.targets` and
+`Directory.Packages.props` (Central Package Management) inheritance is the one thing no move can
+fix, because it changes with folder depth; the move detects when the nearest inherited file
+changes and reports it.
 
 It is not entirely hands-off where native projects are involved off Windows. When you move a
 shared `.props`/`.targets`, `Move-MSBuildImport` also rewrites the `<Import>` path in any native

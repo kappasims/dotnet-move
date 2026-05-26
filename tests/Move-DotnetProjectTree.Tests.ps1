@@ -58,8 +58,25 @@ Describe 'Move-DotnetProjectTree' {
             # Moving area/Proj out of area/ drops the area Directory.Build.targets from its chain.
             Move-DotnetProjectTree -Path (Join-Path $root (Join-Path 'area' ('Proj'))) -Destination (Join-Path $root 'movedProj') `
                 -RepoRoot $root -NoBuild -Confirm:$false -WarningVariable w -WarningAction SilentlyContinue | Out-Null
-            ($w -join "`n") | Should -Match 'Directory\.Build\.\* inheritance changes'
+            ($w -join "`n") | Should -Match 'inheritance changes'
             ($w -join "`n") | Should -Match 'Directory\.Build\.targets'
+        } finally { Pop-Location; Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'warns when the move changes Central Package Management (Directory.Packages.props) scope' {
+        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_cpm_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        New-Item -ItemType Directory -Path (Join-Path $root 'area') -Force | Out-Null
+        Push-Location $root
+        try {
+            & git init -q
+            # CPM file applies to area/* only; moving area/Proj out of area drops it.
+            Set-Content (Join-Path $root (Join-Path 'area' ('Directory.Packages.props'))) '<Project><PropertyGroup><ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally></PropertyGroup></Project>'
+            & dotnet new classlib -n Proj -o (Join-Path $root (Join-Path 'area' ('Proj'))) | Out-Null
+            & git add -A; & git commit -qm fixture | Out-Null
+            Move-DotnetProjectTree -Path (Join-Path $root (Join-Path 'area' ('Proj'))) -Destination (Join-Path $root 'movedProj') `
+                -RepoRoot $root -NoBuild -Confirm:$false -WarningVariable w -WarningAction SilentlyContinue | Out-Null
+            ($w -join "`n") | Should -Match 'inheritance changes'
+            ($w -join "`n") | Should -Match 'Directory\.Packages\.props'
         } finally { Pop-Location; Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 }

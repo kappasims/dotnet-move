@@ -73,34 +73,40 @@ function Get-ConsumingProjects {
 }
 
 function Test-DirectoryBuildInheritance {
-    # Warn if moving from $OldDir to $NewDir changes which Directory.Build.* files apply.
+    # Warn if moving from $OldDir to $NewDir changes which inherited MSBuild file applies. Covers
+    # Directory.Build.props/.targets (SDK auto-imports) and Directory.Packages.props (Central
+    # Package Management). MSBuild and CPM each import only the NEAREST ancestor file of a given
+    # name (the project's own directory counts), so inheritance changes when that nearest file
+    # changes - comparing by full path, not leaf name, since every level uses the same filename.
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$OldDir,
         [Parameter(Mandatory)][string]$NewDir,
         [Parameter(Mandatory)][string]$RepoRoot
     )
-    function _chain([string]$start) {
-        $found = @()
-        $d = [System.IO.DirectoryInfo]::new($start)
-        $rootFull = (Resolve-FullPath $RepoRoot)
+    $rootFull = (Resolve-FullPath $RepoRoot)
+    function _nearest([string]$start, [string]$name) {
+        $d = [System.IO.DirectoryInfo]::new((Resolve-FullPath $start))
         while ($null -ne $d) {
-            foreach ($name in 'Directory.Build.props', 'Directory.Build.targets') {
-                $p = Join-Path $d.FullName $name
-                if (Test-Path $p) { $found += $p }
-            }
+            $p = Join-Path $d.FullName $name
+            if (Test-Path -LiteralPath $p) { return (Resolve-FullPath $p) }
             if (Test-PathEqual (Resolve-FullPath $d.FullName) $rootFull) { break }
             $d = $d.Parent
         }
-        return $found
+        return $null
     }
-    $before = _chain $OldDir
-    $after  = _chain $NewDir
-    $lost   = $before | Where-Object { ($after | ForEach-Object { Split-Path -Leaf $_ }) -notcontains (Split-Path -Leaf $_) }
-    $gained = $after  | Where-Object { ($before | ForEach-Object { Split-Path -Leaf $_ }) -notcontains (Split-Path -Leaf $_) }
-    if ($lost -or $gained) {
-        Write-Warning "Directory.Build.* inheritance changes with this move:"
-        $lost   | ForEach-Object { Write-Warning "  no longer applies: $_" }
-        $gained | ForEach-Object { Write-Warning "  now applies:       $_" }
+    $changes = foreach ($name in 'Directory.Build.props', 'Directory.Build.targets', 'Directory.Packages.props') {
+        $b = _nearest $OldDir $name
+        $a = _nearest $NewDir $name
+        $same = ($b -and $a -and (Test-PathEqual $b $a)) -or (-not $b -and -not $a)
+        if (-not $same) { [pscustomobject]@{ Name = $name; Before = $b; After = $a } }
+    }
+    if ($changes) {
+        Write-Warning "Directory.Build.* / Directory.Packages.props inheritance changes with this move:"
+        foreach ($c in $changes) {
+            $b = if ($c.Before) { $c.Before } else { '(none)' }
+            $a = if ($c.After) { $c.After } else { '(none)' }
+            Write-Warning "  $($c.Name): $b -> $a"
+        }
     }
 }
