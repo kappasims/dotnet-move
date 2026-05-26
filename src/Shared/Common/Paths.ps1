@@ -77,6 +77,16 @@ function Select-BestSuffixMatch {
     return $null
 }
 
+function Test-PathOverlap {
+    # True if two directory paths overlap: identical, or one nested inside the other. Used to
+    # refuse a move whose destination sits inside the source (or vice versa) - that move cannot
+    # complete and would otherwise leave a half-reconciled repo behind.
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$A,
+          [Parameter(Mandatory)][string]$B)
+    return (Test-PathEqual $A $B) -or (Test-PathUnder -Path $A -Dir $B) -or (Test-PathUnder -Path $B -Dir $A)
+}
+
 function Test-PathUnder {
     # True if $Path is strictly inside directory $Dir (not equal to it). OS-aware compare.
     [CmdletBinding()]

@@ -103,6 +103,12 @@ function Move-DotnetProject {
                     'DestinationExists', [System.Management.Automation.ErrorCategory]::ResourceExists, $newProj))
             return
         }
+        if (Test-PathOverlap $newDir $oldDir) {
+            $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
+                    [System.InvalidOperationException]::new("Destination '$newDir' overlaps the source '$oldDir'; a project folder cannot be moved into itself or its own subtree."),
+                    'PathOverlap', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Destination))
+            return
+        }
 
         Write-Verbose "Scanning repo root: $repoFull"
         $allSolutions = @(Find-Solutions -Root $repoFull)
@@ -110,7 +116,9 @@ function Move-DotnetProject {
 
         $solutions = @(Get-SolutionsReferencing -ProjectFile $projFull -Candidates $allSolutions)
         $consumers = @(Get-ConsumingProjects -ProjectFile $projFull -Candidates $allProjects)
-        $ownRefs = @(Get-ProjectReferencePaths -ProjectFile $projFull)
+        # Only literal references are reconciled by the CLI; non-literal/conditional ones are
+        # warned about below (Write-UnreconcilableReferenceWarning) and left untouched.
+        $ownRefs = @(Get-ProjectReferencePaths -ProjectFile $projFull | Where-Object { $_.IsLiteral })
 
         $slnNames = @(); foreach ($s in $solutions) { $slnNames += $s.Name }
         Write-Verbose "Plan: $projFile  $oldDir -> $newDir"
@@ -144,6 +152,7 @@ function Move-DotnetProject {
         }
 
         Test-DirectoryBuildInheritance -OldDir $oldDir -NewDir $newDir -RepoRoot $repoFull
+        Write-UnreconcilableReferenceWarning -MovedProject $projFull -AllProjects $allProjects -LiteralConsumers $consumers
 
         $built = $null
         $performed = $false

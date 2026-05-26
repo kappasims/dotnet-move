@@ -39,7 +39,11 @@ function Read-ProjectXml {
 }
 
 function Get-ProjectReferencePaths {
-    # Absolute paths of every <ProjectReference Include=...> in a project file.
+    # Every <ProjectReference Include=...> in a project file, classified. A reference is literal
+    # only when its Include is a plain relative path; an Include built from an MSBuild property
+    # ($(...)), an item list (@(...)), or a wildcard (* ?) cannot be resolved to one file, and a
+    # reference (or its enclosing ItemGroup) carrying a Condition may not always apply. Non-literal
+    # references get FullPath = $null, since there is no single path to reconcile.
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$ProjectFile)
     $projDir = Split-Path -Parent (Resolve-FullPath $ProjectFile)
@@ -48,10 +52,45 @@ function Get-ProjectReferencePaths {
     foreach ($node in $xml.SelectNodes('//*[local-name()="ProjectReference"]')) {
         $include = $node.GetAttribute('Include')
         if ([string]::IsNullOrWhiteSpace($include)) { continue }
-        $abs = [System.IO.Path]::GetFullPath((Join-Path $projDir $include))
-        $refs += [pscustomobject]@{ Raw = $include; FullPath = $abs }
+        $isLiteral = -not ($include -match '\$\(|@\(|[*?]')
+        $hasCondition = -not [string]::IsNullOrWhiteSpace($node.GetAttribute('Condition')) -or
+            ($null -ne $node.ParentNode -and -not [string]::IsNullOrWhiteSpace($node.ParentNode.GetAttribute('Condition')))
+        $abs = if ($isLiteral) { [System.IO.Path]::GetFullPath((Join-Path $projDir $include)) } else { $null }
+        $refs += [pscustomobject]@{ Raw = $include; FullPath = $abs; IsLiteral = $isLiteral; HasCondition = $hasCondition }
     }
     return $refs
+}
+
+function Get-UnreconcilableReferences {
+    # ProjectReferences the dotnet CLI cannot safely reconcile on a move: a non-literal Include
+    # (MSBuild property / item list / wildcard) or a conditional reference. Reported, not rewritten.
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$ProjectFile)
+    return @(Get-ProjectReferencePaths -ProjectFile $ProjectFile | Where-Object { -not $_.IsLiteral -or $_.HasCondition })
+}
+
+function Write-UnreconcilableReferenceWarning {
+    # Warn about references that a move cannot auto-fix: the moved project's own non-literal /
+    # conditional references, and any other repo project that has such references (which may point
+    # at the moved project through a variable/glob and so was never detected as a consumer).
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$MovedProject,
+        [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$AllProjects,
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]]$LiteralConsumers
+    )
+    $movedFull = Resolve-FullPath $MovedProject
+    foreach ($r in (Get-UnreconcilableReferences -ProjectFile $movedFull)) {
+        $why = if (-not $r.IsLiteral) { 'non-literal path' } else { 'conditional' }
+        Write-Warning ("$(Split-Path -Leaf $movedFull) has an unreconcilable ProjectReference '$($r.Raw)' ($why); verify it by hand after the move.")
+    }
+    foreach ($proj in $AllProjects) {
+        $pf = Resolve-FullPath $proj.FullName
+        if ((Test-PathEqual $pf $movedFull) -or (Test-PathInList $pf $LiteralConsumers)) { continue }
+        if ((Get-UnreconcilableReferences -ProjectFile $pf).Count -gt 0) {
+            Write-Warning ("$(Split-Path -Leaf $pf) has non-literal/conditional ProjectReference(s); if any point at $(Split-Path -Leaf $movedFull), they were not reconciled - verify by hand.")
+        }
+    }
 }
 
 function Get-ConsumingProjects {
@@ -66,6 +105,7 @@ function Get-ConsumingProjects {
     foreach ($proj in $Candidates) {
         if (Test-PathEqual (Resolve-FullPath $proj.FullName) $target) { continue }
         foreach ($ref in (Get-ProjectReferencePaths -ProjectFile $proj.FullName)) {
+            if (-not $ref.IsLiteral) { continue }   # non-literal Include resolves to no single path
             if (Test-PathEqual $ref.FullPath $target) { $hits += $proj.FullName; break }
         }
     }

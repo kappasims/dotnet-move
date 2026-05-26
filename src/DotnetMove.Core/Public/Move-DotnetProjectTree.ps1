@@ -77,6 +77,13 @@ function Move-DotnetProjectTree {
             return
         }
 
+        if (Test-PathOverlap $newDir $srcDir) {
+            $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
+                    [System.InvalidOperationException]::new("Destination '$newDir' overlaps the source '$srcDir'; a folder cannot be moved into itself or its own subtree."),
+                    'PathOverlap', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Destination))
+            return
+        }
+
         if (-not $RepoRoot) { $RepoRoot = Get-RepoRoot -StartPath $srcDir }
         $repoFull = Resolve-FullPath $RepoRoot
 
@@ -97,7 +104,7 @@ function Move-DotnetProjectTree {
             $extConsumers = @(Get-ConsumingProjects -ProjectFile $p -Candidates $allProjects |
                     Where-Object { -not (Test-PathUnder -Path $_ -Dir $srcDir) })
             $extRefs = @(Get-ProjectReferencePaths -ProjectFile $p |
-                    Where-Object { -not (Test-PathUnder -Path $_.FullPath -Dir $srcDir) })
+                    Where-Object { $_.IsLiteral -and -not (Test-PathUnder -Path $_.FullPath -Dir $srcDir) })
             $slns = @(Get-SolutionsReferencing -ProjectFile $p -Candidates $allSolutions)
             $newP = $newDir + $p.Substring($srcDir.Length)   # rebase under destination
             $plan += [pscustomobject]@{ Old = $p; New = $newP; Solutions = $slns; ExtConsumers = $extConsumers; ExtRefs = $extRefs }
@@ -118,6 +125,14 @@ function Move-DotnetProjectTree {
         # the tree move with it; only ancestors outside it change) and before the move so the
         # source chain still resolves.
         Test-DirectoryBuildInheritance -OldDir $srcDir -NewDir $newDir -RepoRoot $repoFull
+
+        # Warn about references the CLI cannot reconcile on a move (non-literal path or conditional).
+        foreach ($p in $moved) {
+            foreach ($r in (Get-UnreconcilableReferences -ProjectFile $p)) {
+                $why = if (-not $r.IsLiteral) { 'non-literal path' } else { 'conditional' }
+                Write-Warning ("$(Split-Path -Leaf $p) has an unreconcilable ProjectReference '$($r.Raw)' ($why); verify it by hand after the move.")
+            }
+        }
 
         $performed = $false
         $built = $null

@@ -82,4 +82,16 @@ Describe 'Move-DotnetProject' {
         $errs | Should -Not -BeNullOrEmpty
         $errs[0].FullyQualifiedErrorId | Should -Match 'ProjectNotFound'
     }
+
+    It 'refuses to move a project into its own subtree (no mutation)' {
+        $root = New-Fixture
+        try {
+            $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
+            $dest = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('nested')))   # under the source
+            Move-DotnetProject -Project $lib -Destination $dest -RepoRoot $root -NoBuild -Confirm:$false `
+                -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
+            $errs[0].FullyQualifiedErrorId | Should -Match 'PathOverlap'
+            $lib | Should -Exist   # nothing moved
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
 }

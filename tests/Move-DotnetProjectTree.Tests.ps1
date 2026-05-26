@@ -45,6 +45,18 @@ Describe 'Move-DotnetProjectTree' {
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
+    It 'refuses to move a folder into its own subtree (no mutation)' {
+        $root = New-TreeFixture
+        try {
+            $group = Join-Path $root 'group'
+            $dest = Join-Path $group 'nested'   # under the source folder
+            Move-DotnetProjectTree -Path $group -Destination $dest -RepoRoot $root -NoBuild -Confirm:$false `
+                -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
+            $errs[0].FullyQualifiedErrorId | Should -Match 'PathOverlap'
+            (Join-Path $group (Join-Path 'Lib' ('Lib.csproj'))) | Should -Exist   # nothing moved
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
     It 'warns when the move changes Directory.Build.* inheritance' {
         $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_dbt_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
         New-Item -ItemType Directory -Path (Join-Path $root 'area') -Force | Out-Null

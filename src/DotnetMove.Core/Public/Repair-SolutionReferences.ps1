@@ -89,6 +89,9 @@ function Repair-SolutionReferences {
         }
         foreach ($proj in (Find-ProjectFiles -Root $RepoRoot)) {
             foreach ($ref in (Get-ProjectReferencePaths -ProjectFile $proj.FullName)) {
+                # Non-literal references (MSBuild property / glob / conditional) have no single
+                # resolved path, so they cannot be "dangling" in a way we could repair - skip them.
+                if (-not $ref.IsLiteral) { continue }
                 if (-not (Test-Path -LiteralPath $ref.FullPath)) {
                     $dangling.Add([pscustomobject]@{ Kind = 'Reference'; Container = $proj.FullName; Missing = $ref.Raw; MissingAbs = $ref.FullPath })
                 }
