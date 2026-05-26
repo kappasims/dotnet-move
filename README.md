@@ -40,13 +40,32 @@ like "move this project" (see [Skills](#skills)).
 
 ### Install
 
-Not on the PowerShell Gallery yet, so install with the hosted installer (no git or clone): it
-downloads the latest release and copies the modules onto your CurrentUser module path.
+DotnetMove is not on the PowerShell Gallery yet, so install it from GitHub. The installer only
+downloads the latest release and copies the five module folders onto your CurrentUser module path.
+
+Recommended: download the installer, read it, then run it.
+
+```powershell
+irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 -OutFile install.ps1
+# look it over, then:
+./install.ps1
+```
+
+No-script option: download the latest release zip from the
+[Releases page](https://github.com/kappasims/dotnet-move/releases), unzip it, and copy the
+`DotnetMove.Shared`, `DotnetMove.Core`, `DotnetMove.Unity`, `DotnetMove.Native`, and `DotnetMove`
+folders out of `src/` into any directory on your `$env:PSModulePath`.
+
+Or pipe it straight in, if you are comfortable running the script unread:
 
 ```powershell
 irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 | iex
-Import-Module DotnetMove                   # all engines, by name
+```
 
+Then load it, and optionally enable the git verb:
+
+```powershell
+Import-Module DotnetMove                   # all engines, by name
 Register-DotnetMvGitAlias -Scope Global    # optional: enable `git dotnetmv` (one git-config line)
 ```
 

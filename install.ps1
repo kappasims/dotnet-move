@@ -76,7 +76,7 @@ try {
     }
     New-Item -ItemType Directory -Path $InstallPath -Force | Out-Null
 
-    # DotnetMove.Shared is the required dependency of the engines; install it alongside them.
+    # DotnetMove.Shared holds the helpers the engines call; install it alongside them.
     foreach ($name in 'DotnetMove.Shared', 'DotnetMove.Core', 'DotnetMove.Unity', 'DotnetMove.Native', 'DotnetMove') {
         $dest = Join-Path $InstallPath $name
         if (Test-Path -LiteralPath $dest) { Remove-Item -LiteralPath $dest -Recurse -Force }
