@@ -84,7 +84,7 @@ irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 -
 ./install.ps1
 ```
 
-No-script option: download the latest release zip from the
+**No-script option:** download the latest release zip from the
 [Releases page](https://github.com/kappasims/dotnet-move/releases), unzip it, and copy the
 `DotnetMove.Shared`, `DotnetMove.Core`, `DotnetMove.Unity`, `DotnetMove.Native`, and `DotnetMove`
 folders out of `src/` into any directory on your `$env:PSModulePath`.
