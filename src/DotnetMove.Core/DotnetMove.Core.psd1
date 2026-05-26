@@ -26,6 +26,7 @@
         'Sync-Solution',
         'Test-DotnetMoveUpdate',
         'Test-SolutionConsistency',
+        'Update-DotnetMove',
         'Unregister-DotnetMvGitAlias'
     )
     CmdletsToExport      = @()

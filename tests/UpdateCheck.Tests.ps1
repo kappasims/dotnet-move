@@ -32,3 +32,23 @@ Describe 'Test-DotnetMoveUpdate' {
         }
     }
 }
+
+Describe 'Update-DotnetMove' {
+    It 'does nothing (no download) when already up to date' {
+        InModuleScope DotnetMove.Core {
+            Mock Test-DotnetMoveUpdate { [pscustomobject]@{ Installed = [version]'1.1.0'; Latest = [version]'1.1.0'; Tag = 'v1.1.0'; UpdateAvailable = $false; Url = '' } }
+            Mock Invoke-WebRequest {}
+            Update-DotnetMove | Out-Null
+            Should -Invoke Invoke-WebRequest -Times 0
+        }
+    }
+
+    It 'does not download under -WhatIf even when an update is available' {
+        InModuleScope DotnetMove.Core {
+            Mock Test-DotnetMoveUpdate { [pscustomobject]@{ Installed = [version]'1.0.0'; Latest = [version]'1.1.0'; Tag = 'v1.1.0'; UpdateAvailable = $true; Url = '' } }
+            Mock Invoke-WebRequest {}
+            Update-DotnetMove -WhatIf | Out-Null
+            Should -Invoke Invoke-WebRequest -Times 0
+        }
+    }
+}

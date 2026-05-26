@@ -38,20 +38,43 @@ the platform and whether `.slnx` is supported.
 
 ### Install
 
-Not on the PowerShell Gallery yet, so install from a clone. The install task copies the modules
-onto your CurrentUser module path; after it you import by name and never reference the clone
-again.
+Not on the PowerShell Gallery yet. The simplest install needs no git or clone, just run the
+hosted installer; re-running it (or `Update-DotnetMove`) is also how you update:
 
 ```powershell
-git clone https://github.com/kappasims/dotnet-move
-./dotnet-move/build.ps1 -Task Install     # copies to your module path (PS7 or 5.1)
+irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 | iex
 Import-Module DotnetMove                   # all engines, by name
 
 Register-DotnetMvGitAlias -Scope Global    # optional: enable `git dotnetmv` (one git-config line)
 ```
 
-To work on DotnetMove itself, import straight from the clone instead of installing:
-`Import-Module ./src/DotnetMove.Core/DotnetMove.Core.psd1`.
+It downloads the latest release, extracts it, and copies the modules onto your CurrentUser module
+path. `Update-DotnetMove` does the same in place for an already-installed copy, and
+`Test-DotnetMoveUpdate` just checks whether you are behind.
+
+From a clone (for working on DotnetMove itself), use the build task instead, or import directly:
+
+```powershell
+./build.ps1 -Task Install                          # copy this clone's modules to your module path
+Import-Module ./src/DotnetMove.Core/DotnetMove.Core.psd1   # or import straight from the clone
+```
+
+### Updating
+
+DotnetMove does not update itself: cutting a release changes nothing already installed until you
+act. `Test-DotnetMoveUpdate` compares the installed module to the latest GitHub release and tells
+you if you are behind. Applying the update differs by how you use it:
+
+- For people (non-agentic): run `Update-DotnetMove` to update in place, or re-run the installer
+  one-liner (`irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 | iex`).
+  Both overwrite the installed modules with the latest release. When DotnetMove reaches the
+  PowerShell Gallery, `Update-Module DotnetMove` becomes the standard path.
+- For agents (the Claude Code skills): the skills are files, separate from the installed module, so
+  they update on their own track. An agent working inside a clone gets both with `git pull` (plus
+  `./build.ps1 -Task Install` to refresh the modules). An agent using globally-installed skills
+  updates the module with `Update-DotnetMove` and re-syncs the `.claude/skills` copies. For
+  automatic reminders, add a Claude Code SessionStart hook that runs `Test-DotnetMoveUpdate` (ask
+  before adding it; it edits `settings.json`).
 
 ### Quick start
 
@@ -301,6 +324,7 @@ tests/                   Pester tests + fixtures
 | [Test-DotnetMoveUpdate](#test-dotnetmoveupdate) | Check GitHub for a newer DotnetMove release and report whether the installed version is behind. |
 | [Test-SolutionConsistency](#test-solutionconsistency) | Report projects whose membership diverges across the solution files in a repo (present in some solutions but absent from others). |
 | [Unregister-DotnetMvGitAlias](#unregister-dotnetmvgitalias) | Remove the `git dotnetmv` alias registered by Register-DotnetMvGitAlias. |
+| [Update-DotnetMove](#update-dotnetmove) | Update an installed DotnetMove to the latest GitHub release, in place. |
 
 **native C++ (Windows)**
 
@@ -1215,6 +1239,53 @@ Unregister-DotnetMvGitAlias -Scope Global
 ```
 
 Removes the global git dotnetmv alias.
+
+### Update-DotnetMove
+
+Update an installed DotnetMove to the latest GitHub release, in place. The one-command
+update for non-clone installs.
+
+**Syntax**
+
+```powershell
+Update-DotnetMove [[-Repository] <string>] [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+Checks GitHub for a newer release (via Test-DotnetMoveUpdate) and, if the installed version
+is behind, runs the release's install.ps1 to overwrite the modules on your module path. No
+git, no clone. Does nothing when already current unless -Force. Honors -WhatIf/-Confirm.
+
+After it runs, reload the module in the current session with `Import-Module DotnetMove -Force`.
+Needs network access to GitHub. When the module ships on the PowerShell Gallery this is
+superseded by `Update-Module DotnetMove`.
+
+**Parameters**
+
+| Name | Type | Required | Pipeline | Description |
+|---|---|---|---|---|
+| `Force` | SwitchParameter | false | false | Reinstall the latest release even if the installed version is already current. |
+| `Repository` | String | false | false | owner/name of the GitHub repository. Defaults to the project repository. |
+| `WhatIf` | SwitchParameter | false | false |  |
+| `Confirm` | SwitchParameter | false | false |  |
+
+**Output**
+
+The DotnetMove.Update record from Test-DotnetMoveUpdate (Installed, Latest, Tag,
+UpdateAvailable, Url), so the decision is inspectable. Nothing on a failed check.
+
+**Examples**
+
+```powershell
+Update-DotnetMove
+```
+
+Updates to the latest release if the installed copy is behind.
+
+```powershell
+Update-DotnetMove -WhatIf
+```
+
+Reports what it would do without downloading or installing.
 
 ### Move-NativeProject
 

@@ -81,9 +81,10 @@ prerequisite is missing, tell the user the install command and let them run it.
 
 ## Staying current
 
-DotnetMove installs from a clone and does not auto-update; cutting a release changes nothing on an
-installed machine until you pull. Check with `Test-DotnetMoveUpdate` (it compares the installed
-module to the latest GitHub release). To update: `git pull` in the clone, then
-`./build.ps1 -Task Install` (and re-sync `.claude/skills` if they were copied out of the clone).
-For automatic reminders, consider a Claude Code SessionStart hook that runs
-`Test-DotnetMoveUpdate`; ask the user before adding it, since it edits their settings.json.
+DotnetMove does not auto-update; cutting a release changes nothing on an installed machine until
+you update. Check with `Test-DotnetMoveUpdate` (it compares the installed module to the latest
+GitHub release). Update in place with `Update-DotnetMove` (no git), or re-run the installer:
+`irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 | iex`. From a dev
+clone instead, `git pull` then `./build.ps1 -Task Install`. For automatic reminders, consider a
+Claude Code SessionStart hook that runs `Test-DotnetMoveUpdate`; ask the user before adding it,
+since it edits their settings.json.
