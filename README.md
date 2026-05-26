@@ -42,10 +42,9 @@ like "move this project" (see [Skills](#skills)).
 
 ## Footprint
 
-Everything DotnetMove creates or changes, so there are no surprises. It never uses AppData, never
-edits `PATH`, never auto-installs git or the .NET SDK, and sends no telemetry.
+Everything DotnetMove creates or changes, so there are no surprises:
 
-Installing (the installer or `./build.ps1 -Task Install`):
+**Installing** (the installer or `./build.ps1 -Task Install`):
 
 - Copies the module folders to your CurrentUser module path: `~/Documents/PowerShell/Modules`
   (or `WindowsPowerShell` for 5.1) on Windows, `~/.local/share/powershell/Modules` elsewhere, or a
@@ -54,7 +53,7 @@ Installing (the installer or `./build.ps1 -Task Install`):
 - Downloads the release zip to the system temp dir, extracts it, and deletes it when done. Install
   and update are the only things that reach the network (`api.github.com` / `github.com`).
 
-Running a move:
+**Running a move:**
 
 - Edits the target repo's solution/project files to reconcile the move. That is the operation
   itself, done through first-party tooling (see [the contract](#build-test-install-docs)).
@@ -64,12 +63,17 @@ Running a move:
 - Snapshots the files it edits to the system temp dir for rollback, and removes the snapshot when
   the move finishes (success or failure). Never written into the repo.
 
-Only when you ask:
+**Only when you ask:**
 
 - `Register-DotnetMvGitAlias` adds one `alias.dotnetmv` line to your git config (repo-local, or
   `~/.gitconfig` with `-Scope Global`); `Unregister-DotnetMvGitAlias` removes it.
 - `install.ps1 -NoJournal` sets `DOTNETMOVE_JOURNAL=off` persistently (a User environment variable
   on Windows, a profile line on Linux/macOS) to turn the undo journal off.
+
+### What it doesn't do
+
+It never uses AppData, never edits `PATH`, never auto-installs git or the .NET SDK, and sends no
+telemetry.
 
 ## Install
 
