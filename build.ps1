@@ -5,17 +5,19 @@
 
 .DESCRIPTION
     Tasks:
-      Test    (default) - import the three modules (validates load + RequiredModules wiring)
-                          and run the Pester suite. Non-zero exit on failure (for CI).
+      Test    (default) - import the modules and run the Pester suite (validates they load).
+                          Non-zero exit on failure (for CI).
       Analyze           - run PSScriptAnalyzer over src/ if it is available.
-      Install           - copy the modules + their Shared sibling into a PowerShell module
-                          path so `Import-Module DotnetMove.Core` works by name.
+      Install           - copy all modules (Shared, the engines, and the DotnetMove umbrella) into
+                          a PowerShell module path so `Import-Module DotnetMove` works by name.
       Docs              - regenerate the "Command reference" section of README.md from the
                           cmdlets' comment-based help.
       Release -Version  - stamp a semver into every module manifest (ModuleVersion), then gate on
                           static analysis (PSScriptAnalyzer, required + clean) and the tests; with
                           -Publish also commit, tag vX.Y.Z, push, and create the GitHub release -
                           keeping the installed ModuleVersion equal to the tag.
+      Publish           - assemble the single bundled DotnetMove package, validate and smoke-import
+                          it, then Publish-Module to the PowerShell Gallery (dry run without -ApiKey).
 
 .EXAMPLE
     ./build.ps1                       # run the tests
@@ -43,7 +45,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
-# Shared first: the engines require it (RequiredModules), so it must import/install before them.
+# Shared first: the engines call its helpers, so it must import/install before them.
 $modules = 'DotnetMove.Shared', 'DotnetMove.Core', 'DotnetMove.Native', 'DotnetMove.Unity'
 # The umbrella bootstrap imports the engines above; it ships but is not in the per-engine
 # import/test loop (importing it would pull the engines in a second time).
@@ -62,7 +64,7 @@ function Invoke-TestTask {
     }
     Import-Module Pester -MinimumVersion 5.0 -Force
 
-    # Importing all three validates loading + the RequiredModules dependency before tests run.
+    # Import Shared first, then the engines (mirrors how the umbrella loads them) before tests run.
     foreach ($m in $modules) {
         Import-Module ([System.IO.Path]::Combine($root, 'src', $m, "$m.psd1")) -Force
     }

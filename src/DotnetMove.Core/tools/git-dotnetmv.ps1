@@ -14,9 +14,9 @@ $ErrorActionPreference = 'Stop'
 if (-not (Get-Command Move-Dotnet -ErrorAction SilentlyContinue)) {
     $coreManifest = [System.IO.Path]::Combine($PSScriptRoot, '..', 'DotnetMove.Core.psd1')
     if (Test-Path -LiteralPath $coreManifest) {
-        # Running from a clone: Core's RequiredModules (DotnetMove.Shared) is not on the module
-        # path, so load the sibling Shared module by path first. When installed, Import-Module by
-        # name (below) resolves the dependency from the module path instead.
+        # Running from a clone: the sibling Shared module is not on the module path, so load it by
+        # path first (Core calls its helpers but declares no RequiredModules), then Core. When
+        # installed, the else branch imports by name and PowerShell auto-loads Shared on first use.
         $sharedManifest = [System.IO.Path]::Combine($PSScriptRoot, '..', '..', 'DotnetMove.Shared', 'DotnetMove.Shared.psd1')
         if (Test-Path -LiteralPath $sharedManifest) { Import-Module $sharedManifest -Force }
         Import-Module $coreManifest -Force

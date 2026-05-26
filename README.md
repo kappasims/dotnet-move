@@ -50,7 +50,7 @@ To work on DotnetMove itself, install from a clone instead, or import directly:
 
 ```powershell
 ./build.ps1 -Task Install                          # copy this clone's modules to your module path
-Import-Module ./src/DotnetMove.Core/DotnetMove.Core.psd1   # or import straight from the clone
+Import-Module ./src/DotnetMove/DotnetMove.psd1     # or import straight from the clone (loads Shared + all engines)
 ```
 
 ### Updating
@@ -214,44 +214,49 @@ the commands above:
 ./build.ps1 -Task Publish -ApiKey <key>            # publish that one DotnetMove package to the PowerShell Gallery
 ```
 
-`Install` copies the modules and their `Shared` sibling (the modules dot-source `..\Shared`), so
-once that path is on `$env:PSModulePath` you can `Import-Module DotnetMove` by name (the umbrella
-surfaces every engine's commands at once; native only on Windows).
+Building and testing needs PowerShell 7+ (or Windows PowerShell 5.1), the .NET SDK (the suite
+creates and builds real projects), git, and Pester 5. `-Task Test` prints the install command for
+Pester if it is missing; nothing here auto-installs.
+
+`Install` copies every module (Shared, the engines, and the `DotnetMove` umbrella) to your module
+path. Once it is on `$env:PSModulePath`, `Import-Module DotnetMove` loads Shared and every
+available engine in one call (native on Windows only).
 
 Per-push CI (`.github/workflows/ci.yml`) runs the suite on windows-latest (PowerShell 7) and
 Windows PowerShell 5.1, plus lint. Linux and macOS are on-demand (`platforms.yml`, via
-`tools/Invoke-PlatformCI.ps1`) - run them before a release.
+`tools/Invoke-PlatformCI.ps1`); run them before a release.
 
 Contract: moves never hand-**write** solution/project files; every path/GUID change goes through
-first-party tooling (`dotnet sln`/`reference`, `git mv`, `Update-ModuleManifest`). The only
-hand-written exceptions are formats no CLI reconciles, solution stored paths, `<Import>` paths, and
-script dot-source paths, via the BOM-preserving `Set-Raw*` helpers; reads parse files directly only
-where no first-party reader suffices. `tests/FirstPartyDrift.Tests.ps1` locks this write surface down.
+first-party tooling (`dotnet sln`/`reference`, `git mv`, `Update-ModuleManifest`). The unavoidable
+hand-writes - formats no CLI reconciles, solution stored paths, `<Import>` paths, script dot-source
+paths - go through the BOM-preserving `Set-Raw*` helpers, which `tests/FirstPartyDrift.Tests.ps1`
+locks down. Reads parse files directly only where no first-party reader suffices.
 
 ### Modules
 
-Split by platform so the cross-platform core never ships native, Windows-only code:
+Split by platform so the cross-platform core never ships native, Windows-only code. It ships as
+one bundled Gallery package: the engines declare no `RequiredModules`; the `DotnetMove` umbrella
+loads Shared first, then each available engine, with `-Global` so all their commands surface
+together.
 
-- `DotnetMove.Shared`: cross-platform support module of path/git/MSBuild/solution helpers that the
-  engines require. Not used directly.
+- `DotnetMove.Shared`: cross-platform path/git/MSBuild/solution helpers used by the engines. Not
+  imported directly.
 - `DotnetMove.Core`: cross-platform (PowerShell 7 and Windows PowerShell 5.1). The .NET and
   PowerShell engines, the `Move-Dotnet` dispatcher, and the utilities.
 - `DotnetMove.Unity`: cross-platform Unity engine.
-- `DotnetMove.Native`: Windows-only native C++ engine.
-- `DotnetMove`: umbrella that imports every available engine in one `Import-Module`.
-
-Each engine declares `RequiredModules = DotnetMove.Shared`.
+- `DotnetMove.Native`: Windows-only native C++ engine (loaded best-effort; absent elsewhere).
+- `DotnetMove`: umbrella that loads Shared and every available engine in one `Import-Module`.
 
 ### Layout
 
 ```
-build.ps1                Test / Analyze / Install / Docs / Release tasks
+build.ps1                Test / Analyze / Install / Docs / Release / Publish tasks
 .github/workflows/      ci.yml (push: Windows + PS 5.1 + lint); platforms.yml (on-demand: Linux + macOS)
-src/DotnetMove.Shared/   shared helpers module (Common/ + Dotnet/); the engines require it
-src/DotnetMove/          umbrella module (loads every available engine)
+src/DotnetMove.Shared/   shared helpers module (Common/ + Dotnet/); loaded by the umbrella first
+src/DotnetMove/          umbrella module (loads Shared + every available engine)
 src/DotnetMove.Core/     cross-platform module; Private/ = helpers, Public/ = cmdlets
-src/DotnetMove.Native/   Windows-only native module (RequiredModules: DotnetMove.Shared)
-src/DotnetMove.Unity/    cross-platform Unity module (RequiredModules: DotnetMove.Shared)
+src/DotnetMove.Native/   Windows-only native module
+src/DotnetMove.Unity/    cross-platform Unity module
 tests/                   Pester tests + fixtures
 .claude/skills/          restructure-dotnet / -powershell / -unity / -native
 ```
