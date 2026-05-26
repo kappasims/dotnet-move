@@ -27,7 +27,7 @@ Describe 'Move-PowerShellModule' {
             $mod | Should -Not -Exist
             (Test-ModuleManifest -Path (Join-Path $dest 'MyMod.psd1') -ErrorAction SilentlyContinue).Name | Should -Be 'MyMod'
             # Now emits a result with the common base shape (audit #4).
-            $r.PSObject.TypeNames[0] | Should -Be 'DotnetMove.ModuleMoveResult'
+            $r.PSObject.TypeNames[0] | Should -Be 'DotnetMove.PSModuleMoveResult'
             $r.Engine | Should -Be 'powershell'
             $r.Performed | Should -BeTrue
             foreach ($f in 'Engine', 'Source', 'Destination', 'Performed', 'SkippedCount') { $r.PSObject.Properties.Name | Should -Contain $f }

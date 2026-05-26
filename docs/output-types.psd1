@@ -111,7 +111,7 @@
         )
     }
 
-    'DotnetMove.ModuleMoveResult' = @{
+    'DotnetMove.PSModuleMoveResult' = @{
         Summary = 'Result of moving a PowerShell module folder and reconciling its manifest.'
         Array   = $false
         Fields  = @(

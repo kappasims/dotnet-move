@@ -821,7 +821,7 @@ no RepoRoot).
 
 ```text
 .ps1                   ->  Move-PowerShellScript  ->  DotnetMove.ScriptMoveResult
-.psd1  module folder   ->  Move-PowerShellModule  ->  DotnetMove.ModuleMoveResult
+.psd1  module folder   ->  Move-PowerShellModule  ->  DotnetMove.PSModuleMoveResult
 ```
 
 These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields; they are plain pscustomobjects with no shared base type. See [Type reference](#type-reference).
@@ -864,10 +864,10 @@ and any path computed at runtime, cannot be reconciled automatically.
 
 **Output**
 
-Returns a single [DotnetMove.ModuleMoveResult](#dotnetmovemodulemoveresult).
+Returns a single [DotnetMove.PSModuleMoveResult](#dotnetmovepsmodulemoveresult).
 
 ```text
-DotnetMove.ModuleMoveResult
+DotnetMove.PSModuleMoveResult
   Engine        string
   Source        string
   Destination   string
@@ -1572,10 +1572,10 @@ Each type below is one `pscustomobject` with the fields shown. A command may ret
 | <small>[DotnetMove.GitAlias](#dotnetmovegitalias)</small> | <small>The git dotnetmv alias registration (or what would be registered).</small> |
 | <small>[DotnetMove.ImportMoveResult](#dotnetmoveimportmoveresult)</small> | <small>Result of moving a shared MSBuild .props/.targets file and fixing its importers.</small> |
 | <small>[DotnetMove.MetaIntegrity](#dotnetmovemetaintegrity)</small> | <small>One Unity .meta integrity problem: an asset missing a .meta, or an orphan .meta.</small> |
-| <small>[DotnetMove.ModuleMoveResult](#dotnetmovemodulemoveresult)</small> | <small>Result of moving a PowerShell module folder and reconciling its manifest.</small> |
 | <small>[DotnetMove.MoveResult](#dotnetmovemoveresult)</small> | <small>Result of moving a .NET project folder and reconciling solutions and project references.</small> |
 | <small>[DotnetMove.NativeMoveResult](#dotnetmovenativemoveresult)</small> | <small>Result of moving a native / C++/CLI project (.vcxproj).</small> |
 | <small>[DotnetMove.PathReference](#dotnetmovepathreference)</small> | <small>One build/CI/hook/container line that hardcodes a moved path and that no first-party tool reconciles.</small> |
+| <small>[DotnetMove.PSModuleMoveResult](#dotnetmovepsmodulemoveresult)</small> | <small>Result of moving a PowerShell module folder and reconciling its manifest.</small> |
 | <small>[DotnetMove.RepairResult](#dotnetmoverepairresult)</small> | <small>One dangling solution-membership or ProjectReference entry that was (or would be) repaired.</small> |
 | <small>[DotnetMove.ScriptMoveResult](#dotnetmovescriptmoveresult)</small> | <small>Result of moving a standalone .ps1 and fixing dot-source/call paths.</small> |
 | <small>[DotnetMove.SolutionItem](#dotnetmovesolutionitem)</small> | <small>One entry in the full contents of a solution (or a project on disk that no solution references).</small> |
@@ -1658,22 +1658,6 @@ DotnetMove.MetaIntegrity
   Path  string
 ```
 
-### DotnetMove.ModuleMoveResult
-
-<small>[ [Move-Dotnet](#move-dotnet), [Move-PowerShell](#move-powershell), [Move-PowerShellModule](#move-powershellmodule) ]</small>
-
-Result of moving a PowerShell module folder and reconciling its manifest.
-
-```text
-DotnetMove.ModuleMoveResult
-  Engine        string
-  Source        string
-  Destination   string
-  Performed     bool    false under -WhatIf
-  SkippedCount  int
-  Manifest      string  the manifest file name
-```
-
 ### DotnetMove.MoveResult
 
 <small>[ [Move-Dotnet](#move-dotnet), [Move-DotnetFile](#move-dotnetfile), [Move-DotnetProject](#move-dotnetproject) ]</small>
@@ -1723,6 +1707,22 @@ DotnetMove.PathReference
   Line        int     1-based line number
   Confidence  string  High | Low
   Text        string  the matching line
+```
+
+### DotnetMove.PSModuleMoveResult
+
+<small>[ [Move-Dotnet](#move-dotnet), [Move-PowerShell](#move-powershell), [Move-PowerShellModule](#move-powershellmodule) ]</small>
+
+Result of moving a PowerShell module folder and reconciling its manifest.
+
+```text
+DotnetMove.PSModuleMoveResult
+  Engine        string
+  Source        string
+  Destination   string
+  Performed     bool    false under -WhatIf
+  SkippedCount  int
+  Manifest      string  the manifest file name
 ```
 
 ### DotnetMove.RepairResult

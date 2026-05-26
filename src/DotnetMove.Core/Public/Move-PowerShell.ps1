@@ -38,7 +38,7 @@ function Move-PowerShell {
     # dispatcher only routes (the specialist calls ShouldProcess), so suppress the rule here.
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '', Justification = 'Delegates to a specialist cmdlet that calls ShouldProcess')]
     [CmdletBinding(SupportsShouldProcess)]
-    [OutputType('DotnetMove.ScriptMoveResult', 'DotnetMove.ModuleMoveResult')]
+    [OutputType('DotnetMove.ScriptMoveResult', 'DotnetMove.PSModuleMoveResult')]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'PSPath')]

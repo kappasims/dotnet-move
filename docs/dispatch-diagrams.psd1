@@ -23,7 +23,7 @@ Unity asset  .meta       ->  Move-UnityAsset
 
     'Move-PowerShell' = @'
 .ps1                   ->  Move-PowerShellScript  ->  DotnetMove.ScriptMoveResult
-.psd1  module folder   ->  Move-PowerShellModule  ->  DotnetMove.ModuleMoveResult
+.psd1  module folder   ->  Move-PowerShellModule  ->  DotnetMove.PSModuleMoveResult
 '@
 
     'Resolve-MoveEngine' = @'

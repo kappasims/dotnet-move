@@ -22,7 +22,7 @@ function Move-PowerShellModule {
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
     .OUTPUTS
-        DotnetMove.ModuleMoveResult
+        DotnetMove.PSModuleMoveResult
 
     .EXAMPLE
         Move-PowerShellModule -ModulePath ./tools/Mayo -Destination ./modules/Mayo
@@ -30,7 +30,7 @@ function Move-PowerShellModule {
         Moves the module and rewrites RootModule, NestedModules, and FileList in its .psd1.
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
-    [OutputType('DotnetMove.ModuleMoveResult')]
+    [OutputType('DotnetMove.PSModuleMoveResult')]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path', 'PSPath')]
@@ -91,7 +91,7 @@ function Move-PowerShellModule {
         Write-Warning "Reminder: dot-sourced relative paths inside .psm1/.ps1 are not auto-fixed. Grep the module for '. \$PSScriptRoot' style references if depth changed."
     }
 
-    New-MoveResult -TypeName 'DotnetMove.ModuleMoveResult' -Engine 'powershell' -Source $moduleDir -Destination $newDir `
+    New-MoveResult -TypeName 'DotnetMove.PSModuleMoveResult' -Engine 'powershell' -Source $moduleDir -Destination $newDir `
         -Performed $performed -SkippedCount $skippedCount -Extra @{ Manifest = $manifestName }
     }
 }
