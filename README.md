@@ -877,9 +877,11 @@ reconciling). Read-only by default: it returns one object per problem, each tagg
 Resolution of Relocatable, Missing, or Ambiguous.
 
 With -Fix it repairs every Relocatable entry: it searches the repo for a project file of the
-same name and, when exactly one exists, re-points the entry at it through the dotnet CLI
-(remove the stale path, add the found one). Entries it cannot resolve are left untouched and
-reported, Missing (no such project anywhere) or Ambiguous (more than one candidate).
+same name and re-points the entry at it through the dotnet CLI (remove the stale path, add
+the found one). When one project of that name exists it is used directly; when several do,
+the one that keeps the most of the original path's trailing folders is chosen, since a moved
+project usually keeps its own folder name. Entries it cannot resolve are left untouched and
+reported, Missing (no such project anywhere) or Ambiguous (several equally-good candidates).
 
 With -Prune it removes the Missing entries, the genuinely deleted ones, through the dotnet
 CLI. -Prune never touches Relocatable or Ambiguous entries. -Fix and -Prune can be combined.

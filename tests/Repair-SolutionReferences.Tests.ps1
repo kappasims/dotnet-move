@@ -34,6 +34,26 @@ BeforeAll {
         Remove-Item -LiteralPath (Join-Path $root 'Lib') -Recurse -Force
         return $root
     }
+
+    function New-DuplicateLeafBase {
+        # App -> Widgets (at src/Widgets), in a solution. A second, unrelated project also named
+        # Widgets.csproj lives at $DecoyDir, so the leaf name 'Widgets.csproj' is not unique.
+        param([Parameter(Mandatory)][string]$DecoyDir)
+        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_amb_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        New-Item -ItemType Directory -Path $root | Out-Null
+        $srcWidgets = Join-Path $root (Join-Path 'src' 'Widgets')
+        Push-Location $root
+        try {
+            & git init -q
+            & dotnet new classlib -n Widgets -o $srcWidgets | Out-Null
+            & dotnet new console -n App -o (Join-Path $root 'App') | Out-Null
+            & dotnet add (Join-Path $root (Join-Path 'App' 'App.csproj')) reference (Join-Path $srcWidgets 'Widgets.csproj') | Out-Null
+            & dotnet new classlib -n Widgets -o (Join-Path $root $DecoyDir) | Out-Null   # decoy, same leaf
+            & dotnet new sln -n Demo --format slnx | Out-Null
+            & dotnet sln Demo.slnx add (Join-Path $srcWidgets 'Widgets.csproj') (Join-Path $root (Join-Path 'App' 'App.csproj')) | Out-Null
+        } finally { Pop-Location }
+        return $root
+    }
 }
 
 Describe 'Repair-SolutionReferences' {
@@ -55,6 +75,45 @@ Describe 'Repair-SolutionReferences' {
             $list | Should -Match 'libs[\\/]Lib[\\/]Lib\.csproj'
             & dotnet build (Join-Path $root 'Demo.slnx') 2>&1 | Out-Null
             $LASTEXITCODE | Should -Be 0
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'disambiguates duplicate leaf names by path proximity and relocates (and it builds)' {
+        # src/Widgets moves to tools/Widgets (its folder name 'Widgets' survives); a decoy
+        # Widgets.csproj sits at legacy/Widgets.csproj. The moved copy shares more trailing
+        # path with the old reference, so it wins uniquely.
+        $root = New-DuplicateLeafBase -DecoyDir 'legacy'
+        try {
+            New-Item -ItemType Directory -Path (Join-Path $root 'tools') | Out-Null
+            Move-Item -LiteralPath (Join-Path $root (Join-Path 'src' 'Widgets')) -Destination (Join-Path $root (Join-Path 'tools' 'Widgets'))
+
+            $probs = Repair-SolutionReferences -RepoRoot $root
+            ($probs | Where-Object { $_.Resolution -eq 'Ambiguous' }) | Should -BeNullOrEmpty
+            ($probs | Where-Object { $_.Resolution -eq 'Relocatable' }) | Should -Not -BeNullOrEmpty
+            (($probs.NewPath | Where-Object { $_ }) -join ';') | Should -Match 'tools[\\/]Widgets[\\/]Widgets\.csproj'
+            (($probs.NewPath | Where-Object { $_ }) -join ';') | Should -Not -Match 'legacy'
+
+            Repair-SolutionReferences -RepoRoot $root -Fix -Confirm:$false | Out-Null
+            (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n" | Should -Match 'tools[\\/]Widgets[\\/]Widgets\.csproj'
+            & dotnet build (Join-Path $root 'Demo.slnx') 2>&1 | Out-Null
+            $LASTEXITCODE | Should -Be 0
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'stays Ambiguous on a genuine tie and -Fix leaves it untouched' {
+        # src/Widgets moves to a/Widgets; the decoy is at b/Widgets/Widgets.csproj. Both candidates
+        # share exactly the trailing 'Widgets/Widgets.csproj', so neither wins.
+        $root = New-DuplicateLeafBase -DecoyDir (Join-Path 'b' 'Widgets')
+        try {
+            New-Item -ItemType Directory -Path (Join-Path $root 'a') | Out-Null
+            Move-Item -LiteralPath (Join-Path $root (Join-Path 'src' 'Widgets')) -Destination (Join-Path $root (Join-Path 'a' 'Widgets'))
+
+            $probs = Repair-SolutionReferences -RepoRoot $root
+            ($probs | Where-Object { $_.Resolution -eq 'Ambiguous' }) | Should -Not -BeNullOrEmpty
+
+            # -Fix cannot resolve a tie, so the stale src/Widgets entry remains in the solution.
+            Repair-SolutionReferences -RepoRoot $root -Fix -Confirm:$false | Out-Null
+            (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n" | Should -Match 'src[\\/]Widgets[\\/]Widgets\.csproj'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 

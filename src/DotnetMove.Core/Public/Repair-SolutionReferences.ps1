@@ -11,9 +11,11 @@ function Repair-SolutionReferences {
         Resolution of Relocatable, Missing, or Ambiguous.
 
         With -Fix it repairs every Relocatable entry: it searches the repo for a project file of the
-        same name and, when exactly one exists, re-points the entry at it through the dotnet CLI
-        (remove the stale path, add the found one). Entries it cannot resolve are left untouched and
-        reported, Missing (no such project anywhere) or Ambiguous (more than one candidate).
+        same name and re-points the entry at it through the dotnet CLI (remove the stale path, add
+        the found one). When one project of that name exists it is used directly; when several do,
+        the one that keeps the most of the original path's trailing folders is chosen, since a moved
+        project usually keeps its own folder name. Entries it cannot resolve are left untouched and
+        reported, Missing (no such project anywhere) or Ambiguous (several equally-good candidates).
 
         With -Prune it removes the Missing entries, the genuinely deleted ones, through the dotnet
         CLI. -Prune never touches Relocatable or Ambiguous entries. -Fix and -Prune can be combined.
@@ -100,8 +102,18 @@ function Repair-SolutionReferences {
             $cands = @()
             if ($byLeaf.ContainsKey($leaf)) { $cands = @($byLeaf[$leaf]) }
             $n = $cands.Count
-            $resolution = if ($n -eq 1) { 'Relocatable' } elseif ($n -eq 0) { 'Missing' } else { 'Ambiguous' }
-            $newPath = if ($n -eq 1) { $cands[0] } else { $null }
+            if ($n -eq 0) {
+                $resolution = 'Missing'; $newPath = $null
+            } elseif ($n -eq 1) {
+                $resolution = 'Relocatable'; $newPath = $cands[0]
+            } else {
+                # Several projects share this leaf name. Disambiguate by which candidate keeps the
+                # most of the original path's trailing folders (a moved project usually keeps its
+                # own folder name); only auto-resolve when that best match is unique.
+                $best = Select-BestSuffixMatch -Original $d.MissingAbs -Candidates $cands
+                if ($best) { $resolution = 'Relocatable'; $newPath = $best }
+                else { $resolution = 'Ambiguous'; $newPath = $null }
+            }
             $problems.Add([pscustomobject]@{
                     Kind       = $d.Kind
                     Resolution = $resolution

@@ -44,6 +44,39 @@ function Get-RelativePathSafe {
     return ($rel -replace '/', '\')
 }
 
+function Get-PathSuffixScore {
+    # Count of matching trailing path segments between two paths (OS-aware, separator-agnostic).
+    # E.g. 'src/Widgets/Widgets.csproj' vs 'tools/Widgets/Widgets.csproj' -> 2 (Widgets, Widgets.csproj).
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$A,
+          [Parameter(Mandatory)][string]$B)
+    $sa = ($A -replace '/', '\').TrimEnd('\').Split('\')
+    $sb = ($B -replace '/', '\').TrimEnd('\').Split('\')
+    $i = $sa.Length - 1
+    $j = $sb.Length - 1
+    $n = 0
+    while ($i -ge 0 -and $j -ge 0 -and [string]::Equals($sa[$i], $sb[$j], $script:PathComparison)) {
+        $n++; $i--; $j--
+    }
+    return $n
+}
+
+function Select-BestSuffixMatch {
+    # Given the original (now-broken) path and a set of candidate paths that share its leaf name,
+    # return the single candidate sharing the most trailing path segments - but only when that
+    # maximum is unique. Returns $null on a tie, which the caller treats as genuinely ambiguous.
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$Original,
+          [Parameter(Mandatory)][string[]]$Candidates)
+    $scored = foreach ($c in $Candidates) {
+        [pscustomobject]@{ Path = $c; Score = (Get-PathSuffixScore -A $Original -B $c) }
+    }
+    $max = ($scored | Measure-Object -Property Score -Maximum).Maximum
+    $top = @($scored | Where-Object { $_.Score -eq $max })
+    if ($top.Count -eq 1) { return $top[0].Path }
+    return $null
+}
+
 function Test-PathUnder {
     # True if $Path is strictly inside directory $Dir (not equal to it). OS-aware compare.
     [CmdletBinding()]
