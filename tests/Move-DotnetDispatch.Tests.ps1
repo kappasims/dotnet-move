@@ -68,6 +68,20 @@ Describe 'Move-DotnetFile (routing)' {
     }
 }
 
+Describe 'Move-Dotnet (legacy .vcproj)' {
+    It 'rejects a legacy .vcproj with a clear, specific error' {
+        $root = New-DispatchFixture
+        try {
+            $vcproj = Join-Path $root 'Old.vcproj'
+            Set-Content -LiteralPath $vcproj -Value '<VisualStudioProject></VisualStudioProject>' -Encoding UTF8
+            Move-Dotnet -Path $vcproj -Destination (Join-Path $root 'moved') -Confirm:$false `
+                -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
+            $errs[0].FullyQualifiedErrorId | Should -Match 'LegacyVcprojNotSupported'
+            $vcproj | Should -Exist   # nothing moved
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+}
+
 Describe 'Move-DotnetFolder (routing)' {
     It 'routes a folder to Move-DotnetProjectTree' {
         $root = New-DispatchFixture

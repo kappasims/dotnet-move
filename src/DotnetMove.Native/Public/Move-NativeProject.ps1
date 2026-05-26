@@ -71,6 +71,12 @@ function Move-NativeProject {
                     'ProjectNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, $Project))
             return
         }
+        if ([System.IO.Path]::GetExtension($projFull).ToLowerInvariant() -eq '.vcproj') {
+            $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
+                    [System.NotSupportedException]::new("'$Project' is a legacy Visual C++ project (.vcproj, pre-VS2010), which predates MSBuild and is not supported. Convert it to .vcxproj (open it in Visual Studio 2010 or later), then retry."),
+                    'LegacyVcprojNotSupported', [System.Management.Automation.ErrorCategory]::NotImplemented, $Project))
+            return
+        }
         if (-not (Test-IsNativeProject $projFull)) {
             $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
                     [System.ArgumentException]::new("Not a native project (.vcxproj): $Project. Use Move-DotnetProject for managed projects."),

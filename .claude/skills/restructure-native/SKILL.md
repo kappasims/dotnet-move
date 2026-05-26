@@ -17,6 +17,11 @@ Native projects do not fit the dotnet-CLI delegation model that managed projects
 
 C++/CLI is Windows-only (`<CLRSupport>`, `#pragma managed`, `<Windows.h>`), so this is gated.
 
+Scope is `.vcxproj` (the MSBuild format, Visual Studio 2010 and later) - covering both pure native
+C++ and C++/CLI. The legacy `.vcproj` (pre-VS2010) is **not** supported: it predates MSBuild, so
+nothing here can process it. Passing a `.vcproj` is rejected with a clear error; convert it to
+`.vcxproj` first (open it in VS 2010+).
+
 ## Analyze/audit first (read-only)
 
 Before moving, inspect with the read-only surface instead of parsing `.sln`/`.vcxproj` by hand:

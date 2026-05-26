@@ -75,6 +75,13 @@ function Move-Dotnet {
             return
         }
 
+        if ([System.IO.Path]::GetExtension($full).ToLowerInvariant() -eq '.vcproj') {
+            $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
+                    [System.NotSupportedException]::new("'$Path' is a legacy Visual C++ project (.vcproj, pre-VS2010). It predates MSBuild, so neither the dotnet CLI nor DotnetMove can process it. Convert it to .vcxproj (open it in Visual Studio 2010 or later, which upgrades it), then move it with Move-NativeProject."),
+                    'LegacyVcprojNotSupported', [System.Management.Automation.ErrorCategory]::NotImplemented, $Path))
+            return
+        }
+
         $isContainer = Test-Path -LiteralPath $full -PathType Container
         $engine = Resolve-MoveEngine $full
 
