@@ -49,9 +49,9 @@ Everything DotnetMove creates or changes, so there are no surprises:
 
 - Edits the target repository's solution/project files to reconcile the move. That is the operation
   itself, done through first-party tooling (see [the Contract](#the-contract)).
-- Writes an undo journal to a `.dotnetmove/` folder at the repository root (`.dotnetmove/journal.jsonl`), plus a `.dotnetmove/.gitignore`
-  of `*` so git ignores the whole folder and your own `.gitignore` is untouched. On by default; see
-  [Undoing](#undoing) to opt out.
+- Writes an undo journal inside the git directory (`.git/dotnetmove/journal.jsonl`), so it is never
+  tracked, never shown by `git status`, and needs no `.gitignore`. With no git it falls back to the
+  system temp dir, keyed by the repository root. On by default; see [Undoing](#undoing) to opt out.
 - Snapshots the files it edits to the system temp dir for rollback, and removes the snapshot when
   the move finishes (success or failure). Never written into the repository.
 
@@ -59,8 +59,10 @@ Everything DotnetMove creates or changes, so there are no surprises:
 
 - `Register-DotnetMvGitAlias` adds one `alias.dotnetmv` line to your git config (repository-local, or
   `~/.gitconfig` with `-Scope Global`); `Unregister-DotnetMvGitAlias` removes it.
-- `install.ps1 -NoJournal` sets `DOTNETMOVE_JOURNAL=off` persistently (a User environment variable
-  on Windows, a profile line on Linux/macOS) to turn the undo journal off.
+- `install.ps1 -NoJournal` turns the undo journal off persistently (`git config --global
+  dotnetmove.journal false` when git is present, else the `DOTNETMOVE_JOURNAL` env var).
+- `Set-DotnetMoveJournal` writes the `dotnetmove.journal` git setting (repository-local, or `-Global`
+  for every repository); `Clear-DotnetMoveJournal` deletes a repository's journal file.
 
 ### What it doesn't do
 
@@ -98,9 +100,9 @@ Import-Module DotnetMove                   # all engines, by name
 Register-DotnetMvGitAlias -Scope Global    # optional: enable `git dotnetmv` (one git-config line)
 ```
 
-DotnetMove keeps an undo journal in a `.dotnetmove/` folder at the repository root so you can reverse a move later (see [Undoing](#undoing)).
-It is **on by default**. To install with it off, add `-NoJournal` (sets `DOTNETMOVE_JOURNAL=off`
-persistently; updates never turn it back on):
+DotnetMove keeps an undo journal inside the git directory so you can reverse a move later (see [Undoing](#undoing)).
+It is **on by default**. To install with it off, add `-NoJournal` (sets `git config --global
+dotnetmove.journal false`, or the `DOTNETMOVE_JOURNAL` env var with no git; updates never turn it back on):
 
 ```powershell
 ./install.ps1 -NoJournal
@@ -175,8 +177,8 @@ Every move supports `-WhatIf`/`-Confirm`; `-Force` enables the no-git fallback.
 
 ## Undoing
 
-Every move is recorded in a journal under a `.dotnetmove/` folder at the repository root
-(`.dotnetmove/journal.jsonl`) so you can reverse it later, even from a fresh session. `Undo-DotnetMove` replays the recorded inverse (the same move with
+Every move is recorded in a journal inside the git directory (`.git/dotnetmove/journal.jsonl`, or the
+system temp dir with no git) so you can reverse it later, even from a fresh session. `Undo-DotnetMove` replays the recorded inverse (the same move with
 source and destination swapped), re-reconciling from the current state rather than restoring a stale
 snapshot. By default it reverses the most recent move; `-Id` reverses a specific entry, and `-List`
 shows what is available.
@@ -194,13 +196,35 @@ Undo-DotnetMove -List          # what can be undone (oldest first)
 Undo-DotnetMove -WhatIf        # preview reversing the most recent move
 Undo-DotnetMove                # reverse the most recent move and pop it; call again to walk back further
 Undo-DotnetMove -Id a1b2c3d4   # reverse a specific entry (prefer reverse order; later moves may depend on it)
+Undo-DotnetMove -All           # reverse every move, newest first (high-impact: prompts; -Force to skip, -WhatIf to preview)
 ```
 
-The journal is **on by default** and self-ignored: DotnetMove writes a `.dotnetmove/.gitignore` of
-`*`, so git never sees the folder and your own `.gitignore` is left untouched. To opt out, set
-`DOTNETMOVE_JOURNAL` to `off` (or `0`/`false`), or install with `-NoJournal` (see [Install](#install)).
-DotnetMove only ever reads that variable, so installing or updating never switches journaling back
-on for you.
+`-All` walks back the entire history in one operation, so it prompts for a yes/no confirmation that
+`-Confirm:$false` does not silence; pass `-Force` to bypass it (for automation) or `-WhatIf` to list
+the reversals first.
+
+The journal is **on by default** and stays out of the working tree: it lives inside `.git/`, so git
+never tracks it, `git status` never shows it, and your own `.gitignore` is left untouched. With no
+git it falls back to the system temp dir.
+
+To opt out, turn it off per repository (or for every repository) with `Set-DotnetMoveJournal`, which
+writes the `dotnetmove.journal` git setting:
+
+```powershell
+Set-DotnetMoveJournal -Enabled $false           # this repository only
+Set-DotnetMoveJournal -Enabled $false -Global    # every repository on the machine
+Clear-DotnetMoveJournal                          # also discard the existing undo history
+```
+
+The enabled state resolves in this order, first match wins: an internal suppression flag (set by
+`Undo` around its own reverse move) → `git config dotnetmove.journal` (local wins over global, the
+durable git setting) → the `DOTNETMOVE_JOURNAL` env var (`off`/`0`/`false`; the no-git escape hatch)
+→ on. Installing with `-NoJournal` writes the global git setting (see [Install](#install)). Because
+the git setting outranks the env var and rides along with your git config, installing or updating
+never switches journaling back on for you.
+
+The journal prunes itself on every write: it drops entries older than 180 days and, oldest first,
+anything beyond a 1 MB cap, always keeping the newest move.
 
 ## Inspecting
 
@@ -295,21 +319,24 @@ the commands above:
 
 ## The Contract
 
-The guarantee behind every move:
+Every move upholds these guarantees:
 
-- **Never hand-write solution or project files.** Every path/GUID change is delegated to
-  first-party tooling:
-  - `dotnet sln add/remove` and `dotnet add/remove reference` for solution membership and references
-  - `git mv` for the move itself (a plain `Move-Item` only under `-Force`, when git is absent)
-  - `Update-ModuleManifest` for PowerShell module manifests
-- **The only exceptions** are formats no first-party tool reconciles, rewritten in place through the
-  BOM-preserving `Set-Raw*` helpers:
-  - a solution's stored project paths
-  - MSBuild `<Import>` paths
-  - a script's dot-source/call references
-- **Reads** parse files directly only where no first-party reader surfaces what is needed.
-- **Enforced, not just promised:** `tests/FirstPartyDrift.Tests.ps1` fails the build if a new file
-  writes file content or a new cmdlet calls the raw writers.
+1. **No hand-written solution or project files.** Every path/GUID change is delegated to
+   first-party tooling:
+   - `dotnet sln add/remove` and `dotnet add/remove reference` for solution membership and references
+   - `git mv` for the move itself (a plain `Move-Item` only under `-Force`, when git is absent)
+   - `Update-ModuleManifest` for PowerShell module manifests
+2. **No direct file writes, except as provided in this clause.** As the sole exception to §1, formats
+   that no first-party tool reconciles are rewritten in place through the BOM-preserving `Set-Raw*`
+   helpers, limited to:
+   - a solution's stored project paths
+   - MSBuild `<Import>` paths
+   - a script's dot-source/call references
+3. **No speculative parsing.** Files are read through first-party readers, and parsed directly only
+   where no such reader surfaces what is needed.
+4. **No unverified compliance.** These guarantees are enforced, not merely promised:
+   `tests/FirstPartyDrift.Tests.ps1` fails the build if a new file writes file content or a new cmdlet
+   calls the raw writers.
 
 ## Building
 
@@ -403,6 +430,7 @@ tests/                   Pester tests + fixtures
 
 | <small>Command</small> | <small>What it does</small> |
 |:---|:---|
+| <small>[Clear-DotnetMoveJournal](#clear-dotnetmovejournal)</small> | <small>Delete a repository's move journal, discarding its undo history.</small> |
 | <small>[Find-PathReference](#find-pathreference)</small> | <small>Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party tool reconciles.</small> |
 | <small>[Get-DotnetMoveCapability](#get-dotnetmovecapability)</small> | <small>Resolve DotnetMove's external-tool capabilities (git, dotnet) and platform.</small> |
 | <small>[Get-SolutionInventory](#get-solutioninventory)</small> | <small>List the full contents of every solution in a repository - projects of any type, solution folders, and solution items - plus on-disk projects that no solution references.</small> |
@@ -419,6 +447,7 @@ tests/                   Pester tests + fixtures
 | <small>[Register-DotnetMvGitAlias](#register-dotnetmvgitalias)</small> | <small>Opt-in: register a `git dotnetmv` alias pointing at DotnetMove's forwarder.</small> |
 | <small>[Repair-SolutionReferences](#repair-solutionreferences)</small> | <small>Scan a repository for broken solution membership and dangling ProjectReferences and repair them by re-pointing each entry at the project's new location.</small> |
 | <small>[Resolve-MoveEngine](#resolve-moveengine)</small> | <small>Classify a path to the reconciliation engine that should move it: dotnet, native, unity, ps-script, ps-module, or unknown.</small> |
+| <small>[Set-DotnetMoveJournal](#set-dotnetmovejournal)</small> | <small>Turn the move journal on or off, per repository (default) or for every repository (`-Global`).</small> |
 | <small>[Sync-Solution](#sync-solution)</small> | <small>Resolve solution-membership divergence by adding each project to the solutions that are missing it, so every solution in the repository lists the same projects.</small> |
 | <small>[Test-DotnetMoveUpdate](#test-dotnetmoveupdate)</small> | <small>Check GitHub for a newer DotnetMove release and report whether the installed version is behind.</small> |
 | <small>[Test-SolutionConsistency](#test-solutionconsistency)</small> | <small>Report projects whose membership diverges across the solution files in a repository (present in some solutions but absent from others).</small> |
@@ -438,6 +467,46 @@ tests/                   Pester tests + fixtures
 |:---|:---|
 | <small>[Move-UnityAsset](#move-unityasset)</small> | <small>Move a Unity asset or folder while keeping its paired .meta file(s), so the GUIDs that scene/prefab/asmdef references depend on survive the move.</small> |
 | <small>[Test-UnityMetaIntegrity](#test-unitymetaintegrity)</small> | <small>Report Unity .meta integrity problems under a root: assets missing a .meta, and orphan .meta files whose asset is gone.</small> |
+
+---
+
+### Clear-DotnetMoveJournal
+
+Delete a repository's move journal, discarding its undo history.
+
+**Syntax**
+
+```powershell
+Clear-DotnetMoveJournal [[-RepoRoot] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+Removes the journal file (under the git dir, .git/dotnetmove/journal.jsonl, or the temp
+fallback with no git). The journal prunes itself on every write (entries older than the age
+cap, then oldest-first past the size cap), so this is rarely needed; use it to wipe the undo
+history outright. After clearing, Undo-DotnetMove has nothing to reverse until the next move.
+It does not change whether journaling is on - use Set-DotnetMoveJournal for that.
+
+**Parameters**
+
+| <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
+|:---|:---|:---|:---|:---|
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repository whose journal to delete. Defaults to the enclosing git repository root.</small> |
+| <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
+| <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
+
+**Output**
+
+None.
+
+**Examples**
+
+```powershell
+# Discard the undo history for this repository
+Clear-DotnetMoveJournal
+
+# Preview without deleting
+Clear-DotnetMoveJournal -WhatIf
+```
 
 ---
 
@@ -1408,6 +1477,54 @@ Resolve-MoveEngine ./Aleppo/Aleppo.vcxproj
 
 ---
 
+### Set-DotnetMoveJournal
+
+Turn the move journal on or off, per repository (default) or for every repository (`-Global`).
+
+**Syntax**
+
+```powershell
+Set-DotnetMoveJournal [-Enabled] <bool> [[-RepoRoot] <string>] [-Global] [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+Journaling is on by default. This cmdlet writes the git setting that the precedence stack
+reads (git config dotnetmove.journal), so the choice persists across sessions and rides along
+with the repository's git config - no environment variable to remember. Local config (the
+default here) wins over global, matching the resolution order in Test-MoveJournalEnabled.
+
+With `-Global` it writes the user's global git config, switching the default for every
+repository on the machine in one place. Requires git; with no git, set `$env`:DOTNETMOVE_JOURNAL
+instead.
+
+**Parameters**
+
+| <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
+|:---|:---|:---|:---|:---|
+| <small>`‑Enabled`</small> | <small>Boolean</small> | <small>true</small> | <small>false</small> | <small>`$true` to journal moves (the default behavior), `$false` to stop journaling.</small> |
+| <small>`‑Global`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Write the user's global git config instead of the repository's local config.</small> |
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repository whose local config to write. Defaults to the enclosing git repository root. Ignored with `-Global`.</small> |
+| <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
+| <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
+
+**Output**
+
+None.
+
+**Examples**
+
+```powershell
+# Stop journaling in this repository only
+Set-DotnetMoveJournal -Enabled $false
+
+# Turn it back on
+Set-DotnetMoveJournal -Enabled $true
+
+# Turn journaling off for every repository on the machine
+Set-DotnetMoveJournal -Enabled $false -Global
+```
+
+---
+
 ### Sync-Solution
 
 Resolve solution-membership divergence by adding each project to the solutions that are
@@ -1575,19 +1692,28 @@ Reverse a previous DotnetMove move, using the journal at the repository root.
 ```powershell
 Undo-DotnetMove [-RepoRoot <string>] [-Id <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
 
+Undo-DotnetMove -All [-RepoRoot <string>] [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
+
 Undo-DotnetMove [-RepoRoot <string>] [-List] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-Each move is recorded in .dotnetmove/journal.jsonl with its inverse: the same mover run with
-source and destination swapped. Undo-DotnetMove replays that inverse, re-reconciling the
-solutions, references, and GUIDs from the CURRENT state (more robust than restoring a stale
-snapshot). By default it undoes the most recent move and pops it from the journal, so calling
-again walks further back (LIFO); `-Id` targets a specific entry and `-List` shows the journal.
+Each move is recorded in the journal (under the git dir, .git/dotnetmove/journal.jsonl, or a
+temp fallback with no git) with its inverse: the same mover run with source and destination
+swapped. Undo-DotnetMove replays that inverse, re-reconciling the solutions, references, and
+GUIDs from the CURRENT state (more robust than restoring a stale snapshot). By default it
+undoes the most recent move and pops it from the journal, so calling again walks further back
+(LIFO); `-Id` targets a specific entry and `-List` shows the journal.
 
 The reversing move is not itself journaled, so undo walks the history back rather than
 ping-ponging. Journaling must have been on when the original move ran (it is on by default;
-opt out with `$env`:DOTNETMOVE_JOURNAL). Undoing an entry that is not the most recent can
-conflict with moves made after it, so prefer undoing in reverse order.
+opt out per repository with git config dotnetmove.journal false, or with
+`$env`:DOTNETMOVE_JOURNAL). Undoing an entry that is not the most recent can conflict with
+moves made after it, so prefer undoing in reverse order.
+
+`-All` reverses every journaled move (newest first) in one operation. Because that walks back
+the entire history at once it is high-impact: it prompts for a yes/no confirmation that is not
+silenced by `-Confirm`:`$false`; pass `-Force` to bypass the prompt (for automation) or `-WhatIf` to
+preview each reversal without making changes.
 
 **Parameters**
 
@@ -1595,6 +1721,8 @@ conflict with moves made after it, so prefer undoing in reverse order.
 |:---|:---|:---|:---|:---|
 | <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repository whose journal to use. Defaults to the enclosing git repository root.</small> |
 | <small>`‑Id`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Undo the entry with this journal id instead of the most recent.</small> |
+| <small>`‑All`</small> | <small>SwitchParameter</small> | <small>true</small> | <small>false</small> | <small>Reverse every journaled move, newest first. High-impact: prompts for confirmation (use `-Force` to bypass, `-WhatIf` to preview).</small> |
+| <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>With `-All`, bypass the confirmation prompt. Ignored without `-All`.</small> |
 | <small>`‑List`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>List the journal (oldest first) and return without undoing anything.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
@@ -1618,6 +1746,9 @@ Undo-DotnetMove
 
 # Undo a specific entry by id
 Undo-DotnetMove -Id a1b2c3d4
+
+# Reverse every journaled move (prompts; -Force to skip the prompt)
+Undo-DotnetMove -All
 ```
 
 ---

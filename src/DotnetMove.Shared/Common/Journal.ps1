@@ -1,29 +1,96 @@
-# Retroactive-undo journal. A .dotnetmove/journal.jsonl at the repository root records one line per
-# completed move so it can be reversed later - an hour later, or in a fresh session - with Undo-DotnetMove.
-# The move family is symmetric: each entry's inverse is the same mover run with source/destination
-# swapped, which re-reconciles from the CURRENT state (more robust than restoring a stale snapshot).
+# Retroactive-undo journal. Records one line per completed move so it can be reversed later - an hour
+# later, or in a fresh session - with Undo-DotnetMove. The move family is symmetric: each entry's
+# inverse is the same mover run with source/destination swapped, re-reconciling from the CURRENT
+# state (more robust than restoring a stale snapshot).
 #
-# On by default. Opt out by setting $env:DOTNETMOVE_JOURNAL to 0/false/off/no (install.ps1 -NoJournal
-# sets it for you). The module only ever READS that variable, so installing or updating DotnetMove
-# can never silently switch journaling back on for someone who opted out.
+# Storage stays OUT of the working tree. In a git repo the journal lives in <git-dir>/dotnetmove/
+# (inside .git/, so it is never tracked, never shown by git status, and needs no .gitignore). With no
+# git it falls back to the system temp dir, keyed by the repo root (best-effort; the OS may clear it).
+#
+# Enabled resolution, first match wins:
+#   1. an explicit suppression (DOTNETMOVE_JOURNAL_SUPPRESS, set by Undo around its reverse move)
+#   2. git config dotnetmove.journal   (local config wins over global - the persistent "git thing")
+#   3. $env:DOTNETMOVE_JOURNAL          (the no-git / CI escape hatch)
+#   4. default: ON
+#
+# Pruning keeps the journal small: on each write it drops entries older than the age cap and, oldest
+# first, anything beyond the size cap - in a single pass (read once, filter, write once).
+
+$script:JournalMaxAgeDays = 180
+$script:JournalMaxBytes = 1MB
+
+function ConvertTo-JournalBool {
+    # Parse a git-config / env truthy string to $true/$false, or $null when empty/unrecognized.
+    param([string]$Value)
+    switch -regex (("$Value").Trim().ToLowerInvariant()) {
+        '^(1|true|on|yes|enabled)$' { $true; break }
+        '^(0|false|off|no|disabled)$' { $false; break }
+        default { $null }
+    }
+}
 
 function Test-MoveJournalEnabled {
     [CmdletBinding()]
     [OutputType([bool])]
-    param()
-    $v = "$env:DOTNETMOVE_JOURNAL".Trim().ToLowerInvariant()
-    return ($v -notin '0', 'false', 'off', 'no', 'disabled')
+    param([string]$RepoRoot)
+    if ((ConvertTo-JournalBool $env:DOTNETMOVE_JOURNAL_SUPPRESS) -eq $true) { return $false }
+    if ($RepoRoot) {
+        try {
+            $cfg = "$(& git -C $RepoRoot config --get dotnetmove.journal 2>$null)"
+            $b = ConvertTo-JournalBool $cfg
+            if ($null -ne $b) { return $b }
+        } catch { Write-Verbose "git config probe failed: $_" }
+    }
+    $b = ConvertTo-JournalBool $env:DOTNETMOVE_JOURNAL
+    if ($null -ne $b) { return $b }
+    return $true
 }
 
 function Get-MoveJournalPath {
+    # Resolve the journal file for a repo: inside the git dir when there is one, else system temp.
     [CmdletBinding()]
     [OutputType([string])]
     param([Parameter(Mandatory)][string]$RepoRoot)
-    Join-Path (Join-Path $RepoRoot '.dotnetmove') 'journal.jsonl'
+    $gitDir = $null
+    try {
+        $gd = "$(& git -C $RepoRoot rev-parse --git-dir 2>$null)".Trim()
+        if ($LASTEXITCODE -eq 0 -and $gd) {
+            $gitDir = if ([System.IO.Path]::IsPathRooted($gd)) { $gd } else { Join-Path $RepoRoot $gd }
+        }
+    } catch { Write-Verbose "git-dir probe failed: $_" }
+    if ($gitDir) { return (Join-Path (Join-Path $gitDir 'dotnetmove') 'journal.jsonl') }
+    # Non-git: system temp, keyed by a stable hash of the repo root so different roots do not collide.
+    $sha = [System.Security.Cryptography.SHA1]::Create()
+    try { $hash = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($RepoRoot.ToLowerInvariant())) }
+    finally { $sha.Dispose() }
+    $key = -join ($hash[0..5] | ForEach-Object { $_.ToString('x2') })
+    return (Join-Path (Join-Path ([System.IO.Path]::GetTempPath()) 'dotnetmove-journal') ($key + '.jsonl'))
+}
+
+function Select-RecentJournalLine {
+    # Single pass: keep the newest lines that are within the age cap and whose cumulative size stays
+    # under the byte cap. Input is oldest-first; output preserves that order. The newest line is
+    # always kept (so a move is never silently dropped).
+    [CmdletBinding()]
+    param([string[]]$Lines)
+    $cutoff = (Get-Date).ToUniversalTime().AddDays(-$script:JournalMaxAgeDays)
+    $keep = [System.Collections.Generic.List[string]]::new()
+    $bytes = 0
+    for ($i = $Lines.Count - 1; $i -ge 0; $i--) {
+        $line = $Lines[$i]
+        $ts = $null
+        try { $ts = ([datetimeoffset]::Parse((($line | ConvertFrom-Json).timestamp))).UtcDateTime } catch { $ts = $null }
+        if ($ts -and $ts -lt $cutoff) { break }   # older than the age cap: this and all earlier drop
+        $sz = [System.Text.Encoding]::UTF8.GetByteCount($line) + 1
+        if ($keep.Count -gt 0 -and ($bytes + $sz) -gt $script:JournalMaxBytes) { break }
+        $bytes += $sz
+        $keep.Insert(0, $line)
+    }
+    , $keep.ToArray()
 }
 
 function Add-MoveJournalEntry {
-    # Append one completed move. $Undo is @{ Command = '<mover>'; Params = @{ <splat to reverse> } }.
+    # Append one completed move (then prune). $Undo is @{ Command = '<mover>'; Params = @{ <splat> } }.
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$RepoRoot,
@@ -33,12 +100,9 @@ function Add-MoveJournalEntry {
         [Parameter(Mandatory)][string]$Destination,
         [Parameter(Mandatory)][hashtable]$Undo
     )
-    $dir = Join-Path $RepoRoot '.dotnetmove'
+    $path = Get-MoveJournalPath -RepoRoot $RepoRoot
+    $dir = Split-Path -Parent $path
     if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-    # Self-ignore: a .gitignore of '*' makes git treat the whole .dotnetmove/ folder (the journal and
-    # this file) as ignored, so nothing is ever committed and the repository's own .gitignore is untouched.
-    $gi = Join-Path $dir '.gitignore'
-    if (-not (Test-Path -LiteralPath $gi)) { [System.IO.File]::WriteAllText($gi, "*`n", [System.Text.UTF8Encoding]::new($false)) }
     $entry = [ordered]@{
         id          = [guid]::NewGuid().ToString('N').Substring(0, 8)
         timestamp   = (Get-Date).ToUniversalTime().ToString('o')
@@ -48,7 +112,9 @@ function Add-MoveJournalEntry {
         destination = $Destination
         undo        = $Undo
     }
-    Add-Content -LiteralPath (Get-MoveJournalPath -RepoRoot $RepoRoot) -Value (ConvertTo-Json $entry -Depth 6 -Compress) -Encoding utf8
+    $existing = if (Test-Path -LiteralPath $path) { @(Get-Content -LiteralPath $path | Where-Object { $_.Trim() }) } else { @() }
+    $kept = Select-RecentJournalLine -Lines (@($existing) + (ConvertTo-Json $entry -Depth 6 -Compress))
+    Set-Content -LiteralPath $path -Value $kept -Encoding utf8
 }
 
 function Get-MoveJournalEntries {
@@ -72,9 +138,9 @@ function Remove-MoveJournalEntry {
 }
 
 function Register-MoveUndo {
-    # Called by each mover after a successful move: emits a one-line undo hint and, when journaling
-    # is enabled, records the reversing invocation. $UndoParams is the splat that reverses the move
-    # (the same mover with source/destination swapped).
+    # Called by each mover after a successful move: emits a one-line undo hint and, when journaling is
+    # enabled, records the reversing invocation. $UndoParams is the splat that reverses the move (the
+    # same mover with source/destination swapped).
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$RepoRoot,
@@ -88,7 +154,7 @@ function Register-MoveUndo {
                 if ($_.Value -is [bool]) { if ($_.Value) { "-$($_.Key)" } }
                 else { "-$($_.Key) '$($_.Value)'" }
             }) -join ' ')
-    if (Test-MoveJournalEnabled) {
+    if (Test-MoveJournalEnabled -RepoRoot $RepoRoot) {
         Add-MoveJournalEntry -RepoRoot $RepoRoot -Command $Command -Engine $Engine -Source $Source `
             -Destination $Destination -Undo @{ Command = $Command; Params = $UndoParams }
         Write-Host "Undo with: Undo-DotnetMove   (replays: $inv)" -ForegroundColor DarkGray

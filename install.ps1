@@ -35,9 +35,10 @@ param(
     [string]$Version,
     [string]$InstallPath,
     [string]$Repository = 'kappasims/dotnet-move',
-    # Opt out of the retroactive-undo journal. Sets DOTNETMOVE_JOURNAL=off persistently (User scope
-    # on Windows; printed for your profile on Linux/macOS). The module only reads that variable, so
-    # this choice survives future installs/updates - they never switch journaling back on.
+    # Opt out of the retroactive-undo journal. Prefers git config (git config --global
+    # dotnetmove.journal false) when git is present - the durable, config-first switch; falls back to
+    # the DOTNETMOVE_JOURNAL env var with no git. Either way the choice survives future
+    # installs/updates - they never switch journaling back on.
     [switch]$NoJournal
 )
 
@@ -90,9 +91,15 @@ try {
     Write-Host "    Import-Module DotnetMove" -ForegroundColor Green
 
     if ($NoJournal) {
-        # Persist the opt-out where the module reads it. Windows has a User env store; on Unix
-        # PowerShell can only set the process scope, so print the profile line to make it stick.
-        if (Test-IsWindowsHost) {
+        # Persist the opt-out where the module reads it. Prefer the durable, config-first switch
+        # (global git config), so it holds for every repository; fall back to the env var with no git.
+        $gitAvailable = [bool](Get-Command git -ErrorAction SilentlyContinue)
+        if ($gitAvailable) {
+            & git config --global dotnetmove.journal false 2>$null
+        }
+        if ($gitAvailable -and $LASTEXITCODE -eq 0) {
+            Write-Host "Undo journaling disabled for every repository (git config --global dotnetmove.journal false)." -ForegroundColor Yellow
+        } elseif (Test-IsWindowsHost) {
             [Environment]::SetEnvironmentVariable('DOTNETMOVE_JOURNAL', 'off', 'User')
             $env:DOTNETMOVE_JOURNAL = 'off'
             Write-Host "Undo journaling disabled (set DOTNETMOVE_JOURNAL=off for your user)." -ForegroundColor Yellow

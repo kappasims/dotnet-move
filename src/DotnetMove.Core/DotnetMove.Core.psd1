@@ -9,6 +9,7 @@
     # No RequiredModules: shipped as one bundled DotnetMove package; the umbrella loads the bundled
     # DotnetMove.Shared (-Global) before this engine. (In dev, tests/build/the forwarder do the same.)
     FunctionsToExport    = @(
+        'Clear-DotnetMoveJournal',
         'Find-PathReference',
         'Get-DotnetMoveCapability',
         'Get-SolutionInventory',
@@ -25,6 +26,7 @@
         'Register-DotnetMvGitAlias',
         'Repair-SolutionReferences',
         'Resolve-MoveEngine',
+        'Set-DotnetMoveJournal',
         'Sync-Solution',
         'Test-DotnetMoveUpdate',
         'Test-SolutionConsistency',
