@@ -494,7 +494,8 @@ These share a common shape (Engine, Source, Destination, Performed, SkippedCount
 Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
 ```
 
-Detects the .NET engine and previews moving Tarragon into libs/; nothing changes.
+Detects the .NET engine and previews renaming the project folder src/Tarragon to
+libs/Tarragon (the project lands at libs/Tarragon/Tarragon.csproj); nothing changes.
 
 ### Move-DotnetFile
 
