@@ -93,6 +93,9 @@ function Move-PowerShellModule {
             -MoveArgs @($ctx.UseGit, $moduleDir, $newDir, $repoRoot)
         $performed = $true
         $skippedCount = $planResult.Skipped
+        Register-MoveUndo -RepoRoot $repoRoot -Command 'Move-PowerShellModule' -Engine 'powershell' `
+            -Source $moduleDir -Destination $newDir `
+            -UndoParams @{ ModulePath = $newDir; Destination = $moduleDir; Force = [bool]$Force }
 
         Write-Warning "Reminder: dot-sourced relative paths inside .psm1/.ps1 are not auto-fixed. Grep the module for '. \$PSScriptRoot' style references if depth changed."
     }

@@ -132,6 +132,9 @@ function Move-NativeProject {
                 -MoveArgs @($ctx.UseGit, $oldDir, $newDir, $repoFull)
             $performed = $true
             $skippedCount = $planResult.Skipped
+            Register-MoveUndo -RepoRoot $repoFull -Command 'Move-NativeProject' -Engine 'native' `
+                -Source $projFull -Destination $newProj `
+                -UndoParams @{ Project = $newProj; Destination = $oldDir; Force = [bool]$Force }
         }
 
         if ($nativeSettings.Count -gt 0) {

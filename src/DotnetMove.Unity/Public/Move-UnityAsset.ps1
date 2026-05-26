@@ -114,6 +114,9 @@ function Move-UnityAsset {
             Invoke-MovePlan -Caption "Move Unity asset $(Split-Path -Leaf $src)" -Items @() -Move $move `
                 -MoveArgs @($ctx.UseGit, $src, $dst, $srcMeta, $dstMeta, $hasMeta, $repoFull) | Out-Null
             $performed = $true
+            Register-MoveUndo -RepoRoot $repoFull -Command 'Move-UnityAsset' -Engine 'unity' `
+                -Source $src -Destination $dst `
+                -UndoParams @{ AssetPath = $dst; Destination = $src; Force = [bool]$Force }
             Write-Verbose "Moved asset$(if ($hasMeta) { ' + .meta' })."
         }
 

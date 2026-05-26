@@ -22,7 +22,7 @@ like "move this project" (see [Skills](#skills)).
 
 # Contents
 
-- For users: [Requirements](#requirements), [Install](#install), [Updating](#updating), [Moving](#moving), [Inspecting](#inspecting), [Repairing](#repairing), [PowerShell usage](#powershell-usage), [git usage](#git-usage), [Skills](#skills)
+- For users: [Requirements](#requirements), [Install](#install), [Updating](#updating), [Moving](#moving), [Undoing](#undoing), [Inspecting](#inspecting), [Repairing](#repairing), [PowerShell usage](#powershell-usage), [git usage](#git-usage), [Skills](#skills)
 - For developers: [Build, test, install, docs](#build-test-install-docs), [Modules](#modules), [Layout](#layout)
 - [Reference](#reference): the [command reference](#command-reference) and the [output types](#output-types) the commands return
 
@@ -65,6 +65,14 @@ Then load it, and optionally enable the git verb:
 ```powershell
 Import-Module DotnetMove                   # all engines, by name
 Register-DotnetMvGitAlias -Scope Global    # optional: enable `git dotnetmv` (one git-config line)
+```
+
+DotnetMove keeps a repo-local undo journal so you can reverse a move later (see [Undoing](#undoing)).
+It is **on by default**. To install with it off, add `-NoJournal` (sets `DOTNETMOVE_JOURNAL=off`
+persistently; updates never turn it back on):
+
+```powershell
+./install.ps1 -NoJournal
 ```
 
 To work on DotnetMove itself, install from a clone instead, or import directly:
@@ -131,6 +139,26 @@ every OS (path-only); a `.vcxproj`'s native link settings are reconciled only by
 5. Build and report. If any step fails, the move rolls back to the original state.
 
 Every move supports `-WhatIf`/`-Confirm`; `-Force` enables the no-git fallback.
+
+## Undoing
+
+Every move is recorded in a repo-local journal (`.dotnetmove/journal.jsonl`) so you can reverse it
+later, even from a fresh session. `Undo-DotnetMove` replays the recorded inverse (the same move with
+source and destination swapped), re-reconciling from the current state rather than restoring a stale
+snapshot. Moves only, for now (not `Sync-Solution`/`Repair-SolutionReferences`).
+
+```powershell
+Undo-DotnetMove -List          # what can be undone (oldest first)
+Undo-DotnetMove -WhatIf        # preview reversing the most recent move
+Undo-DotnetMove                # reverse the most recent move and pop it; call again to walk back further
+Undo-DotnetMove -Id a1b2c3d4   # reverse a specific entry (prefer reverse order; later moves may depend on it)
+```
+
+The journal is **on by default** and self-ignored: DotnetMove writes a `.dotnetmove/.gitignore` of
+`*`, so git never sees the folder and your own `.gitignore` is left untouched. To opt out, set
+`DOTNETMOVE_JOURNAL` to `off` (or `0`/`false`), or install with `-NoJournal` (see [Install](#install)).
+DotnetMove only ever reads that variable, so installing or updating never switches journaling back
+on for you.
 
 ## Inspecting
 
@@ -312,6 +340,7 @@ tests/                   Pester tests + fixtures
 | <small>[Sync-Solution](#sync-solution)</small> | <small>Resolve solution-membership divergence by adding each project to the solutions that are missing it, so every solution in the repo lists the same projects.</small> |
 | <small>[Test-DotnetMoveUpdate](#test-dotnetmoveupdate)</small> | <small>Check GitHub for a newer DotnetMove release and report whether the installed version is behind.</small> |
 | <small>[Test-SolutionConsistency](#test-solutionconsistency)</small> | <small>Report projects whose membership diverges across the solution files in a repo (present in some solutions but absent from others).</small> |
+| <small>[Undo-DotnetMove](#undo-dotnetmove)</small> | <small>Reverse a previous DotnetMove move, using the repo-local journal.</small> |
 | <small>[Unregister-DotnetMvGitAlias](#unregister-dotnetmvgitalias)</small> | <small>Remove the `git dotnetmv` alias registered by Register-DotnetMvGitAlias.</small> |
 | <small>[Update-DotnetMove](#update-dotnetmove)</small> | <small>Update an installed DotnetMove to the latest GitHub release, in place.</small> |
 
@@ -1371,6 +1400,57 @@ Test-SolutionConsistency -RepoRoot . -Debug
 Test-SolutionConsistency -RepoRoot . -Strict
 # Check several repos from the pipeline
 Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
+```
+
+### Undo-DotnetMove
+
+Reverse a previous DotnetMove move, using the repo-local journal.
+
+**Syntax**
+
+```powershell
+Undo-DotnetMove [-RepoRoot <string>] [-Id <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+
+Undo-DotnetMove [-RepoRoot <string>] [-List] [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+Each move is recorded in .dotnetmove/journal.jsonl with its inverse: the same mover run with
+source and destination swapped. Undo-DotnetMove replays that inverse, re-reconciling the
+solutions, references, and GUIDs from the CURRENT state (more robust than restoring a stale
+snapshot). By default it undoes the most recent move and pops it from the journal, so calling
+again walks further back (LIFO); `-Id` targets a specific entry and `-List` shows the journal.
+
+The reversing move is not itself journaled, so undo walks the history back rather than
+ping-ponging. Journaling must have been on when the original move ran (it is on by default;
+opt out with `$env`:DOTNETMOVE_JOURNAL). Undoing an entry that is not the most recent can
+conflict with moves made after it, so prefer undoing in reverse order.
+
+**Parameters**
+
+| <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
+|:---|:---|:---|:---|:---|
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repo whose journal to use. Defaults to the enclosing git repo root.</small> |
+| <small>`‑Id`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Undo the entry with this journal id instead of the most recent.</small> |
+| <small>`‑List`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>List the journal (oldest first) and return without undoing anything.</small> |
+| <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
+| <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
+
+**Output**
+
+Without `-List`, the move-result object from the reversing move (its type matches the original
+mover). With `-List`, the journal entries. Nothing when the journal is empty.
+
+**Examples**
+
+```powershell
+# See what can be undone
+Undo-DotnetMove -List
+# Preview undoing the most recent move
+Undo-DotnetMove -WhatIf
+# Undo the most recent move
+Undo-DotnetMove
+# Undo a specific entry by id
+Undo-DotnetMove -Id a1b2c3d4
 ```
 
 ### Unregister-DotnetMvGitAlias

@@ -16,8 +16,12 @@ BeforeAll {
 Describe 'First-party tooling drift monitor' {
     It 'raw file-content writes live only in the sanctioned Set-Raw* helpers' {
         $writePattern = 'WriteAllText|WriteAllLines|Set-Content|Add-Content|Out-File|\.Save\('
-        # The single file allowed to write file content directly (it IS the Set-Raw* helpers).
-        $sanctioned = @('MSBuildImports.ps1')
+        # Files allowed to write content directly:
+        #   MSBuildImports.ps1 - IS the Set-Raw* helpers (the sanctioned solution/<Import>/script rewriters).
+        #   Journal.ps1        - writes the repo-local undo journal and its self-.gitignore under
+        #                        .dotnetmove/; a tool sidecar, never a solution/project file, so the
+        #                        "no hand-writing project files" contract is unaffected.
+        $sanctioned = @('MSBuildImports.ps1', 'Journal.ps1')
         $offenders = $srcFiles |
             Where-Object { (Get-Content -LiteralPath $_.FullName -Raw) -match $writePattern } |
             Where-Object { $sanctioned -notcontains $_.Name } |

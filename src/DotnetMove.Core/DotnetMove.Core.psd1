@@ -28,6 +28,7 @@
         'Sync-Solution',
         'Test-DotnetMoveUpdate',
         'Test-SolutionConsistency',
+        'Undo-DotnetMove',
         'Update-DotnetMove',
         'Unregister-DotnetMvGitAlias'
     )

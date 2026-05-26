@@ -34,7 +34,11 @@
 param(
     [string]$Version,
     [string]$InstallPath,
-    [string]$Repository = 'kappasims/dotnet-move'
+    [string]$Repository = 'kappasims/dotnet-move',
+    # Opt out of the retroactive-undo journal. Sets DOTNETMOVE_JOURNAL=off persistently (User scope
+    # on Windows; printed for your profile on Linux/macOS). The module only reads that variable, so
+    # this choice survives future installs/updates - they never switch journaling back on.
+    [switch]$NoJournal
 )
 
 $ErrorActionPreference = 'Stop'
@@ -84,6 +88,20 @@ try {
     }
     Write-Host "Installed DotnetMove $tag to $InstallPath" -ForegroundColor Green
     Write-Host "    Import-Module DotnetMove" -ForegroundColor Green
+
+    if ($NoJournal) {
+        # Persist the opt-out where the module reads it. Windows has a User env store; on Unix
+        # PowerShell can only set the process scope, so print the profile line to make it stick.
+        if (Test-IsWindowsHost) {
+            [Environment]::SetEnvironmentVariable('DOTNETMOVE_JOURNAL', 'off', 'User')
+            $env:DOTNETMOVE_JOURNAL = 'off'
+            Write-Host "Undo journaling disabled (set DOTNETMOVE_JOURNAL=off for your user)." -ForegroundColor Yellow
+        } else {
+            $env:DOTNETMOVE_JOURNAL = 'off'
+            Write-Host "Undo journaling disabled for this session. To persist, add to your profile:" -ForegroundColor Yellow
+            Write-Host "    `$env:DOTNETMOVE_JOURNAL = 'off'" -ForegroundColor Yellow
+        }
+    }
 } finally {
     Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
 }

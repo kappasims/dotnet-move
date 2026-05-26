@@ -149,6 +149,9 @@ function Move-MSBuildImport {
                 -MoveArgs @($ctx.UseGit, $src, $newPath, $repoFull)
             $performed = $true
             $skippedCount = $planResult.Skipped
+            Register-MoveUndo -RepoRoot $repoFull -Command 'Move-MSBuildImport' -Engine 'dotnet' `
+                -Source $src -Destination $newPath `
+                -UndoParams @{ Path = $newPath; Destination = $src; Force = [bool]$Force }
         }
 
         New-MoveResult -TypeName 'DotnetMove.ImportMoveResult' -Engine 'dotnet' -Source $src -Destination $newPath `

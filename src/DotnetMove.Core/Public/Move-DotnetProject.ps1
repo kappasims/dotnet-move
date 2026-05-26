@@ -182,6 +182,9 @@ function Move-DotnetProject {
                 -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $oldDir, $repoFull)
             $performed = $true
             $skippedCount = $planResult.Skipped
+            Register-MoveUndo -RepoRoot $repoFull -Command 'Move-DotnetProject' -Engine 'dotnet' `
+                -Source $projFull -Destination $newProj `
+                -UndoParams @{ Project = $newProj; Destination = $oldDir; Force = [bool]$Force }
 
             if (-not $NoBuild) {
                 & dotnet build $newProj

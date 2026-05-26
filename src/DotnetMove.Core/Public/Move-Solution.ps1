@@ -108,6 +108,9 @@ function Move-Solution {
             $performed = $true
             $rebased = $counter.N
             $skippedCount = $planResult.Skipped
+            Register-MoveUndo -RepoRoot $repoFull -Command 'Move-Solution' -Engine 'dotnet' `
+                -Source $src -Destination $newPath `
+                -UndoParams @{ Path = $newPath; Destination = $src; Force = [bool]$Force }
         }
 
         New-MoveResult -TypeName 'DotnetMove.SolutionMoveResult' -Engine 'dotnet' -Source $src -Destination $newPath `

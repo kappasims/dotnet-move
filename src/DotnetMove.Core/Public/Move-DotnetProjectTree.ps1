@@ -172,6 +172,9 @@ function Move-DotnetProjectTree {
                 -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $srcDir, $repoFull)
             $performed = $true
             $skippedCount = $planResult.Skipped
+            Register-MoveUndo -RepoRoot $repoFull -Command 'Move-DotnetProjectTree' -Engine 'dotnet' `
+                -Source $srcDir -Destination $newDir `
+                -UndoParams @{ Path = $newDir; Destination = $srcDir; Force = [bool]$Force }
 
             if (-not $NoBuild) {
                 foreach ($item in $plan) { & dotnet build $item.New | Out-Null }

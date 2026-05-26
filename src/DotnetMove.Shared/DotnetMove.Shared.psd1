@@ -7,11 +7,14 @@
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Core', 'Desktop')
     FunctionsToExport    = @(
+        'Add-MoveJournalEntry',
         'Assert-DotnetAvailable',
         'Find-ProjectFiles',
         'Find-Solutions',
         'Get-ConsumingProjects',
         'Get-ExternalTool',
+        'Get-MoveJournalEntries',
+        'Get-MoveJournalPath',
         'Get-NestedWorktreePath',
         'Get-PathSuffixScore',
         'Get-ProjectReferencePaths',
@@ -30,6 +33,9 @@
         'New-MoveItem',
         'New-MoveResult',
         'Read-ProjectXml',
+        'Register-MoveUndo',
+        'Remove-MoveJournalEntry',
+        'Test-MoveJournalEnabled',
         'Resolve-FullPath',
         'Resolve-GitUsage',
         'Resolve-MoveContext',

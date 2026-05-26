@@ -139,6 +139,9 @@ function Move-PowerShellScript {
                 -MoveArgs @($ctx.UseGit, $src, $newPath, $repoFull)
             $performed = $true
             $skippedCount = $planResult.Skipped
+            Register-MoveUndo -RepoRoot $repoFull -Command 'Move-PowerShellScript' -Engine 'powershell' `
+                -Source $src -Destination $newPath `
+                -UndoParams @{ Path = $newPath; Destination = $src; Force = [bool]$Force }
         }
 
         New-MoveResult -TypeName 'DotnetMove.ScriptMoveResult' -Engine 'powershell' -Source $src -Destination $newPath `
