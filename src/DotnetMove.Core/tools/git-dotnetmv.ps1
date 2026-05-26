@@ -42,7 +42,10 @@ if ($env:GIT_PREFIX) {
 $params = @{ Path = $src; Destination = $dst; WhatIf = $whatIf; Confirm = $false }
 if ($force) { $params.Force = $true }
 if ($noBuild) { $params.NoBuild = $true }
-$repo = (& git rev-parse --show-toplevel 2>$null)
-if ($LASTEXITCODE -eq 0 -and $repo) { $params.RepoRoot = "$repo".Trim() }
+# Let Move-Dotnet derive the repo root from the target path. Do NOT use
+# `git rev-parse --show-toplevel`: git canonicalizes symlinks (on macOS the temp/repo path
+# /var/folders/... becomes /private/var/folders/...), which would not match the OS-form paths the
+# rest of the toolkit uses (Get-ChildItem, Get-RepoRoot), breaking path comparisons on a repo that
+# sits under a symlinked directory.
 
 Move-Dotnet @params

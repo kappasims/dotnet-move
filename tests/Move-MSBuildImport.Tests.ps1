@@ -71,8 +71,8 @@ Describe 'Move-MSBuildImport' {
             $appText = Get-Content (Join-Path $root (Join-Path 'src' (Join-Path 'App' ('App.csproj')))) -Raw
             $appText | Should -Match 'Project="\.\.[\\/]\.\.[\\/]build[\\/]Shared\.props"'
 
-            & dotnet build (Join-Path $root (Join-Path 'src' (Join-Path 'App' ('App.csproj')))) 2>&1 | Out-Null
-            $LASTEXITCODE | Should -Be 0
+            $bo = & dotnet build (Join-Path $root (Join-Path 'src' (Join-Path 'App' ('App.csproj')))) 2>&1
+            $LASTEXITCODE | Should -Be 0 -Because ($bo -join [Environment]::NewLine)
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 

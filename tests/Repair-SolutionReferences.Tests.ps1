@@ -74,8 +74,8 @@ Describe 'Repair-SolutionReferences' {
             Repair-SolutionReferences -RepoRoot $root -Fix -Confirm:$false | Out-Null
             $list = (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n"
             $list | Should -Match 'libs[\\/]Lib[\\/]Lib\.csproj'
-            & dotnet build (Join-Path $root 'Demo.slnx') 2>&1 | Out-Null
-            $LASTEXITCODE | Should -Be 0
+            $bo = & dotnet build (Join-Path $root 'Demo.slnx') 2>&1
+            $LASTEXITCODE | Should -Be 0 -Because ($bo -join [Environment]::NewLine)
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
@@ -96,8 +96,8 @@ Describe 'Repair-SolutionReferences' {
 
             Repair-SolutionReferences -RepoRoot $root -Fix -Confirm:$false | Out-Null
             (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n" | Should -Match 'tools[\\/]Widgets[\\/]Widgets\.csproj'
-            & dotnet build (Join-Path $root 'Demo.slnx') 2>&1 | Out-Null
-            $LASTEXITCODE | Should -Be 0
+            $bo = & dotnet build (Join-Path $root 'Demo.slnx') 2>&1
+            $LASTEXITCODE | Should -Be 0 -Because ($bo -join [Environment]::NewLine)
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 

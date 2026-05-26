@@ -46,8 +46,8 @@ Describe 'Move-DotnetProject' {
             ($listed -join "`n") | Should -Match 'libs[\\/]Lib[\\/]Lib\.csproj'
 
             # Consumer reference resolves and the whole thing builds.
-            & dotnet build $sln 2>&1 | Out-Null
-            $LASTEXITCODE | Should -Be 0
+            $bo = & dotnet build $sln 2>&1
+            $LASTEXITCODE | Should -Be 0 -Because ($bo -join [Environment]::NewLine)
         } finally {
             Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
         }

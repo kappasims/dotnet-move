@@ -38,8 +38,8 @@ Describe 'Move-Solution' {
             # The moved solution still resolves its project and builds.
             $listed = & dotnet sln $dest list
             ($listed -join "`n") | Should -Match 'Lib\.csproj'
-            & dotnet build $dest 2>&1 | Out-Null
-            $LASTEXITCODE | Should -Be 0
+            $bo = & dotnet build $dest 2>&1
+            $LASTEXITCODE | Should -Be 0 -Because ($bo -join [Environment]::NewLine)
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 }

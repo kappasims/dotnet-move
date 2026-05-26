@@ -41,8 +41,8 @@ Describe 'Move-DotnetProjectTree' {
             # Solution lists the new locations and the whole thing builds.
             $listed = & dotnet sln (Join-Path $root 'Demo.slnx') list
             ($listed -join "`n") | Should -Match 'moved[\\/]group[\\/]Lib2'
-            & dotnet build (Join-Path $root 'Demo.slnx') 2>&1 | Out-Null
-            $LASTEXITCODE | Should -Be 0
+            $bo = & dotnet build (Join-Path $root 'Demo.slnx') 2>&1
+            $LASTEXITCODE | Should -Be 0 -Because ($bo -join [Environment]::NewLine)
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
