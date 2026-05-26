@@ -13,10 +13,11 @@ Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
 git dotnetmv src/Tarragon/Tarragon.csproj libs/Tarragon --whatif
 ```
 
-Every change goes through first-party tooling (the dotnet CLI, git mv, Update-ModuleManifest),
-never a hand-edited project file. The same holds beyond managed .NET, for what the Visual Studio
-GUI never covered: PowerShell module manifests, Unity `.meta` GUIDs, and native C++ `.vcxproj` link
-paths.
+Each format is reconciled by the tool that owns it where one exists (the dotnet CLI, git mv,
+Update-ModuleManifest), and by a targeted in-place rewrite where none does (a solution's stored
+paths, MSBuild `<Import>`s, a script's dot-source/call references). Beyond managed .NET this reaches
+PowerShell modules and scripts, Unity `.meta` GUIDs, and native C++ `.vcxproj` projects, reporting
+the link settings it cannot safely rewrite rather than guessing at them.
 
 For AI agents, the repo ships Claude Code skills that run these commands, triggering on phrases
 like "move this project" (see [Skills](#skills)).
