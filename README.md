@@ -24,13 +24,18 @@ like "move this project" (see [Skills](#skills)).
 
 # Contents
 
-|  |  |
-|---|---|
-| **[Setup](#setup)** | [Requirements](#requirements), [Footprint](#footprint), [Install](#install), [Updating](#updating) |
-| **[Usage](#usage)** | [Moving](#moving), [Undoing](#undoing), [Inspecting](#inspecting), [Repairing](#repairing) |
-| **[Interfaces](#interfaces)** | [PowerShell usage](#powershell-usage), [git usage](#git-usage), [Skills](#skills) |
-| **[For developers](#for-developers)** | [Build, test, install, docs](#build-test-install-docs), [Modules](#modules), [Layout](#layout) |
-| **[Reference](#reference)** | [Command reference](#command-reference), [Output types](#output-types) |
+<dl>
+  <dt><strong><a href="#setup">Setup</a></strong></dt>
+  <dd><a href="#requirements">Requirements</a>, <a href="#footprint">Footprint</a>, <a href="#install">Install</a>, <a href="#updating">Updating</a></dd>
+  <dt><strong><a href="#usage">Usage</a></strong></dt>
+  <dd><a href="#moving">Moving</a>, <a href="#undoing">Undoing</a>, <a href="#inspecting">Inspecting</a>, <a href="#repairing">Repairing</a></dd>
+  <dt><strong><a href="#interfaces">Interfaces</a></strong></dt>
+  <dd><a href="#powershell-usage">PowerShell usage</a>, <a href="#git-usage">git usage</a>, <a href="#skills">Skills</a></dd>
+  <dt><strong><a href="#for-developers">For developers</a></strong></dt>
+  <dd><a href="#building">Building</a>, <a href="#modules">Modules</a>, <a href="#layout">Layout</a></dd>
+  <dt><strong><a href="#reference">Reference</a></strong></dt>
+  <dd><a href="#command-reference">Command reference</a>, <a href="#output-types">Output types</a></dd>
+</dl>
 
 # Setup
 
@@ -58,7 +63,7 @@ Everything DotnetMove creates or changes, so there are no surprises:
 **Running a move:**
 
 - Edits the target repo's solution/project files to reconcile the move. That is the operation
-  itself, done through first-party tooling (see [the contract](#build-test-install-docs)).
+  itself, done through first-party tooling (see [the contract](#building)).
 - Writes an undo journal to a `.dotnetmove/` folder at the repository root (`.dotnetmove/journal.jsonl`), plus a `.dotnetmove/.gitignore`
   of `*` so git ignores the whole folder and your own `.gitignore` is untouched. On by default; see
   [Undoing](#undoing) to opt out.
@@ -303,7 +308,7 @@ the commands above:
 
 # For developers
 
-## Build, test, install, docs
+## Building
 
 ```powershell
 ./build.ps1                          # run the Pester suite (imports all modules first); CI-friendly exit code
