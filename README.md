@@ -76,17 +76,17 @@ telemetry.
 
 ## Install
 
-The simplest way is the [PowerShell Gallery](https://www.powershellgallery.com/packages/DotnetMove):
+Install from the [PowerShell Gallery](https://www.powershellgallery.com/packages/DotnetMove):
 
 ```powershell
 Install-Module DotnetMove -Scope CurrentUser
 ```
 
-That pulls the single bundled package (all engines). Update later with `Update-Module DotnetMove`.
+This installs the single bundled package (all engines). Update later with `Update-Module DotnetMove`.
 
-Prefer to install straight from GitHub (to read the installer first, or to pin a specific release)?
-It only downloads the latest release and copies the five module folders onto your CurrentUser module
-path.
+Installing from GitHub instead lets you read the installer before running it, or pin a specific
+release. The installer downloads a release and copies the five module folders onto your CurrentUser
+module path.
 
 **Recommended:** download [the installer](https://github.com/kappasims/dotnet-move/blob/master/install.ps1), read it, then run it.
 
