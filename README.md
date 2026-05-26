@@ -56,9 +56,10 @@ Everything DotnetMove creates or changes, so there are no surprises:
 
 - Edits the target repository's solution/project files to reconcile the move. That is the operation
   itself, done through first-party tooling (see [the Contract](#the-contract)).
-- Writes an undo journal inside the git directory (`.git/dotnetmove/journal.jsonl`), so it is never
-  tracked, never shown by `git status`, and needs no `.gitignore`. With no git it falls back to the
-  system temp dir, keyed by the repository root. On by default; see [Undoing](#undoing) to opt out.
+- Writes an undo journal to a per-user data directory (`%LOCALAPPDATA%\dotnet-move` on Windows,
+  `~/Library/Application Support/dotnet-move` on macOS, `~/.local/share/dotnet-move` on Linux), one
+  file per repository. It stays out of the working tree, so it is never tracked or shown by
+  `git status`. On by default; see [Undoing](#undoing) to opt out or relocate it.
 - Snapshots the files it edits to the system temp dir for rollback, and removes the snapshot when
   the move finishes (success or failure). Never written into the repository.
 
@@ -73,8 +74,8 @@ Everything DotnetMove creates or changes, so there are no surprises:
 
 ### What it doesn't do
 
-It never uses AppData, never edits `PATH`, never auto-installs git or the .NET SDK, and sends no
-telemetry.
+Apart from the per-user undo journal noted above, it writes nothing under your home/AppData: it never
+edits `PATH`, never auto-installs git or the .NET SDK, and sends no telemetry.
 
 ## Install
 
@@ -119,7 +120,7 @@ Or pipe it straight in for a **YOLO install** if you are comfortable running [th
 irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 | iex
 ```
 
-DotnetMove keeps an undo journal inside the git directory so you can reverse a move later (see [Undoing](#undoing)).
+DotnetMove keeps an undo journal in a per-user data directory so you can reverse a move later (see [Undoing](#undoing)).
 It is **on by default**. To install with it off, add `-NoJournal` (sets `git config --global
 dotnetmove.journal false`, or the `DOTNETMOVE_JOURNAL` env var with no git; updates never turn it back on):
 
@@ -196,8 +197,9 @@ Every move supports `-WhatIf`/`-Confirm`; `-Force` enables the no-git fallback.
 
 ## Undoing
 
-Every move is recorded in a journal inside the git directory (`.git/dotnetmove/journal.jsonl`, or the
-system temp dir with no git) so you can reverse it later, even from a fresh session. `Undo-DotnetMove` replays the recorded inverse (the same move with
+Every move is recorded in a journal in a per-user data directory (`%LOCALAPPDATA%\dotnet-move` on
+Windows, `~/Library/Application Support/dotnet-move` on macOS, `~/.local/share/dotnet-move` on Linux),
+one file per repository, so you can reverse it later, even from a fresh session. `Undo-DotnetMove` replays the recorded inverse (the same move with
 source and destination swapped), re-reconciling from the current state rather than restoring a stale
 snapshot. By default it reverses the most recent move; `-Id` reverses a specific entry, and `-List`
 shows what is available.
@@ -222,9 +224,11 @@ Undo-DotnetMove -All           # reverse every move, newest first (high-impact: 
 `-Confirm:$false` does not silence; pass `-Force` to bypass it (for automation) or `-WhatIf` to list
 the reversals first.
 
-The journal is **on by default** and stays out of the working tree: it lives inside `.git/`, so git
-never tracks it, `git status` never shows it, and your own `.gitignore` is left untouched. With no
-git it falls back to the system temp dir.
+The journal is **on by default** and stays out of the working tree: it lives in the per-user data
+directory above, so git never tracks it, `git status` never shows it, and your own `.gitignore` is
+left untouched. It survives `git clean` and repository deletion, and enterprise backup (Time Machine,
+roaming profiles, JAMF/Intune) covers it. Set `$env:DOTNETMOVE_JOURNAL_HOME` to relocate the store
+(for example to a roaming or managed path).
 
 To opt out, turn it off per repository (or for every repository) with `Set-DotnetMoveJournal`, which
 writes the `dotnetmove.journal` git setting:
@@ -499,8 +503,8 @@ Delete a repository's move journal, discarding its undo history.
 Clear-DotnetMoveJournal [[-RepoRoot] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-Removes the journal file (under the git dir, .git/dotnetmove/journal.jsonl, or the temp
-fallback with no git). The journal prunes itself on every write (entries older than the age
+Removes this repository's journal file from the per-user store (LocalAppData on Windows,
+~/Library/Application Support on macOS, ~/.local/share on Linux). The journal prunes itself on every write (entries older than the age
 cap, then oldest-first past the size cap), so this is rarely needed; use it to wipe the undo
 history outright. After clearing, Undo-DotnetMove has nothing to reverse until the next move.
 It does not change whether journaling is on - use Set-DotnetMoveJournal for that.
@@ -1726,8 +1730,9 @@ Undo-DotnetMove -All [-RepoRoot <string>] [-Force] [-WhatIf] [-Confirm] [<Common
 Undo-DotnetMove [-RepoRoot <string>] [-List] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-Each move is recorded in the journal (under the git dir, .git/dotnetmove/journal.jsonl, or a
-temp fallback with no git) with its inverse: the same mover run with source and destination
+Each move is recorded in the journal (a per-user data directory: LocalAppData on Windows,
+~/Library/Application Support on macOS, ~/.local/share on Linux; one file per repository) with
+its inverse: the same mover run with source and destination
 swapped. Undo-DotnetMove replays that inverse, re-reconciling the solutions, references, and
 GUIDs from the CURRENT state (more robust than restoring a stale snapshot). By default it
 undoes the most recent move and pops it from the journal, so calling again walks further back

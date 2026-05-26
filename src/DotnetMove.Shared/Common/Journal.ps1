@@ -3,9 +3,15 @@
 # inverse is the same mover run with source/destination swapped, re-reconciling from the CURRENT
 # state (more robust than restoring a stale snapshot).
 #
-# Storage stays OUT of the working tree. In a git repo the journal lives in <git-dir>/dotnetmove/
-# (inside .git/, so it is never tracked, never shown by git status, and needs no .gitignore). With no
-# git it falls back to the system temp dir, keyed by the repo root (best-effort; the OS may clear it).
+# Storage lives in the per-user application-data directory (not the working tree, not a volatile temp
+# dir, not inside .git/ where prune/clean and repo deletion churn it). One folder, "dotnet-move",
+# holds one <repo-leaf>-<hash>.jsonl per repository (the hash of the repo root keeps repos separate in
+# the shared store). Resolves per OS:
+#   Windows: %LOCALAPPDATA%                         (e.g. C:\Users\<u>\AppData\Local\dotnet-move\)
+#   macOS:   ~/Library/Application Support          (Apple's LocalAppData equivalent)
+#   Linux:   $XDG_DATA_HOME or ~/.local/share       (the XDG persistent-data location)
+# Enterprise backup (Time Machine, roaming profiles, JAMF/Intune) covers these by default.
+# $env:DOTNETMOVE_JOURNAL_HOME overrides the base dir (relocate the store, or isolate it in tests).
 #
 # Enabled resolution, first match wins:
 #   1. an explicit suppression (DOTNETMOVE_JOURNAL_SUPPRESS, set by Undo around its reverse move)
@@ -46,25 +52,37 @@ function Test-MoveJournalEnabled {
     return $true
 }
 
+function Get-MoveJournalAppDataRoot {
+    # The per-user application-data base, per OS. macOS is special-cased to Application Support
+    # because .NET's LocalApplicationData maps to ~/.local/share on Unix (including macOS); on
+    # Windows and Linux that mapping is already correct (%LOCALAPPDATA% / $XDG_DATA_HOME).
+    [CmdletBinding()]
+    [OutputType([string])]
+    param()
+    # Explicit override (enterprise relocation / tests): use it verbatim as the base.
+    if ($env:DOTNETMOVE_JOURNAL_HOME) { return $env:DOTNETMOVE_JOURNAL_HOME }
+    $isMac = (Test-Path Variable:\IsMacOS) -and (Get-Variable -Name IsMacOS -ValueOnly)
+    if ($isMac) { return (Join-Path $HOME 'Library/Application Support') }
+    $base = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
+    if ([string]::IsNullOrWhiteSpace($base)) { $base = Join-Path $HOME '.local/share' }  # defensive fallback
+    return $base
+}
+
 function Get-MoveJournalPath {
-    # Resolve the journal file for a repo: inside the git dir when there is one, else system temp.
+    # Resolve the journal file for a repo in the per-user store: <appdata>/dotnet-move/<leaf>-<hash>.jsonl.
+    # The hash of the (lowercased) repo root keeps different repositories separate in the shared store;
+    # the readable leaf name makes the file identifiable.
     [CmdletBinding()]
     [OutputType([string])]
     param([Parameter(Mandatory)][string]$RepoRoot)
-    $gitDir = $null
-    try {
-        $gd = "$(& git -C $RepoRoot rev-parse --git-dir 2>$null)".Trim()
-        if ($LASTEXITCODE -eq 0 -and $gd) {
-            $gitDir = if ([System.IO.Path]::IsPathRooted($gd)) { $gd } else { Join-Path $RepoRoot $gd }
-        }
-    } catch { Write-Verbose "git-dir probe failed: $_" }
-    if ($gitDir) { return (Join-Path (Join-Path $gitDir 'dotnetmove') 'journal.jsonl') }
-    # Non-git: system temp, keyed by a stable hash of the repo root so different roots do not collide.
+    $dir = Join-Path (Get-MoveJournalAppDataRoot) 'dotnet-move'
     $sha = [System.Security.Cryptography.SHA1]::Create()
     try { $hash = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($RepoRoot.ToLowerInvariant())) }
     finally { $sha.Dispose() }
-    $key = -join ($hash[0..5] | ForEach-Object { $_.ToString('x2') })
-    return (Join-Path (Join-Path ([System.IO.Path]::GetTempPath()) 'dotnetmove-journal') ($key + '.jsonl'))
+    $key = -join ($hash[0..3] | ForEach-Object { $_.ToString('x2') })
+    $leaf = (Split-Path -Leaf $RepoRoot) -replace '[^A-Za-z0-9._-]', '_'
+    if (-not $leaf) { $leaf = 'repo' }
+    return (Join-Path $dir "$leaf-$key.jsonl")
 }
 
 function Select-RecentJournalLine {

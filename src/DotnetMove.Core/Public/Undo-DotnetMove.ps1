@@ -4,8 +4,9 @@ function Undo-DotnetMove {
         Reverse a previous DotnetMove move, using the journal at the repository root.
 
     .DESCRIPTION
-        Each move is recorded in the journal (under the git dir, .git/dotnetmove/journal.jsonl, or a
-        temp fallback with no git) with its inverse: the same mover run with source and destination
+        Each move is recorded in the journal (a per-user data directory: LocalAppData on Windows,
+        ~/Library/Application Support on macOS, ~/.local/share on Linux; one file per repository) with
+        its inverse: the same mover run with source and destination
         swapped. Undo-DotnetMove replays that inverse, re-reconciling the solutions, references, and
         GUIDs from the CURRENT state (more robust than restoring a stale snapshot). By default it
         undoes the most recent move and pops it from the journal, so calling again walks further back
