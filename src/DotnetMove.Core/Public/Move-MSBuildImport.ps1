@@ -40,9 +40,12 @@ function Move-MSBuildImport {
         DotnetMove.ImportMoveResult
 
     .EXAMPLE
-        Move-MSBuildImport -Path ./Shared.props -Destination ./build/Shared.props
-
-        Moves the shared props and fixes the Import path in every project that consumes it.
+        # Move a shared props/targets and fix the <Import> path in every consumer
+        Move-MSBuildImport -Path ./Shared.props -Destination ./build/Shared.props -WhatIf
+        # Move into an existing folder (lands at ./build/Shared.props)
+        Move-MSBuildImport -Path ./Shared.props -Destination ./build
+        # A by-location import (Directory.Build.props): moving it changes inheritance scope - reported
+        Move-MSBuildImport -Path ./src/Directory.Build.props -Destination ./Directory.Build.props
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('DotnetMove.ImportMoveResult')]

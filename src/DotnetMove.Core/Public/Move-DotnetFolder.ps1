@@ -31,9 +31,10 @@ function Move-DotnetFolder {
         DotnetMove.TreeMoveResult - from Move-DotnetProjectTree.
 
     .EXAMPLE
+        # Preview moving a folder of .NET projects (delegates to the tree mover)
         Move-DotnetFolder -Path ./src/Group -Destination ./libs/Group -WhatIf
-
-        Previews moving the src/Group folder of projects via the tree mover.
+        # Move into an existing folder (lands at ./libs/Group)
+        Move-DotnetFolder -Path ./src/Group -Destination ./libs
     #>
 
     # SupportsShouldProcess so -WhatIf/-Confirm bind and propagate to the specialist; this

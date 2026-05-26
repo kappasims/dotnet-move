@@ -35,9 +35,12 @@ function Move-UnityAsset {
         DotnetMove.UnityMoveResult
 
     .EXAMPLE
+        # Preview; moves the asset/folder together with its .meta so GUIDs survive
         Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/Tarragon -WhatIf
-
-        Previews moving the asset and its .meta together so GUID references survive.
+        # Move it for real
+        Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/Tarragon
+        # Destination is an existing folder -> lands at ./Assets/Lib/Tarragon
+        Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('DotnetMove.UnityMoveResult')]

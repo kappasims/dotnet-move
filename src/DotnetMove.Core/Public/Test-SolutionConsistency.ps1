@@ -23,14 +23,14 @@ function Test-SolutionConsistency {
         DotnetMove.ConsistencyResult - one per divergent project.
 
     .EXAMPLE
+        # Report projects whose membership diverges across solutions (warnings)
+        Test-SolutionConsistency -RepoRoot .
+        # Add the full solution/project membership matrix
         Test-SolutionConsistency -RepoRoot . -Debug
-
-        Reports divergent projects, and with -Debug the full membership matrix.
-
-    .EXAMPLE
+        # Escalate divergence to non-terminating errors (e.g. to gate CI)
+        Test-SolutionConsistency -RepoRoot . -Strict
+        # Check several repos from the pipeline
         Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
-
-        Checks several repos from the pipeline, raising a non-terminating error per divergence.
     #>
     [CmdletBinding()]
     [OutputType('DotnetMove.ConsistencyResult')]

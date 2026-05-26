@@ -42,14 +42,18 @@ function Move-DotnetProject {
         DotnetMove.MoveResult
 
     .EXAMPLE
+        # Preview the move and emit the plan object; nothing changes
         Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
-
-        Previews the move and emits the plan object; nothing is changed.
-
-    .EXAMPLE
+        # Rename the project folder src/Tarragon -> libs/Tarragon
+        Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
+        # Destination is an existing folder -> moves into it, landing at libs/Tarragon
+        Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs
+        # Skip the verifying 'dotnet build' at the end
+        Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -NoBuild
+        # Treat solution-membership divergence as a non-terminating error, not a warning
+        Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -Strict
+        # Take the project from the pipeline
         Get-Item ./src/Tarragon/Tarragon.csproj | Move-DotnetProject -Destination ./libs/Tarragon
-
-        Same move, taking the project from the pipeline.
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('DotnetMove.MoveResult')]

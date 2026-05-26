@@ -38,9 +38,14 @@ function Move-DotnetProjectTree {
         DotnetMove.TreeMoveResult
 
     .EXAMPLE
+        # Preview moving a whole folder of projects as one set
+        Move-DotnetProjectTree -Path ./src/Group -Destination ./libs/Group -WhatIf
+        # Move it: only references that cross the folder boundary are reconciled (internal ones are untouched)
         Move-DotnetProjectTree -Path ./src/Group -Destination ./libs/Group
-
-        Moves every project under src/Group as one set, reconciling only cross-boundary references.
+        # Move into an existing folder (lands at ./libs/Group)
+        Move-DotnetProjectTree -Path ./src/Group -Destination ./libs
+        # Skip the verifying build
+        Move-DotnetProjectTree -Path ./src/Group -Destination ./libs/Group -NoBuild
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('DotnetMove.TreeMoveResult')]

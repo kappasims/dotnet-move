@@ -348,10 +348,13 @@ DotnetMove.PathReference
 **Examples**
 
 ```powershell
+# Build/CI/hook lines that hardcode the path (report-only)
 Find-PathReference -Path ./lib/Tarragon.csproj
+# Scan the old path after a move to find what still points at it
+Find-PathReference -Path ./libs/Tarragon/Tarragon.csproj
+# Widen the candidate set with extra repo-relative globs
+Find-PathReference -Path ./lib/Tarragon.csproj -AdditionalGlob 'deploy/*.sh','*.psake.ps1'
 ```
-
-Lists the build/CI/hook lines that hardcode lib/Tarragon.csproj so you can fix them by hand.
 
 ### Get-DotnetMoveCapability
 
@@ -432,16 +435,15 @@ DotnetMove.SolutionItem
 **Examples**
 
 ```powershell
+# Everything across all solutions, plus projects in none
 Get-SolutionInventory -RepoRoot . | Format-Table -AutoSize
-```
-
-Shows every project, folder, and item across all solutions, and any unreferenced project.
-
-```powershell
+# Only the projects on disk that no solution references
 Get-SolutionInventory | Where-Object Kind -eq 'UnreferencedProject'
+# Only loose solution items (e.g. a README in a solution folder)
+Get-SolutionInventory | Where-Object Kind -eq 'SolutionItem'
+# Kind is the [DotnetMove.SolutionItemKind] enum, so this also works
+Get-SolutionInventory | Where-Object Kind -eq ([DotnetMove.SolutionItemKind]::UnreferencedProject)
 ```
-
-Lists only the projects on disk that no solution includes.
 
 ### Move-Dotnet
 
@@ -494,11 +496,17 @@ These share a common shape (Engine, Source, Destination, Performed, SkippedCount
 **Examples**
 
 ```powershell
+# Preview any move - detects the engine, changes nothing
 Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
+# Rename: ./libs/Tarragon does not exist yet, so src/Tarragon becomes libs/Tarragon
+Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
+# Move into an existing folder: ./libs exists, so it lands at ./libs/Tarragon
+Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs
+# Any supported type routes through the same call (here a PowerShell module folder)
+Move-Dotnet -Path ./tools/Mayo -Destination ./modules/Mayo
+# No git in the repo? -Force falls back to a plain Move-Item (history not preserved)
+Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -Force
 ```
-
-Detects the .NET engine and previews renaming the project folder src/Tarragon to
-libs/Tarragon (the project lands at libs/Tarragon/Tarragon.csproj); nothing changes.
 
 ### Move-DotnetFile
 
@@ -542,10 +550,13 @@ These share a common shape (Engine, Source, Destination, Performed, SkippedCount
 **Examples**
 
 ```powershell
+# A project file routes to Move-DotnetProject
+Move-DotnetFile -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
+# A solution routes to Move-Solution (rebases stored project paths)
 Move-DotnetFile -Path ./Demo.slnx -Destination ./build/Demo.slnx
+# A shared import routes to Move-MSBuildImport (fixes <Import> in consumers)
+Move-DotnetFile -Path ./Shared.props -Destination ./build/Shared.props
 ```
-
-Routes the .slnx to Move-Solution and rebases its stored project paths.
 
 ### Move-DotnetFolder
 
@@ -597,10 +608,11 @@ DotnetMove.TreeMoveResult
 **Examples**
 
 ```powershell
+# Preview moving a folder of .NET projects (delegates to the tree mover)
 Move-DotnetFolder -Path ./src/Group -Destination ./libs/Group -WhatIf
+# Move into an existing folder (lands at ./libs/Group)
+Move-DotnetFolder -Path ./src/Group -Destination ./libs
 ```
-
-Previews moving the src/Group folder of projects via the tree mover.
 
 ### Move-DotnetProject
 
@@ -657,16 +669,19 @@ DotnetMove.MoveResult
 **Examples**
 
 ```powershell
+# Preview the move and emit the plan object; nothing changes
 Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
-```
-
-Previews the move and emits the plan object; nothing is changed.
-
-```powershell
+# Rename the project folder src/Tarragon -> libs/Tarragon
+Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
+# Destination is an existing folder -> moves into it, landing at libs/Tarragon
+Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs
+# Skip the verifying 'dotnet build' at the end
+Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -NoBuild
+# Treat solution-membership divergence as a non-terminating error, not a warning
+Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -Strict
+# Take the project from the pipeline
 Get-Item ./src/Tarragon/Tarragon.csproj | Move-DotnetProject -Destination ./libs/Tarragon
 ```
-
-Same move, taking the project from the pipeline.
 
 ### Move-DotnetProjectTree
 
@@ -723,10 +738,15 @@ DotnetMove.TreeMoveResult
 **Examples**
 
 ```powershell
+# Preview moving a whole folder of projects as one set
+Move-DotnetProjectTree -Path ./src/Group -Destination ./libs/Group -WhatIf
+# Move it: only references that cross the folder boundary are reconciled (internal ones are untouched)
 Move-DotnetProjectTree -Path ./src/Group -Destination ./libs/Group
+# Move into an existing folder (lands at ./libs/Group)
+Move-DotnetProjectTree -Path ./src/Group -Destination ./libs
+# Skip the verifying build
+Move-DotnetProjectTree -Path ./src/Group -Destination ./libs/Group -NoBuild
 ```
-
-Moves every project under src/Group as one set, reconciling only cross-boundary references.
 
 ### Move-MSBuildImport
 
@@ -788,10 +808,13 @@ DotnetMove.ImportMoveResult
 **Examples**
 
 ```powershell
-Move-MSBuildImport -Path ./Shared.props -Destination ./build/Shared.props
+path in every consumer
+Move-MSBuildImport -Path ./Shared.props -Destination ./build/Shared.props -WhatIf
+# Move into an existing folder (lands at ./build/Shared.props)
+Move-MSBuildImport -Path ./Shared.props -Destination ./build
+# A by-location import (Directory.Build.props): moving it changes inheritance scope - reported
+Move-MSBuildImport -Path ./src/Directory.Build.props -Destination ./Directory.Build.props
 ```
-
-Moves the shared props and fixes the Import path in every project that consumes it.
 
 ### Move-PowerShell
 
@@ -833,10 +856,13 @@ These share a common shape (Engine, Source, Destination, Performed, SkippedCount
 **Examples**
 
 ```powershell
-Move-PowerShell -Path ./tools/Mayo -Destination ./modules/Mayo -WhatIf
+# A .ps1 routes to the script mover (fixes dot-source/call references)
+Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -WhatIf
+# A module folder (or its .psd1) routes to the module mover (reconciles the manifest)
+Move-PowerShell -Path ./tools/Mayo -Destination ./modules/Mayo
+# Destination is an existing folder -> the script lands at ./shared/helpers.ps1
+Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared
 ```
-
-Detects a module folder and previews moving it, reconciling the .psd1 manifest.
 
 ### Move-PowerShellModule
 
@@ -883,10 +909,13 @@ DotnetMove.PSModuleMoveResult
 **Examples**
 
 ```powershell
+# Preview; reconciles RootModule/NestedModules/FileList via Update-ModuleManifest
+Move-PowerShellModule -ModulePath ./tools/Mayo -Destination ./modules/Mayo -WhatIf
+# Move it for real
 Move-PowerShellModule -ModulePath ./tools/Mayo -Destination ./modules/Mayo
+# Point at the .psd1 instead of the folder - same result
+Move-PowerShellModule -ModulePath ./tools/Mayo/Mayo.psd1 -Destination ./modules/Mayo
 ```
-
-Moves the module and rewrites RootModule, NestedModules, and FileList in its .psd1.
 
 ### Move-PowerShellScript
 
@@ -944,10 +973,13 @@ DotnetMove.ScriptMoveResult
 **Examples**
 
 ```powershell
+# Preview; rewrites dot-source/call paths in referencing scripts and the script's own refs
+Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -WhatIf
+# Move it for real
 Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1
+# Limit the scan for referencing scripts to a specific root
+Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -RepoRoot ./lib
 ```
-
-Moves the script and rewrites the dot-source and call paths in scripts that reference it.
 
 ### Move-Solution
 
@@ -998,10 +1030,13 @@ DotnetMove.SolutionMoveResult
 **Examples**
 
 ```powershell
-Move-Solution -Path ./Demo.slnx -Destination ./build/Demo.slnx
+# Preview moving a solution and rebasing the project paths it stores
+Move-Solution -Path ./Demo.slnx -Destination ./build/Demo.slnx -WhatIf
+# Destination is an existing folder -> lands at ./build/Demo.slnx
+Move-Solution -Path ./Demo.slnx -Destination ./build
+# Works the same for .sln
+Move-Solution -Path ./Demo.sln -Destination ./build/Demo.sln
 ```
-
-Moves the solution and rebases each stored project path to resolve from build/.
 
 ### Register-DotnetMvGitAlias
 
@@ -1044,10 +1079,13 @@ DotnetMove.GitAlias
 **Examples**
 
 ```powershell
+# Preview the exact git config command (changes nothing)
 Register-DotnetMvGitAlias -Scope Global -WhatIf
+# Register for this repo only (default scope is Local)
+Register-DotnetMvGitAlias
+# Register globally, in ~/.gitconfig
+Register-DotnetMvGitAlias -Scope Global
 ```
-
-Prints the exact git config command it would run, without changing anything.
 
 ### Repair-SolutionReferences
 
@@ -1104,22 +1142,13 @@ DotnetMove.RepairResult
 **Examples**
 
 ```powershell
+# Report dangling entries only - read-only (each tagged Relocatable, Missing, or Ambiguous)
 Repair-SolutionReferences -RepoRoot .
-```
-
-Reports dangling entries, each tagged Relocatable, Missing, or Ambiguous.
-
-```powershell
+# Re-point relocatable entries at the project's new location (relocates; never deletes)
 Repair-SolutionReferences -RepoRoot . -Fix
-```
-
-Re-points every relocatable entry at the project's new location.
-
-```powershell
+# Also remove entries whose project is gone for good - preview the whole thing first
 Repair-SolutionReferences -RepoRoot . -Fix -Prune -WhatIf
 ```
-
-Previews relocating the movable entries and removing the ones whose project is gone.
 
 ### Resolve-MoveEngine
 
@@ -1159,8 +1188,14 @@ anything else                                       ->  unknown
 **Examples**
 
 ```powershell
-dotnet
-Resolve-MoveEngine ./Assets/Art/logo.png     # -> unity
+# A managed project classifies as 'dotnet'
+Resolve-MoveEngine ./src/Tarragon/Tarragon.csproj
+# Anything under Assets/ or paired with a .meta is 'unity'
+Resolve-MoveEngine ./Assets/Art/logo.png
+# A .ps1 is 'ps-script'; a module folder or .psd1 is 'ps-module'
+Resolve-MoveEngine ./tools/build.ps1
+# A .vcxproj is 'native'; an unrecognized path is 'unknown'
+Resolve-MoveEngine ./Aleppo/Aleppo.vcxproj
 ```
 
 ### Sync-Solution
@@ -1205,16 +1240,11 @@ DotnetMove.SyncResult
 **Examples**
 
 ```powershell
+# Preview which projects would be added to which solutions to make membership uniform
 Sync-Solution -RepoRoot . -WhatIf
-```
-
-Previews which projects would be added to which solutions to make membership uniform.
-
-```powershell
+# Add each divergent project to the solutions missing it (only adds, never removes)
 Sync-Solution -RepoRoot .
 ```
-
-Adds every divergent project to the solutions missing it.
 
 ### Test-DotnetMoveUpdate
 
@@ -1259,10 +1289,11 @@ DotnetMove.Update
 **Examples**
 
 ```powershell
+# Compare the installed module to the latest GitHub release
 Test-DotnetMoveUpdate
+# Check a fork or a different repository (owner/name)
+Test-DotnetMoveUpdate -Repository myfork/dotnet-move
 ```
-
-Reports whether a newer release exists and, if so, how to update.
 
 ### Test-SolutionConsistency
 
@@ -1304,16 +1335,15 @@ DotnetMove.ConsistencyResult
 **Examples**
 
 ```powershell
+# Report projects whose membership diverges across solutions (warnings)
+Test-SolutionConsistency -RepoRoot .
+# Add the full solution/project membership matrix
 Test-SolutionConsistency -RepoRoot . -Debug
-```
-
-Reports divergent projects, and with `-Debug` the full membership matrix.
-
-```powershell
+# Escalate divergence to non-terminating errors (e.g. to gate CI)
+Test-SolutionConsistency -RepoRoot . -Strict
+# Check several repos from the pipeline
 Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
 ```
-
-Checks several repos from the pipeline, raising a non-terminating error per divergence.
 
 ### Unregister-DotnetMvGitAlias
 
@@ -1340,10 +1370,11 @@ None.
 **Examples**
 
 ```powershell
+# Remove the alias for this repo (default scope is Local)
+Unregister-DotnetMvGitAlias
+# Remove the global alias from ~/.gitconfig
 Unregister-DotnetMvGitAlias -Scope Global
 ```
-
-Removes the global git dotnetmv alias.
 
 ### Update-DotnetMove
 
@@ -1390,16 +1421,13 @@ DotnetMove.Update
 **Examples**
 
 ```powershell
+# Update to the latest release if the installed copy is behind
 Update-DotnetMove
-```
-
-Updates to the latest release if the installed copy is behind.
-
-```powershell
+# Report what it would do without downloading or installing
 Update-DotnetMove -WhatIf
+# Reinstall the latest even if already up to date
+Update-DotnetMove -Force
 ```
-
-Reports what it would do without downloading or installing.
 
 ### Move-NativeProject
 
@@ -1454,10 +1482,13 @@ DotnetMove.NativeMoveResult
 **Examples**
 
 ```powershell
+# Preview; reports the native path settings it cannot reconcile (verify by hand after)
 Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo -WhatIf
+# Move it (also moves the paired .vcxproj.filters)
+Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo
+# Move into an existing folder (lands at ./native/Aleppo)
+Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native
 ```
-
-Previews the native move and reports the MSBuild path settings it cannot reconcile.
 
 ### Move-UnityAsset
 
@@ -1513,10 +1544,13 @@ DotnetMove.UnityMoveResult
 **Examples**
 
 ```powershell
+# Preview; moves the asset/folder together with its .meta so GUIDs survive
 Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/Tarragon -WhatIf
+# Move it for real
+Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/Tarragon
+# Destination is an existing folder -> lands at ./Assets/Lib/Tarragon
+Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib
 ```
-
-Previews moving the asset and its .meta together so GUID references survive.
 
 ### Test-UnityMetaIntegrity
 

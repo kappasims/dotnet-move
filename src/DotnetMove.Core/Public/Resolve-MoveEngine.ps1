@@ -17,8 +17,14 @@ function Resolve-MoveEngine {
         A single [string], one of: dotnet, native, unity, ps-script, ps-module, unknown.
 
     .EXAMPLE
-        Resolve-MoveEngine ./src/Tarragon/Tarragon.csproj      # -> dotnet
-        Resolve-MoveEngine ./Assets/Art/logo.png     # -> unity
+        # A managed project classifies as 'dotnet'
+        Resolve-MoveEngine ./src/Tarragon/Tarragon.csproj
+        # Anything under Assets/ or paired with a .meta is 'unity'
+        Resolve-MoveEngine ./Assets/Art/logo.png
+        # A .ps1 is 'ps-script'; a module folder or .psd1 is 'ps-module'
+        Resolve-MoveEngine ./tools/build.ps1
+        # A .vcxproj is 'native'; an unrecognized path is 'unknown'
+        Resolve-MoveEngine ./Aleppo/Aleppo.vcxproj
     #>
     [CmdletBinding()]
     [OutputType([string])]

@@ -36,9 +36,12 @@ function Move-PowerShellScript {
         DotnetMove.ScriptMoveResult
 
     .EXAMPLE
+        # Preview; rewrites dot-source/call paths in referencing scripts and the script's own refs
+        Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -WhatIf
+        # Move it for real
         Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1
-
-        Moves the script and rewrites the dot-source and call paths in scripts that reference it.
+        # Limit the scan for referencing scripts to a specific root
+        Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -RepoRoot ./lib
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('DotnetMove.ScriptMoveResult')]

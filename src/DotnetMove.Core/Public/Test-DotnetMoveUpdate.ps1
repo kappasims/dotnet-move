@@ -21,9 +21,10 @@ function Test-DotnetMoveUpdate {
         DotnetMove.Update - none (writes a non-terminating error) when the release cannot be fetched.
 
     .EXAMPLE
+        # Compare the installed module to the latest GitHub release
         Test-DotnetMoveUpdate
-
-        Reports whether a newer release exists and, if so, how to update.
+        # Check a fork or a different repository (owner/name)
+        Test-DotnetMoveUpdate -Repository myfork/dotnet-move
     #>
     [CmdletBinding()]
     [OutputType('DotnetMove.Update')]

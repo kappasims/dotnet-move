@@ -29,9 +29,12 @@ function Move-PowerShell {
         The result object from the PowerShell specialist it routes to, by item type.
 
     .EXAMPLE
-        Move-PowerShell -Path ./tools/Mayo -Destination ./modules/Mayo -WhatIf
-
-        Detects a module folder and previews moving it, reconciling the .psd1 manifest.
+        # A .ps1 routes to the script mover (fixes dot-source/call references)
+        Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -WhatIf
+        # A module folder (or its .psd1) routes to the module mover (reconciles the manifest)
+        Move-PowerShell -Path ./tools/Mayo -Destination ./modules/Mayo
+        # Destination is an existing folder -> the script lands at ./shared/helpers.ps1
+        Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared
     #>
 
     # SupportsShouldProcess so -WhatIf/-Confirm bind and propagate to the specialist; this

@@ -22,14 +22,14 @@ function Get-SolutionInventory {
         DotnetMove.SolutionItem - one per item.
 
     .EXAMPLE
+        # Everything across all solutions, plus projects in none
         Get-SolutionInventory -RepoRoot . | Format-Table -AutoSize
-
-        Shows every project, folder, and item across all solutions, and any unreferenced project.
-
-    .EXAMPLE
+        # Only the projects on disk that no solution references
         Get-SolutionInventory | Where-Object Kind -eq 'UnreferencedProject'
-
-        Lists only the projects on disk that no solution includes.
+        # Only loose solution items (e.g. a README in a solution folder)
+        Get-SolutionInventory | Where-Object Kind -eq 'SolutionItem'
+        # Kind is the [DotnetMove.SolutionItemKind] enum, so this also works
+        Get-SolutionInventory | Where-Object Kind -eq ([DotnetMove.SolutionItemKind]::UnreferencedProject)
     #>
     [CmdletBinding()]
     [OutputType('DotnetMove.SolutionItem')]

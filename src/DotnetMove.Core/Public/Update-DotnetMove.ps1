@@ -23,14 +23,12 @@ function Update-DotnetMove {
         DotnetMove.Update - the record from Test-DotnetMoveUpdate, so the decision is inspectable. Nothing on a failed check.
 
     .EXAMPLE
+        # Update to the latest release if the installed copy is behind
         Update-DotnetMove
-
-        Updates to the latest release if the installed copy is behind.
-
-    .EXAMPLE
+        # Report what it would do without downloading or installing
         Update-DotnetMove -WhatIf
-
-        Reports what it would do without downloading or installing.
+        # Reinstall the latest even if already up to date
+        Update-DotnetMove -Force
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     [OutputType('DotnetMove.Update')]

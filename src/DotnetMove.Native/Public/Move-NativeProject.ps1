@@ -34,9 +34,12 @@ function Move-NativeProject {
         DotnetMove.NativeMoveResult
 
     .EXAMPLE
+        # Preview; reports the native path settings it cannot reconcile (verify by hand after)
         Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo -WhatIf
-
-        Previews the native move and reports the MSBuild path settings it cannot reconcile.
+        # Move it (also moves the paired .vcxproj.filters)
+        Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo
+        # Move into an existing folder (lands at ./native/Aleppo)
+        Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('DotnetMove.NativeMoveResult')]

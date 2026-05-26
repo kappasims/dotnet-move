@@ -34,19 +34,12 @@ function Repair-SolutionReferences {
         DotnetMove.RepairResult - one per dangling entry.
 
     .EXAMPLE
+        # Report dangling entries only - read-only (each tagged Relocatable, Missing, or Ambiguous)
         Repair-SolutionReferences -RepoRoot .
-
-        Reports dangling entries, each tagged Relocatable, Missing, or Ambiguous.
-
-    .EXAMPLE
+        # Re-point relocatable entries at the project's new location (relocates; never deletes)
         Repair-SolutionReferences -RepoRoot . -Fix
-
-        Re-points every relocatable entry at the project's new location.
-
-    .EXAMPLE
+        # Also remove entries whose project is gone for good - preview the whole thing first
         Repair-SolutionReferences -RepoRoot . -Fix -Prune -WhatIf
-
-        Previews relocating the movable entries and removing the ones whose project is gone.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType('DotnetMove.RepairResult')]

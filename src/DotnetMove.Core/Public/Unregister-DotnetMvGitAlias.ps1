@@ -10,9 +10,10 @@ function Unregister-DotnetMvGitAlias {
         None.
 
     .EXAMPLE
+        # Remove the alias for this repo (default scope is Local)
+        Unregister-DotnetMvGitAlias
+        # Remove the global alias from ~/.gitconfig
         Unregister-DotnetMvGitAlias -Scope Global
-
-        Removes the global git dotnetmv alias.
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     param(

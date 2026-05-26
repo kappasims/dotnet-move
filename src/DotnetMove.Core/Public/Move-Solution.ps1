@@ -29,9 +29,12 @@ function Move-Solution {
         DotnetMove.SolutionMoveResult
 
     .EXAMPLE
-        Move-Solution -Path ./Demo.slnx -Destination ./build/Demo.slnx
-
-        Moves the solution and rebases each stored project path to resolve from build/.
+        # Preview moving a solution and rebasing the project paths it stores
+        Move-Solution -Path ./Demo.slnx -Destination ./build/Demo.slnx -WhatIf
+        # Destination is an existing folder -> lands at ./build/Demo.slnx
+        Move-Solution -Path ./Demo.slnx -Destination ./build
+        # Works the same for .sln
+        Move-Solution -Path ./Demo.sln -Destination ./build/Demo.sln
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('DotnetMove.SolutionMoveResult')]

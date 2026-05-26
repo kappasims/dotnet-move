@@ -19,9 +19,12 @@ function Register-DotnetMvGitAlias {
         DotnetMove.GitAlias
 
     .EXAMPLE
+        # Preview the exact git config command (changes nothing)
         Register-DotnetMvGitAlias -Scope Global -WhatIf
-
-        Prints the exact git config command it would run, without changing anything.
+        # Register for this repo only (default scope is Local)
+        Register-DotnetMvGitAlias
+        # Register globally, in ~/.gitconfig
+        Register-DotnetMvGitAlias -Scope Global
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     [OutputType('DotnetMove.GitAlias')]

@@ -30,9 +30,12 @@ function Move-DotnetFile {
         The result object from the .NET specialist it routes to, by file extension.
 
     .EXAMPLE
+        # A project file routes to Move-DotnetProject
+        Move-DotnetFile -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
+        # A solution routes to Move-Solution (rebases stored project paths)
         Move-DotnetFile -Path ./Demo.slnx -Destination ./build/Demo.slnx
-
-        Routes the .slnx to Move-Solution and rebases its stored project paths.
+        # A shared import routes to Move-MSBuildImport (fixes <Import> in consumers)
+        Move-DotnetFile -Path ./Shared.props -Destination ./build/Shared.props
     #>
 
     # SupportsShouldProcess so -WhatIf/-Confirm bind and propagate to the specialist; this

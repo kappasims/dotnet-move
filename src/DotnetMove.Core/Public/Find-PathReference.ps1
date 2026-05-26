@@ -31,9 +31,12 @@ function Find-PathReference {
         DotnetMove.PathReference - one per matching line.
 
     .EXAMPLE
+        # Build/CI/hook lines that hardcode the path (report-only)
         Find-PathReference -Path ./lib/Tarragon.csproj
-
-        Lists the build/CI/hook lines that hardcode lib/Tarragon.csproj so you can fix them by hand.
+        # Scan the old path after a move to find what still points at it
+        Find-PathReference -Path ./libs/Tarragon/Tarragon.csproj
+        # Widen the candidate set with extra repo-relative globs
+        Find-PathReference -Path ./lib/Tarragon.csproj -AdditionalGlob 'deploy/*.sh','*.psake.ps1'
     #>
     [CmdletBinding()]
     [OutputType('DotnetMove.PathReference')]

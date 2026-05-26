@@ -35,10 +35,16 @@ function Move-Dotnet {
         The result object from the engine it routes to; the concrete type varies by engine.
 
     .EXAMPLE
+        # Preview any move - detects the engine, changes nothing
         Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
-
-        Detects the .NET engine and previews renaming the project folder src/Tarragon to
-        libs/Tarragon (the project lands at libs/Tarragon/Tarragon.csproj); nothing changes.
+        # Rename: ./libs/Tarragon does not exist yet, so src/Tarragon becomes libs/Tarragon
+        Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
+        # Move into an existing folder: ./libs exists, so it lands at ./libs/Tarragon
+        Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs
+        # Any supported type routes through the same call (here a PowerShell module folder)
+        Move-Dotnet -Path ./tools/Mayo -Destination ./modules/Mayo
+        # No git in the repo? -Force falls back to a plain Move-Item (history not preserved)
+        Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -Force
     #>
 
     # SupportsShouldProcess so -WhatIf/-Confirm bind and propagate to the engine; this dispatcher

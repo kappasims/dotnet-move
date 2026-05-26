@@ -26,9 +26,12 @@ function Move-PowerShellModule {
         DotnetMove.PSModuleMoveResult
 
     .EXAMPLE
+        # Preview; reconciles RootModule/NestedModules/FileList via Update-ModuleManifest
+        Move-PowerShellModule -ModulePath ./tools/Mayo -Destination ./modules/Mayo -WhatIf
+        # Move it for real
         Move-PowerShellModule -ModulePath ./tools/Mayo -Destination ./modules/Mayo
-
-        Moves the module and rewrites RootModule, NestedModules, and FileList in its .psd1.
+        # Point at the .psd1 instead of the folder - same result
+        Move-PowerShellModule -ModulePath ./tools/Mayo/Mayo.psd1 -Destination ./modules/Mayo
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('DotnetMove.PSModuleMoveResult')]

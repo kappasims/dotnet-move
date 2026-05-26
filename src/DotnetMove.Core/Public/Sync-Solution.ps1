@@ -22,14 +22,10 @@ function Sync-Solution {
         DotnetMove.SyncResult - one per project added.
 
     .EXAMPLE
+        # Preview which projects would be added to which solutions to make membership uniform
         Sync-Solution -RepoRoot . -WhatIf
-
-        Previews which projects would be added to which solutions to make membership uniform.
-
-    .EXAMPLE
+        # Add each divergent project to the solutions missing it (only adds, never removes)
         Sync-Solution -RepoRoot .
-
-        Adds every divergent project to the solutions missing it.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType('DotnetMove.SyncResult')]
