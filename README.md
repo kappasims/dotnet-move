@@ -25,15 +25,15 @@ like "move this project" (see [Skills](#skills)).
 # Contents
 
 <dl>
-  <dt><strong><a href="#setup">Setup</a></strong></dt>
+  <dt><strong>Setup</strong></dt>
   <dd><a href="#requirements">Requirements</a>, <a href="#footprint">Footprint</a>, <a href="#install">Install</a>, <a href="#updating">Updating</a></dd>
-  <dt><strong><a href="#usage">Usage</a></strong></dt>
+  <dt><strong>Usage</strong></dt>
   <dd><a href="#moving">Moving</a>, <a href="#undoing">Undoing</a>, <a href="#inspecting">Inspecting</a>, <a href="#repairing">Repairing</a></dd>
-  <dt><strong><a href="#interfaces">Interfaces</a></strong></dt>
+  <dt><strong>Interfaces</strong></dt>
   <dd><a href="#powershell-usage">PowerShell usage</a>, <a href="#git-usage">git usage</a>, <a href="#skills">Skills</a></dd>
-  <dt><strong><a href="#for-developers">For developers</a></strong></dt>
+  <dt><strong>For developers</strong></dt>
   <dd><a href="#building">Building</a>, <a href="#modules">Modules</a>, <a href="#layout">Layout</a></dd>
-  <dt><strong><a href="#reference">Reference</a></strong></dt>
+  <dt><strong>Reference</strong></dt>
   <dd><a href="#command-reference">Command reference</a>, <a href="#output-types">Output types</a></dd>
 </dl>
 
