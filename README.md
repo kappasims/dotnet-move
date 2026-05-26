@@ -76,7 +76,7 @@ Only when you ask:
 DotnetMove is not on the PowerShell Gallery yet, so install it from GitHub. The installer only
 downloads the latest release and copies the five module folders onto your CurrentUser module path.
 
-Recommended: download [the installer](https://github.com/kappasims/dotnet-move/blob/master/install.ps1), read it, then run it.
+**Recommended:** download [the installer](https://github.com/kappasims/dotnet-move/blob/master/install.ps1), read it, then run it.
 
 ```powershell
 irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 -OutFile install.ps1
@@ -89,7 +89,7 @@ No-script option: download the latest release zip from the
 `DotnetMove.Shared`, `DotnetMove.Core`, `DotnetMove.Unity`, `DotnetMove.Native`, and `DotnetMove`
 folders out of `src/` into any directory on your `$env:PSModulePath`.
 
-Or pipe it straight in, if you are comfortable running [the install script](https://github.com/kappasims/dotnet-move/blob/master/install.ps1) unread:
+Or pipe it straight in for a *YOLO install* (easiest) if you are comfortable running [the install script](https://github.com/kappasims/dotnet-move/blob/master/install.ps1) unread:
 
 ```powershell
 irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 | iex
