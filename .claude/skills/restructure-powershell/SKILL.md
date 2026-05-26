@@ -5,6 +5,11 @@ description: Use when moving, relocating, or restructuring PowerShell code: movi
 
 # Restructuring PowerShell code (scripts + modules, cross-platform)
 
+Purpose (full overview: the [DotnetMove README](https://github.com/kappasims/dotnet-move)): a move
+that fixes what it would otherwise break. PowerShell has no Visual Studio to reconcile a relocated
+file, so DotnetMove rewrites the dot-source/call paths a script move breaks and the `.psd1` manifest
+a module move breaks, delegating manifest edits to `Update-ModuleManifest` rather than hand-editing.
+
 These cmdlets are **cross-platform** (PowerShell 7 on Windows/Linux/macOS, and Windows
 PowerShell 5.1) and need only git. The hazard is **relative references that break when a file
 moves**. Unlike a .NET project, there is no manifest/CLI that reconciles every kind:

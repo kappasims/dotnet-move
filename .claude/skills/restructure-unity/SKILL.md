@@ -5,6 +5,11 @@ description: Use when moving, relocating, or restructuring assets/folders in a U
 
 # Restructuring Unity projects (cross-platform, incl. mobile)
 
+Purpose (full overview: the [DotnetMove README](https://github.com/kappasims/dotnet-move)): a move
+that does not break references. Where the .NET engines fix what a move breaks, the Unity engine
+prevents the break: it always moves an asset together with its `.meta`, so the GUID that scenes,
+prefabs, and asmdefs resolve by survives.
+
 Unity's move hazard is the inverse of .NET's. It is not path-fixing:
 
 - asmdef references are by **name or "GUID:..."**, not paths - moving a folder does not

@@ -5,6 +5,12 @@ description: Use when moving or restructuring a native C++ or C++/CLI project (.
 
 # Restructuring native / C++ projects (.vcxproj), Windows only
 
+Purpose (full overview: the [DotnetMove README](https://github.com/kappasims/dotnet-move)): a move
+that reconciles what it can and reports the rest. Unlike the managed engines, the dotnet CLI cannot
+fix a native project's link paths, so DotnetMove updates solution membership and moves the folder
+(with its paired `.vcxproj.filters`), then reports every `$(SolutionDir)`-relative setting you must
+verify by hand rather than silently editing it.
+
 Native projects do not fit the dotnet-CLI delegation model that managed projects use.
 `dotnet sln add/remove` can update solution membership for a `.vcxproj`, but the dotnet CLI
 **cannot** reconcile how native projects actually link:

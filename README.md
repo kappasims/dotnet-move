@@ -209,7 +209,7 @@ the commands above:
 ```powershell
 ./build.ps1                          # run the Pester suite (imports all modules first); CI-friendly exit code
 ./build.ps1 -Task Analyze            # PSScriptAnalyzer over src/ (skipped if not installed)
-./build.ps1 -Task Install            # copy modules + Shared into the per-user PowerShell module path
+./build.ps1 -Task Install            # copy all modules into the per-user PowerShell module path
 ./build.ps1 -Task Install -InstallPath D:\Modules
 ./build.ps1 -Task Docs               # regenerate the README Command reference section from the cmdlets' help
 ./build.ps1 -Task Release -Version 1.2.0           # stamp ModuleVersion in every manifest; gate on analyze + tests
@@ -249,7 +249,7 @@ together.
   PowerShell engines, the `Move-Dotnet` dispatcher, and the utilities.
 - `DotnetMove.Unity`: cross-platform Unity engine.
 - `DotnetMove.Native`: Windows-only native C++ engine (loaded best-effort; absent elsewhere).
-- `DotnetMove`: umbrella that loads Shared and every available engine in one `Import-Module`.
+- `DotnetMove`: the umbrella package (what you `Import-Module`).
 
 ### Layout
 

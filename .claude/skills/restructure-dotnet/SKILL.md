@@ -5,6 +5,12 @@ description: Use when moving, relocating, or restructuring managed .NET projects
 
 # Restructuring managed .NET repos (cross-platform)
 
+Purpose (full overview: the [DotnetMove README](https://github.com/kappasims/dotnet-move)): a move
+that fixes what it would otherwise break. Dragging a project in Visual Studio reconciles the
+`.sln`/`.slnx`, the `<ProjectReference>`s that point at it, and the GUID wiring; DotnetMove does the
+same from the command line, everywhere Visual Studio is not, delegating every path/GUID change to
+first-party tooling rather than hand-editing files.
+
 These cmdlets are **cross-platform** (PowerShell 7 on Windows/Linux/macOS); they rely only
 on the dotnet CLI and git. For native C++ (`.vcxproj`), which is Windows-only, see the
 `restructure-native` skill (`Move-DotnetProject` deliberately refuses `.vcxproj`). For moving
