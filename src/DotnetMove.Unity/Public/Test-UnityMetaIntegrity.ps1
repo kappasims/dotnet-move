@@ -24,8 +24,8 @@ function Test-UnityMetaIntegrity {
 
     .OUTPUTS
         Emits zero or more pscustomobjects, one per problem (a caller collects them as an array).
-        Each has (both strings): Kind (MissingMeta | OrphanMeta) and Path. Returns nothing when
-        integrity is intact.
+        Each has (both strings): Kind (MissingMeta | OrphanMeta) and Path. Emits no objects when
+        integrity is intact (a collecting variable is `$null`).
 
     .EXAMPLE
         Test-UnityMetaIntegrity -Root ./Assets -Strict

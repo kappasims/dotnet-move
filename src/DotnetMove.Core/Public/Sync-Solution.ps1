@@ -21,7 +21,8 @@ function Sync-Solution {
     .OUTPUTS
         Emits zero or more pscustomobjects, one per addition (a caller collects them as an array).
         Each has (both strings): Solution (repo-relative) and Added (repo-relative project path).
-        Returns nothing when every solution already contains every project.
+        Emits no objects when every solution already contains every project (a collecting variable
+        is `$null`).
 
     .EXAMPLE
         Sync-Solution -RepoRoot . -WhatIf

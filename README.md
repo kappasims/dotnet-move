@@ -12,7 +12,7 @@ git dotnetmv src/Tarragon/Tarragon.csproj libs/Tarragon --whatif
 
 Visual Studio reconciles a moved project for you. DotnetMove does it everywhere Visual Studio
 is not (AI agents, VS Code, Rider, CLI, CI, Linux and macOS), and for what it never did:
-PowerShell modules, Unity `.meta` GUIDs, native C++ link paths.
+PowerShell modules, Unity `.meta` GUIDs, Native C++ link paths.
 
 For AI agents, the repo ships Claude Code skills that run these commands, triggering on phrases
 like "move this project" (see [Skills](#skills)).
@@ -375,7 +375,7 @@ Run it before a move (to see what will break) or after (searching the old path).
 
 Emits zero or more pscustomobjects, one per matching line (a caller collects them as an
 array). Each has: File (string), Line (int), Confidence (string, High|Low), and Text
-(string). Returns nothing when no references are found.
+(string). Emits no objects when no references are found (a collecting variable is ``$null``).
 
 **Examples**
 
@@ -475,12 +475,12 @@ Move-Dotnet [-Path] <string> -Destination <string> [-RepoRoot <string>] [-NoBuil
 
 Classifies the target with Resolve-MoveEngine, then dispatches to the namespace front
 door, which performs the appropriate file/folder move:
-  - managed .NET (.csproj/.fsproj/.vbproj/.sln/.slnx/.props/.targets, or a folder of
+  - Managed .NET (.csproj/.fsproj/.vbproj/.sln/.slnx/.props/.targets, or a folder of
     them) -&gt; Move-DotnetFile / Move-DotnetFolder
   - PowerShell (.ps1/.psd1/module folder) -&gt; Move-PowerShell
   - Unity (under Assets/Packages, .meta-paired, .asmdef/.asmref) -&gt; Move-UnityAsset
     (loads DotnetMove.Unity on demand)
-  - native C++ (.vcxproj) -&gt; Move-NativeProject (loads DotnetMove.Native on demand)
+  - Native C++ (.vcxproj) -&gt; Move-NativeProject (loads DotnetMove.Native on demand)
 
 "dotnet" here is the .NET-platform umbrella (CLR/CoreCLR), not just the dotnet CLI - the
 verb spans every engine. Each engine's behavior lives in its own cmdlet; this only routes.
@@ -1020,7 +1020,7 @@ CLI. -Prune never touches Relocatable or Ambiguous entries. -Fix and -Prune can 
 Emits zero or more pscustomobjects, one per dangling entry (a caller collects them as an
 array). Each has: Kind, Resolution, Missing, NewPath, Container, MissingAbs (all strings),
 and Candidates (string[], the same-named project files found, used to resolve NewPath).
-Returns nothing when there are no dangling entries.
+Emits no objects when there are no dangling entries (a collecting variable is ``$null``).
 
 **Examples**
 
@@ -1107,7 +1107,8 @@ this against the whole repo; preview with -WhatIf first and add specific project
 
 Emits zero or more pscustomobjects, one per addition (a caller collects them as an array).
 Each has (both strings): Solution (repo-relative) and Added (repo-relative project path).
-Returns nothing when every solution already contains every project.
+Emits no objects when every solution already contains every project (a collecting variable
+is ``$null``).
 
 **Examples**
 
@@ -1153,7 +1154,7 @@ rate-limited, or no releases yet).
 
 A single pscustomobject: Installed ([version]), Latest ([version], or `$null` if the tag
 could not be parsed), Tag (string), UpdateAvailable (bool), and Url (string). Returns
-nothing (writes a non-terminating error) when the release cannot be fetched.
+no object (writes a non-terminating error) when the release cannot be fetched.
 
 **Examples**
 
@@ -1193,7 +1194,7 @@ full membership matrix of every solution and its projects.
 Emits zero or more pscustomobjects to the pipeline, one per divergent project (a caller
 collects them as an array). Each has: Project (string, the project path), PresentIn
 (string[], solution paths that list it), and AbsentFrom (string[], solution paths that
-do not). Returns nothing when membership is consistent.
+do not). Emits no objects when membership is consistent (a collecting variable is ``$null``).
 
 **Examples**
 
@@ -1416,8 +1417,8 @@ and the Library/Temp/obj caches.
 **Output**
 
 Emits zero or more pscustomobjects, one per problem (a caller collects them as an array).
-Each has (both strings): Kind (MissingMeta | OrphanMeta) and Path. Returns nothing when
-integrity is intact.
+Each has (both strings): Kind (MissingMeta | OrphanMeta) and Path. Emits no objects when
+integrity is intact (a collecting variable is ``$null``).
 
 **Examples**
 

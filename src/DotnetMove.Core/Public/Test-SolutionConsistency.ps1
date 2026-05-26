@@ -23,7 +23,7 @@ function Test-SolutionConsistency {
         Emits zero or more pscustomobjects to the pipeline, one per divergent project (a caller
         collects them as an array). Each has: Project (string, the project path), PresentIn
         (string[], solution paths that list it), and AbsentFrom (string[], solution paths that
-        do not). Returns nothing when membership is consistent.
+        do not). Emits no objects when membership is consistent (a collecting variable is `$null`).
 
     .EXAMPLE
         Test-SolutionConsistency -RepoRoot . -Debug

@@ -30,7 +30,7 @@ function Find-PathReference {
     .OUTPUTS
         Emits zero or more pscustomobjects, one per matching line (a caller collects them as an
         array). Each has: File (string), Line (int), Confidence (string, High|Low), and Text
-        (string). Returns nothing when no references are found.
+        (string). Emits no objects when no references are found (a collecting variable is `$null`).
 
     .EXAMPLE
         Find-PathReference -Path ./lib/Tarragon.csproj

@@ -8,12 +8,12 @@ function Move-Dotnet {
     .DESCRIPTION
         Classifies the target with Resolve-MoveEngine, then dispatches to the namespace front
         door, which performs the appropriate file/folder move:
-          - managed .NET (.csproj/.fsproj/.vbproj/.sln/.slnx/.props/.targets, or a folder of
+          - Managed .NET (.csproj/.fsproj/.vbproj/.sln/.slnx/.props/.targets, or a folder of
             them) -> Move-DotnetFile / Move-DotnetFolder
           - PowerShell (.ps1/.psd1/module folder) -> Move-PowerShell
           - Unity (under Assets/Packages, .meta-paired, .asmdef/.asmref) -> Move-UnityAsset
             (loads DotnetMove.Unity on demand)
-          - native C++ (.vcxproj) -> Move-NativeProject (loads DotnetMove.Native on demand)
+          - Native C++ (.vcxproj) -> Move-NativeProject (loads DotnetMove.Native on demand)
 
         "dotnet" here is the .NET-platform umbrella (CLR/CoreCLR), not just the dotnet CLI - the
         verb spans every engine. Each engine's behavior lives in its own cmdlet; this only routes.

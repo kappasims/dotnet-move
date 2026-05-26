@@ -20,7 +20,7 @@ function Test-DotnetMoveUpdate {
     .OUTPUTS
         A single pscustomobject: Installed ([version]), Latest ([version], or $null if the tag
         could not be parsed), Tag (string), UpdateAvailable (bool), and Url (string). Returns
-        nothing (writes a non-terminating error) when the release cannot be fetched.
+        no object (writes a non-terminating error) when the release cannot be fetched.
 
     .EXAMPLE
         Test-DotnetMoveUpdate
