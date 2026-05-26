@@ -1,5 +1,3 @@
-# DotnetMove
-
 DotnetMove moves a .NET project folder and fixes everything the move would otherwise break: the
 solution file, the references that point at it, and the GUID wiring. Visual Studio does that for you
 when you drag a project in its GUI; DotnetMove does it from the command line, everywhere Visual
@@ -22,15 +20,15 @@ the link settings it cannot safely rewrite rather than guessing at them.
 For AI agents, the repo ships Claude Code skills that run these commands, triggering on phrases
 like "move this project" (see [Skills](#skills)).
 
-## Contents
+# Contents
 
 - For users: [Requirements](#requirements), [Install](#install), [Updating](#updating), [Moving](#moving), [Inspecting](#inspecting), [Repairing](#repairing), [PowerShell usage](#powershell-usage), [git usage](#git-usage), [Skills](#skills)
 - For developers: [Build, test, install, docs](#build-test-install-docs), [Modules](#modules), [Layout](#layout)
 - [Reference](#reference): the [command reference](#command-reference) and the [output types](#output-types) the commands return
 
-## For users
+# For users
 
-### Requirements
+## Requirements
 
 - PowerShell 7+ (Windows, Linux, macOS), or Windows PowerShell 5.1.
 - The .NET SDK (`dotnet`) on PATH for .NET project moves; the .NET 9 SDK or later for `.slnx`
@@ -38,7 +36,7 @@ like "move this project" (see [Skills](#skills)).
 - git is optional: with it, moves use `git mv` (history kept); without it, `-Force` does a plain
   `Move-Item` (no history). `Get-DotnetMoveCapability` reports what the machine has.
 
-### Install
+## Install
 
 DotnetMove is not on the PowerShell Gallery yet, so install it from GitHub. The installer only
 downloads the latest release and copies the five module folders onto your CurrentUser module path.
@@ -76,14 +74,14 @@ To work on DotnetMove itself, install from a clone instead, or import directly:
 Import-Module ./src/DotnetMove/DotnetMove.psd1     # or import straight from the clone (loads Shared + all engines)
 ```
 
-### Updating
+## Updating
 
 Nothing updates automatically. `Test-DotnetMoveUpdate` checks GitHub for a newer release;
 `Update-DotnetMove` (or re-running the installer) applies it in place. The Claude Code skills are
 separate files: refresh them with `git pull` in a clone, or re-sync `.claude/skills` if installed
 globally. (Once on the PowerShell Gallery, `Update-Module DotnetMove` replaces this.)
 
-### Moving
+## Moving
 
 Every move recomputes the stored paths after the files move, delegating each change to the tool
 that owns the format. The commands, most general first (full per-parameter docs in the
@@ -134,7 +132,7 @@ every OS (path-only); a `.vcxproj`'s native link settings are reconciled only by
 
 Every move supports `-WhatIf`/`-Confirm`; `-Force` enables the no-git fallback.
 
-### Inspecting
+## Inspecting
 
 DotnetMove can be used purely to inspect a repo. These commands are read-only and change nothing.
 
@@ -148,7 +146,7 @@ DotnetMove can be used purely to inspect a repo. These commands are read-only an
 | <small>`Get-DotnetMoveCapability`</small> | <small>whether git and dotnet are present, plus the platform</small> |
 | <small>`Test-DotnetMoveUpdate`</small> | <small>whether a newer DotnetMove release is available on GitHub</small> |
 
-### Repairing
+## Repairing
 
 It can also fix a repo whose solution entries or `<ProjectReference>`s were left dangling by a
 move done outside DotnetMove, without moving anything itself. `Repair-SolutionReferences` finds
@@ -165,7 +163,7 @@ To resolve the membership divergence that `Test-SolutionConsistency` reports, `S
 each project to the solutions missing it (via `dotnet sln add`), making membership uniform. It only
 adds, never removes; preview with `-WhatIf` first.
 
-### PowerShell usage
+## PowerShell usage
 
 ```powershell
 Import-Module DotnetMove   # all engines (native is loaded on Windows only)
@@ -188,7 +186,7 @@ Repair-SolutionReferences -RepoRoot . -Fix -WhatIf
 Test-SolutionConsistency  -RepoRoot .
 ```
 
-### git usage
+## git usage
 
 An opt-in alias gives `git dotnetmv`, a single verb that forwards to `Move-Dotnet`. It sets one
 reversible git-config line and does not edit PATH or install anything.
@@ -209,7 +207,7 @@ git dotnetmv Aleppo/Aleppo.vcxproj native/Aleppo          # routes to the native
 Flags: `--whatif` (preview), `--force` (plain `Move-Item` fallback when git is unavailable),
 `--nobuild` (skip the .NET build step). Unity and native engines are loaded on demand.
 
-### Skills
+## Skills
 
 Four Claude Code skills (`.claude/skills/`), one per engine, trigger on natural language and run
 the commands above:
@@ -221,9 +219,9 @@ the commands above:
 | <small>`restructure-unity`</small> | <small>moving a Unity asset, folder, or `.asmdef`</small> |
 | <small>`restructure-native`</small> | <small>moving a native C++ `.vcxproj` (Windows)</small> |
 
-## For developers
+# For developers
 
-### Build, test, install, docs
+## Build, test, install, docs
 
 ```powershell
 ./build.ps1                          # run the Pester suite (imports all modules first); CI-friendly exit code
@@ -255,7 +253,7 @@ hand-writes - formats no CLI reconciles, solution stored paths, `<Import>` paths
 paths - go through the BOM-preserving `Set-Raw*` helpers, which `tests/FirstPartyDrift.Tests.ps1`
 locks down. Reads parse files directly only where no first-party reader suffices.
 
-### Modules
+## Modules
 
 Split by platform so the cross-platform core never ships native, Windows-only code. It ships as
 one bundled Gallery package: the engines declare no `RequiredModules`; the `DotnetMove` umbrella
@@ -270,7 +268,7 @@ together.
 - `DotnetMove.Native`: Windows-only native C++ engine (loaded best-effort; absent elsewhere).
 - `DotnetMove`: the umbrella package (what you `Import-Module`).
 
-### Layout
+## Layout
 
 ```
 build.ps1                Test / Analyze / Install / Docs / Release / Publish tasks
@@ -284,12 +282,12 @@ tests/                   Pester tests + fixtures
 .claude/skills/          restructure-dotnet / -powershell / -unity / -native
 ```
 
-## Reference
+# Reference
 
 <!-- BEGIN GENERATED REFERENCE -->
 <!-- Regenerate with ./build.ps1 -Task Docs. Generated from the cmdlets' comment-based help in src/; do not hand-edit between these markers. -->
 
-### Command reference
+## Command reference
 
 **.NET and PowerShell**
 
@@ -330,7 +328,7 @@ tests/                   Pester tests + fixtures
 | <small>[Move-UnityAsset](#move-unityasset)</small> | <small>Move a Unity asset or folder while keeping its paired .meta file(s), so the GUIDs that scene/prefab/asmdef references depend on survive the move.</small> |
 | <small>[Test-UnityMetaIntegrity](#test-unitymetaintegrity)</small> | <small>Report Unity .meta integrity problems under a root: assets missing a .meta, and orphan .meta files whose asset is gone.</small> |
 
-#### Find-PathReference
+### Find-PathReference
 
 Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/
 container scripts) that no first-party tool reconciles. report-only.
@@ -386,7 +384,7 @@ Find-PathReference -Path ./libs/Tarragon/Tarragon.csproj
 Find-PathReference -Path ./lib/Tarragon.csproj -AdditionalGlob 'deploy/*.sh','*.psake.ps1'
 ```
 
-#### Get-DotnetMoveCapability
+### Get-DotnetMoveCapability
 
 Resolve DotnetMove's external-tool capabilities (git, dotnet) and platform. This is the
 canonical "what can I do here" probe - DotnetMove does not auto-install anything.
@@ -422,7 +420,7 @@ Get-DotnetMoveCapability
 
 Returns an object with Platform, PSEdition, Git, Dotnet, and DotnetSupportsSlnx.
 
-#### Get-SolutionInventory
+### Get-SolutionInventory
 
 List the full contents of every solution in a repo - projects of any type, solution
 folders, and solution items - plus on-disk projects that no solution references.
@@ -475,7 +473,7 @@ Get-SolutionInventory | Where-Object Kind -eq 'SolutionItem'
 Get-SolutionInventory | Where-Object Kind -eq ([DotnetMove.SolutionItemKind]::UnreferencedProject)
 ```
 
-#### Move-Dotnet
+### Move-Dotnet
 
 Move any supported item and reconcile references, routing by detected type to the right
 per-namespace front door. The single top-level entry point (the `git dotnetmv` alias
@@ -538,7 +536,7 @@ Move-Dotnet -Path ./tools/Mayo -Destination ./modules/Mayo
 Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -Force
 ```
 
-#### Move-DotnetFile
+### Move-DotnetFile
 
 Move a single managed .NET file and reconcile references, routing by extension to the
 right specialist. The front door for file moves in the .NET family.
@@ -588,7 +586,7 @@ Move-DotnetFile -Path ./Demo.slnx -Destination ./build/Demo.slnx
 Move-DotnetFile -Path ./Shared.props -Destination ./build/Shared.props
 ```
 
-#### Move-DotnetFolder
+### Move-DotnetFolder
 
 Move a folder of managed .NET projects, reconciling references. The front door for
 folder moves in the .NET family; delegates to Move-DotnetProjectTree (which handles a
@@ -644,7 +642,7 @@ Move-DotnetFolder -Path ./src/Group -Destination ./libs/Group -WhatIf
 Move-DotnetFolder -Path ./src/Group -Destination ./libs
 ```
 
-#### Move-DotnetProject
+### Move-DotnetProject
 
 Move a .NET project folder and reconcile every solution and project reference
 that points at it, delegating all path/GUID changes to the dotnet CLI.
@@ -713,7 +711,7 @@ Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/T
 Get-Item ./src/Tarragon/Tarragon.csproj | Move-DotnetProject -Destination ./libs/Tarragon
 ```
 
-#### Move-DotnetProjectTree
+### Move-DotnetProjectTree
 
 Move a folder that contains one or more managed .NET projects, reconciling solution
 membership and every external project reference in one operation. This is the bulk
@@ -778,7 +776,7 @@ Move-DotnetProjectTree -Path ./src/Group -Destination ./libs
 Move-DotnetProjectTree -Path ./src/Group -Destination ./libs/Group -NoBuild
 ```
 
-#### Move-MSBuildImport
+### Move-MSBuildImport
 
 Move a shared MSBuild .props/.targets file and fix every project (or other
 props/targets) that imports it via &lt;Import Project="..."&gt;.
@@ -846,7 +844,7 @@ Move-MSBuildImport -Path ./Shared.props -Destination ./build
 Move-MSBuildImport -Path ./src/Directory.Build.props -Destination ./Directory.Build.props
 ```
 
-#### Move-PowerShell
+### Move-PowerShell
 
 Move a PowerShell item and reconcile references, routing by type to the right
 specialist. The front door for PowerShell moves.
@@ -894,7 +892,7 @@ Move-PowerShell -Path ./tools/Mayo -Destination ./modules/Mayo
 Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared
 ```
 
-#### Move-PowerShellModule
+### Move-PowerShellModule
 
 Move a PowerShell module folder and reconcile its manifest, delegating manifest
 edits to Update-ModuleManifest rather than hand-editing the .psd1.
@@ -947,7 +945,7 @@ Move-PowerShellModule -ModulePath ./tools/Mayo -Destination ./modules/Mayo
 Move-PowerShellModule -ModulePath ./tools/Mayo/Mayo.psd1 -Destination ./modules/Mayo
 ```
 
-#### Move-PowerShellScript
+### Move-PowerShellScript
 
 Move a standalone .ps1 script and fix the relative paths in scripts that dot-source or
 call it (and the moved script's own dot-source/call paths).
@@ -1011,7 +1009,7 @@ Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1
 Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -RepoRoot ./lib
 ```
 
-#### Move-Solution
+### Move-Solution
 
 Move a solution file (.sln/.slnx) and rebase the relative project paths it stores, so
 every project it references still resolves from the solution's new location.
@@ -1068,7 +1066,7 @@ Move-Solution -Path ./Demo.slnx -Destination ./build
 Move-Solution -Path ./Demo.sln -Destination ./build/Demo.sln
 ```
 
-#### Register-DotnetMvGitAlias
+### Register-DotnetMvGitAlias
 
 Opt-in: register a `git dotnetmv` alias pointing at DotnetMove's forwarder. Sets a single
 reversible git-config line - it never edits PATH or installs anything.
@@ -1117,7 +1115,7 @@ Register-DotnetMvGitAlias
 Register-DotnetMvGitAlias -Scope Global
 ```
 
-#### Repair-SolutionReferences
+### Repair-SolutionReferences
 
 Scan a repo for broken solution membership and dangling ProjectReferences and repair them
 by re-pointing each entry at the project's new location.
@@ -1180,7 +1178,7 @@ Repair-SolutionReferences -RepoRoot . -Fix
 Repair-SolutionReferences -RepoRoot . -Fix -Prune -WhatIf
 ```
 
-#### Resolve-MoveEngine
+### Resolve-MoveEngine
 
 Classify a path to the reconciliation engine that should move it: dotnet, native,
 unity, ps-script, ps-module, or unknown. Used by the `git dotnetmv` forwarder and
@@ -1228,7 +1226,7 @@ Resolve-MoveEngine ./tools/build.ps1
 Resolve-MoveEngine ./Aleppo/Aleppo.vcxproj
 ```
 
-#### Sync-Solution
+### Sync-Solution
 
 Resolve solution-membership divergence by adding each project to the solutions that are
 missing it, so every solution in the repo lists the same projects.
@@ -1276,7 +1274,7 @@ Sync-Solution -RepoRoot . -WhatIf
 Sync-Solution -RepoRoot .
 ```
 
-#### Test-DotnetMoveUpdate
+### Test-DotnetMoveUpdate
 
 Check GitHub for a newer DotnetMove release and report whether the installed version is
 behind. On-demand and read-only: it never updates anything itself.
@@ -1325,7 +1323,7 @@ Test-DotnetMoveUpdate
 Test-DotnetMoveUpdate -Repository myfork/dotnet-move
 ```
 
-#### Test-SolutionConsistency
+### Test-SolutionConsistency
 
 Report projects whose membership diverges across the solution files in a repo
 (present in some solutions but absent from others).
@@ -1375,7 +1373,7 @@ Test-SolutionConsistency -RepoRoot . -Strict
 Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
 ```
 
-#### Unregister-DotnetMvGitAlias
+### Unregister-DotnetMvGitAlias
 
 Remove the `git dotnetmv` alias registered by Register-DotnetMvGitAlias.
 
@@ -1406,7 +1404,7 @@ Unregister-DotnetMvGitAlias
 Unregister-DotnetMvGitAlias -Scope Global
 ```
 
-#### Update-DotnetMove
+### Update-DotnetMove
 
 Update an installed DotnetMove to the latest GitHub release, in place. The one-command
 update for non-clone installs.
@@ -1459,7 +1457,7 @@ Update-DotnetMove -WhatIf
 Update-DotnetMove -Force
 ```
 
-#### Move-NativeProject
+### Move-NativeProject
 
 Move a native / C++/CLI project (.vcxproj). Windows-only. Does the parts the
 dotnet CLI can delegate (solution membership, the move itself) and reports the
@@ -1520,7 +1518,7 @@ Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo
 Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native
 ```
 
-#### Move-UnityAsset
+### Move-UnityAsset
 
 Move a Unity asset or folder while keeping its paired .meta file(s), so the GUIDs
 that scene/prefab/asmdef references depend on survive the move.
@@ -1582,7 +1580,7 @@ Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/T
 Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib
 ```
 
-#### Test-UnityMetaIntegrity
+### Test-UnityMetaIntegrity
 
 Report Unity .meta integrity problems under a root: assets missing a .meta, and
 orphan .meta files whose asset is gone. These are the Unity analog of dangling
@@ -1629,7 +1627,7 @@ Test-UnityMetaIntegrity -Root ./Assets -Strict
 
 Reports MissingMeta and OrphanMeta under Assets, one non-terminating error each.
 
-### Output types
+## Output types
 
 Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several (and some types are also used as a field on another); whether a given command returns one or a collection is stated in that command's Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `DotnetMove.*` field is itself one of these types.
 
@@ -1654,7 +1652,7 @@ Each type below is one `pscustomobject` with the fields shown. A command may ret
 | <small>[DotnetMove.UnityMoveResult](#dotnetmoveunitymoveresult)</small> | <small>Result of moving a Unity asset/folder while keeping its paired .meta file(s).</small> |
 | <small>[DotnetMove.Update](#dotnetmoveupdate)</small> | <small>Whether the installed DotnetMove is behind the latest GitHub release.</small> |
 
-#### DotnetMove.Capability
+### DotnetMove.Capability
 
 <small>[ [Get-DotnetMoveCapability](#get-dotnetmovecapability) ]</small>
 
@@ -1669,7 +1667,7 @@ DotnetMove.Capability
   Dotnet              DotnetMove.ToolInfo
 ```
 
-#### DotnetMove.ConsistencyResult
+### DotnetMove.ConsistencyResult
 
 <small>[ [Test-SolutionConsistency](#test-solutionconsistency) ]</small>
 
@@ -1682,7 +1680,7 @@ DotnetMove.ConsistencyResult
   AbsentFrom  string[]  solution paths that do not
 ```
 
-#### DotnetMove.GitAlias
+### DotnetMove.GitAlias
 
 <small>[ [Register-DotnetMvGitAlias](#register-dotnetmvgitalias) ]</small>
 
@@ -1696,7 +1694,7 @@ DotnetMove.GitAlias
   Command    string  the git config command that was/would be run
 ```
 
-#### DotnetMove.ImportMoveResult
+### DotnetMove.ImportMoveResult
 
 <small>[ [Move-Dotnet](#move-dotnet) | [Move-DotnetFile](#move-dotnetfile) | [Move-MSBuildImport](#move-msbuildimport) ]</small>
 
@@ -1714,7 +1712,7 @@ DotnetMove.ImportMoveResult
   AutoImported     bool    true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
 ```
 
-#### DotnetMove.MetaIntegrity
+### DotnetMove.MetaIntegrity
 
 <small>[ [Test-UnityMetaIntegrity](#test-unitymetaintegrity) ]</small>
 
@@ -1726,7 +1724,7 @@ DotnetMove.MetaIntegrity
   Path  string
 ```
 
-#### DotnetMove.MoveResult
+### DotnetMove.MoveResult
 
 <small>[ [Move-Dotnet](#move-dotnet) | [Move-DotnetFile](#move-dotnetfile) | [Move-DotnetProject](#move-dotnetproject) ]</small>
 
@@ -1745,7 +1743,7 @@ DotnetMove.MoveResult
   Built          bool?     $null with -NoBuild
 ```
 
-#### DotnetMove.NativeMoveResult
+### DotnetMove.NativeMoveResult
 
 <small>[ [Move-Dotnet](#move-dotnet) | [Move-NativeProject](#move-nativeproject) ]</small>
 
@@ -1763,7 +1761,7 @@ DotnetMove.NativeMoveResult
   UnreconciledSettings  object[]  one per native path setting to verify by hand; each has the setting name and value
 ```
 
-#### DotnetMove.PathReference
+### DotnetMove.PathReference
 
 <small>[ [Find-PathReference](#find-pathreference) ]</small>
 
@@ -1777,7 +1775,7 @@ DotnetMove.PathReference
   Text        string  the matching line
 ```
 
-#### DotnetMove.PSModuleMoveResult
+### DotnetMove.PSModuleMoveResult
 
 <small>[ [Move-Dotnet](#move-dotnet) | [Move-PowerShell](#move-powershell) | [Move-PowerShellModule](#move-powershellmodule) ]</small>
 
@@ -1793,7 +1791,7 @@ DotnetMove.PSModuleMoveResult
   Manifest      string  the manifest file name
 ```
 
-#### DotnetMove.RepairResult
+### DotnetMove.RepairResult
 
 <small>[ [Repair-SolutionReferences](#repair-solutionreferences) ]</small>
 
@@ -1810,7 +1808,7 @@ DotnetMove.RepairResult
   Candidates  string[]  same-named project files found, used to resolve NewPath
 ```
 
-#### DotnetMove.ScriptMoveResult
+### DotnetMove.ScriptMoveResult
 
 <small>[ [Move-Dotnet](#move-dotnet) | [Move-PowerShell](#move-powershell) | [Move-PowerShellScript](#move-powershellscript) ]</small>
 
@@ -1828,7 +1826,7 @@ DotnetMove.ScriptMoveResult
   UnresolvedRefs    int     count of possible dynamic references to verify, not a list
 ```
 
-#### DotnetMove.SolutionItem
+### DotnetMove.SolutionItem
 
 <small>[ [Get-SolutionInventory](#get-solutioninventory) ]</small>
 
@@ -1843,7 +1841,7 @@ DotnetMove.SolutionItem
   Path      string                       as stored in the solution, or repo-relative
 ```
 
-#### DotnetMove.SolutionMoveResult
+### DotnetMove.SolutionMoveResult
 
 <small>[ [Move-Dotnet](#move-dotnet) | [Move-DotnetFile](#move-dotnetfile) | [Move-Solution](#move-solution) ]</small>
 
@@ -1859,7 +1857,7 @@ DotnetMove.SolutionMoveResult
   ProjectsRebased  int     stored paths rewritten
 ```
 
-#### DotnetMove.SyncResult
+### DotnetMove.SyncResult
 
 <small>[ [Sync-Solution](#sync-solution) ]</small>
 
@@ -1871,7 +1869,7 @@ DotnetMove.SyncResult
   Added     string  repo-relative project path
 ```
 
-#### DotnetMove.ToolInfo
+### DotnetMove.ToolInfo
 
 <small>[ [DotnetMove.Capability](#dotnetmovecapability) ]</small>
 
@@ -1884,7 +1882,7 @@ DotnetMove.ToolInfo
   Path     string
 ```
 
-#### DotnetMove.TreeMoveResult
+### DotnetMove.TreeMoveResult
 
 <small>[ [Move-Dotnet](#move-dotnet) | [Move-DotnetFolder](#move-dotnetfolder) | [Move-DotnetProjectTree](#move-dotnetprojecttree) ]</small>
 
@@ -1902,7 +1900,7 @@ DotnetMove.TreeMoveResult
   Built          bool?   $null with -NoBuild
 ```
 
-#### DotnetMove.UnityMoveResult
+### DotnetMove.UnityMoveResult
 
 <small>[ [Move-Dotnet](#move-dotnet) | [Move-UnityAsset](#move-unityasset) ]</small>
 
@@ -1920,7 +1918,7 @@ DotnetMove.UnityMoveResult
   ReferencedBy  string[]  asmdefs that reference a moved .asmdef; informational, refs are by name/GUID and survive
 ```
 
-#### DotnetMove.Update
+### DotnetMove.Update
 
 <small>[ [Test-DotnetMoveUpdate](#test-dotnetmoveupdate) | [Update-DotnetMove](#update-dotnetmove) ]</small>
 

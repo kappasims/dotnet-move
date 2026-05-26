@@ -228,8 +228,8 @@ function Invoke-DocsTask {
     $emittedBy = @{}   # type name -> @(command names) that declare it via [OutputType]
     $nsLabel = @{ 'DotnetMove.Core' = '.NET and PowerShell'; 'DotnetMove.Unity' = 'Unity'; 'DotnetMove.Native' = 'Native C++ (Windows)' }
 
-    # Two subsections under the hand-written "## Reference": the commands, then the output types.
-    [void]$sb.AppendLine('### Command reference')
+    # Two subsections under the hand-written "# Reference": the commands, then the output types.
+    [void]$sb.AppendLine('## Command reference')
     [void]$sb.AppendLine()
 
     # Table of contents, grouped by namespace: each command links to its detail entry, with a
@@ -257,7 +257,7 @@ function Invoke-DocsTask {
             # Get-Help treats the name as a pattern, so 'Move-Dotnet' also matches Move-Dotnet*;
             # keep the exact match.
             $h = Get-Help $c.Name -Full | Where-Object { $_.Name -eq $c.Name } | Select-Object -First 1
-            [void]$sb.AppendLine("#### $($c.Name)")
+            [void]$sb.AppendLine("### $($c.Name)")
             [void]$sb.AppendLine()
             $syn = "$($h.Synopsis)".Trim()
             if ($syn) { [void]$sb.AppendLine((ConvertTo-MdText $syn)); [void]$sb.AppendLine() }
@@ -359,7 +359,7 @@ function Invoke-DocsTask {
         }
     }
 
-    # Output types: the second subsection under "## Reference", one entry per typedef with the same
+    # Output types: the second subsection under "# Reference", one entry per typedef with the same
     # code-view the commands link to. Back-references (which commands emit it, which types nest it)
     # sit as a callout right under each type name. A type that is only nested in another (never
     # emitted directly, e.g. DotnetMove.ToolInfo inside Capability) is still listed so its link
@@ -371,7 +371,7 @@ function Invoke-DocsTask {
             if ($typeDefs.ContainsKey($ft)) { $nestedIn[$ft] = @($nestedIn[$ft]) + $name | Where-Object { $_ } }
         }
     }
-    [void]$sb.AppendLine('### Output types')
+    [void]$sb.AppendLine('## Output types')
     [void]$sb.AppendLine()
     [void]$sb.AppendLine('Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several (and some types are also used as a field on another); whether a given command returns one or a collection is stated in that command''s Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `DotnetMove.*` field is itself one of these types.')
     [void]$sb.AppendLine()
@@ -385,7 +385,7 @@ function Invoke-DocsTask {
     [void]$sb.AppendLine()
     foreach ($name in $sortedTypes) {
         $def = $typeDefs[$name]
-        [void]$sb.AppendLine("#### $name")
+        [void]$sb.AppendLine("### $name")
         [void]$sb.AppendLine()
         # Cross-references as a compact bracketed list (no label), one font size down. The link
         # text - a command name or a DotnetMove.* type - is self-describing.
