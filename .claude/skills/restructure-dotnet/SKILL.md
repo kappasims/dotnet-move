@@ -17,6 +17,20 @@ path/GUID change to first-party tooling.
 Use the installed `DotnetMove` module (`Import-Module DotnetMove`). If it is not installed, point
 the user to the project's install steps and let them run them; never auto-install.
 
+## Analyze/audit first (read-only)
+
+To understand a repo before touching it, use these; do not parse solution/project files by hand:
+
+- `Test-SolutionConsistency` - projects whose membership diverges across solutions (`-Debug` for
+  the full solution/project matrix). To resolve a reported divergence, add the project where it is
+  missing with `dotnet sln <solution> add <project>` (DotnetMove does not add membership for you).
+- `Repair-SolutionReferences` (no flags) - report dangling solution entries / `<ProjectReference>`s.
+- `Find-PathReference` - build/CI/hook scripts that hardcode a path no move reconciles.
+- `Resolve-MoveEngine` - which engine a given path classifies to.
+- `Get-DotnetMoveCapability` - whether git and dotnet are present, plus the platform.
+
+These are the right tools when the task is "audit" or "sync the solutions", not only when moving.
+
 ## Moving a .NET project
 
 ```powershell

@@ -5,8 +5,9 @@ function Find-Solutions {
     # every file). Where-Object behaves identically on both editions.
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$Root)
+    $nested = Get-NestedWorktreePath -Root $Root   # linked worktrees hold duplicate copies
     Get-ChildItem -LiteralPath $Root -Recurse -File -ErrorAction SilentlyContinue |
-        Where-Object { $_.Extension -in '.sln', '.slnx' -and $_.FullName -notmatch '[\\/](bin|obj|\.vs|\.git)[\\/]' }
+        Where-Object { $_.Extension -in '.sln', '.slnx' -and $_.FullName -notmatch '[\\/](bin|obj|\.vs|\.git)[\\/]' -and -not (Test-PathUnderAny -Path $_.FullName -Dirs $nested) }
 }
 
 function Get-SolutionsReferencing {
@@ -60,6 +61,50 @@ function Get-SolutionProjectEntries {
         }
     }
     return $entries
+}
+
+function Get-SolutionContent {
+    # Full contents of one solution (both .sln and .slnx): every project entry (any type, incl.
+    # .pssproj/.vcxproj that `dotnet sln list` may omit), solution folders, and solution items
+    # (loose files). Solution folders are reported separately, never as projects.
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$SolutionFile)
+    $full = Resolve-FullPath $SolutionFile
+    $dir = Split-Path -Parent $full
+    $projects = @(); $folders = @(); $items = @()
+    if ([System.IO.Path]::GetExtension($full) -ieq '.slnx') {
+        $xml = Read-ProjectXml -Path $full
+        foreach ($n in $xml.SelectNodes('//*[local-name()="Project"]')) {
+            $p = $n.GetAttribute('Path')
+            if ([string]::IsNullOrWhiteSpace($p)) { continue }
+            $abs = [System.IO.Path]::GetFullPath((Join-Path $dir ($p -replace '/', '\')))
+            $projects += [pscustomobject]@{ Stored = $p; Abs = $abs; Ext = [System.IO.Path]::GetExtension($p) }
+        }
+        foreach ($n in $xml.SelectNodes('//*[local-name()="Folder"]')) {
+            $name = $n.GetAttribute('Name'); if ($name) { $folders += $name }
+        }
+        foreach ($n in $xml.SelectNodes('//*[local-name()="File"]')) {
+            $p = $n.GetAttribute('Path'); if ($p) { $items += $p }
+        }
+    } else {
+        $folderTypeGuid = '2150E333-8FDC-42A3-9474-1A3956D46DE8'   # solution-folder project type
+        $inItems = $false
+        foreach ($line in (Get-Content -LiteralPath $full)) {
+            if ($line -match '^\s*Project\("\{([^}]+)\}"\)\s*=\s*"([^"]*)",\s*"([^"]+)",\s*"\{[^}]+\}"') {
+                $typeGuid = $Matches[1]; $name = $Matches[2]; $p = $Matches[3]
+                if ($typeGuid -ieq $folderTypeGuid) { $folders += $name; continue }
+                $abs = [System.IO.Path]::GetFullPath((Join-Path $dir $p))
+                $projects += [pscustomobject]@{ Stored = $p; Abs = $abs; Ext = [System.IO.Path]::GetExtension($p) }
+            } elseif ($line -match '^\s*ProjectSection\(SolutionItems\)') {
+                $inItems = $true
+            } elseif ($line -match '^\s*EndProjectSection') {
+                $inItems = $false
+            } elseif ($inItems -and $line -match '^\s*(.+?)\s*=\s*(.+?)\s*$') {
+                $items += $Matches[1].Trim()
+            }
+        }
+    }
+    return [pscustomobject]@{ Projects = $projects; Folders = $folders; Items = $items }
 }
 
 function Get-SolutionMembership {

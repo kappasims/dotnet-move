@@ -16,6 +16,14 @@ Unity's move hazard is the inverse of .NET's. It is not path-fixing:
 So the rule: **never move a Unity asset/folder without its `.meta`.** A folder's meta is a
 *sibling* (`Assets/Tarragon.meta` for folder `Assets/Tarragon`); descendant metas live inside the folder.
 
+## Analyze/audit first (read-only)
+
+Before moving, audit with the read-only surface rather than scanning `.meta`/asmdef files by hand:
+`Test-UnityMetaIntegrity -Root ./Assets` (assets missing a `.meta`, orphan `.meta` whose asset is
+gone; see "Validate integrity" below) and `Resolve-MoveEngine` / `Get-DotnetMoveCapability`. If the
+project also has a managed side (`.csproj`/`.sln`), `Test-SolutionConsistency` and
+`Repair-SolutionReferences` (report mode) cover that.
+
 ## Use Move-UnityAsset
 
 `Import-Module DotnetMove` loads the Unity engine (install it first if needed; never

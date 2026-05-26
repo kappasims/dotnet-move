@@ -9,6 +9,7 @@
     FunctionsToExport    = @(
         'Find-PathReference',
         'Get-DotnetMoveCapability',
+        'Get-SolutionInventory',
         'Move-Dotnet',
         'Move-DotnetFile',
         'Move-DotnetFolder',
@@ -22,6 +23,7 @@
         'Register-DotnetMvGitAlias',
         'Repair-SolutionReferences',
         'Resolve-MoveEngine',
+        'Sync-Solution',
         'Test-SolutionConsistency',
         'Unregister-DotnetMvGitAlias'
     )

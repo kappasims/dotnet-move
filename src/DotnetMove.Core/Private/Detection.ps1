@@ -39,10 +39,12 @@ function Get-PathBearingFile {
     $root = (Resolve-FullPath $RepoRoot).TrimEnd('\', '/')
     $rootLen = $root.Length
 
+    $nested = Get-NestedWorktreePath -Root $root   # linked worktrees hold duplicate copies
+
     # -Force so dot-prefixed dirs (.github, .githooks) are traversed; on Unix they are
     # "hidden" and Get-ChildItem -Recurse skips them without it.
     $files = @(Get-ChildItem -LiteralPath $root -Recurse -File -Force -ErrorAction SilentlyContinue |
-            Where-Object { Test-PathBearingFile -File $_ -RootLen $rootLen })
+            Where-Object { (Test-PathBearingFile -File $_ -RootLen $rootLen) -and -not (Test-PathUnderAny -Path $_.FullName -Dirs $nested) })
 
     # .git/hooks/* active hooks live inside the excluded .git dir - add them explicitly.
     $gitHooks = Join-Path $root '.git/hooks'

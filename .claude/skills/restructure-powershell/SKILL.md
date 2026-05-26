@@ -18,6 +18,14 @@ the user to the project's install steps and let them run them, never auto-instal
 front door is **`Move-PowerShell`**. It routes a `.ps1` to the script mover and a `.psd1`/module
 folder to the module mover. Always dry-run with `-WhatIf` first.
 
+## Analyze/audit first (read-only)
+
+Before moving, use the read-only surface rather than grepping by hand: `Find-PathReference` (the
+build/CI/hook scripts that hardcode a path), `Resolve-MoveEngine` (how a path classifies), and
+`Get-DotnetMoveCapability` (git present? platform?). `Test-SolutionConsistency` and
+`Repair-SolutionReferences` are .NET-solution tools; reach for them when a PowerShell repo also
+carries `.csproj`/`.sln` (e.g. a `.pssproj`).
+
 ```powershell
 Import-Module DotnetMove
 

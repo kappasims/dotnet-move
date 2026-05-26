@@ -44,6 +44,15 @@ function Get-RelativePathSafe {
     return ($rel -replace '/', '\')
 }
 
+function Test-PathUnderAny {
+    # True if $Path is strictly inside any directory in $Dirs. OS-aware.
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$Path,
+          [AllowEmptyCollection()][string[]]$Dirs = @())
+    foreach ($d in $Dirs) { if (Test-PathUnder -Path $Path -Dir $d) { return $true } }
+    return $false
+}
+
 function Get-PathSuffixScore {
     # Count of matching trailing path segments between two paths (OS-aware, separator-agnostic).
     # E.g. 'src/Widgets/Widgets.csproj' vs 'tools/Widgets/Widgets.csproj' -> 2 (Widgets, Widgets.csproj).

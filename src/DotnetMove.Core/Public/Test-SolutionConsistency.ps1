@@ -60,12 +60,18 @@ function Test-SolutionConsistency {
             foreach ($p in $m.Projects) { Write-Debug "    $p" }
         }
 
+        # Repo-relative solution names so two solutions with the same file name in different
+        # folders are still distinguishable (a bare leaf would render them identically).
+        function _rel([string]$p) { (Get-RelativePathSafe -From $RepoRoot -To $p) }
+
         # Union of every project across all solutions.
         $allProjects = $membership.Projects | Sort-Object -Unique
+        $divergences = 0
         foreach ($proj in $allProjects) {
             $present = @($membership | Where-Object { $_.Projects -contains $proj })
             $absent = @($membership | Where-Object { $_.Projects -notcontains $proj })
             if ($absent.Count -eq 0) { continue } # in every solution - consistent
+            $divergences++
 
             $record = [pscustomobject]@{
                 Project   = $proj
@@ -73,13 +79,17 @@ function Test-SolutionConsistency {
                 AbsentFrom = @($absent.Solution)
             }
 
-            $msg = "Project '$([System.IO.Path]::GetFileName($proj))' diverges: present in [$(($present.Solution | ForEach-Object { Split-Path -Leaf $_ }) -join ', ')] but absent from [$(($absent.Solution | ForEach-Object { Split-Path -Leaf $_ }) -join ', ')]."
+            $msg = "Project '$(_rel $proj)' diverges: present in [$(($present.Solution | ForEach-Object { _rel $_ }) -join ', ')] but absent from [$(($absent.Solution | ForEach-Object { _rel $_ }) -join ', ')]. To resolve, add it where missing with: dotnet sln <solution> add <project>"
             if ($Strict) {
                 Write-Error -Message $msg -Category InvalidData -TargetObject $record -ErrorId 'SolutionDivergence'
             } else {
                 Write-Warning $msg
             }
             $record # emit to pipeline regardless, so it is capturable/filterable
+        }
+
+        if ($divergences -eq 0) {
+            Write-Host "All $($solutions.Count) solutions agree on project membership." -ForegroundColor Green
         }
     }
 }

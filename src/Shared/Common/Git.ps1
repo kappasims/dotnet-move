@@ -11,6 +11,32 @@ function Get-RepoRoot {
     return (Get-Item -LiteralPath $StartPath).FullName
 }
 
+function Get-NestedWorktreePath {
+    # Absolute paths of git worktrees that live strictly inside $Root - linked worktrees (e.g.
+    # under .claude/worktrees/<id>/) hold duplicate copies of the repo's solutions/projects and
+    # would poison a recursive scan (double-counted membership, etc.). Callers exclude these.
+    # Empty when git is unavailable, $Root is not in a repo, or nothing nests under it.
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$Root)
+    if (-not (Test-GitAvailable)) { return @() }
+    $rootFull = Resolve-FullPath $Root
+    if (-not (Test-Path -LiteralPath $rootFull)) { return @() }
+    $lines = $null
+    Push-Location $rootFull
+    try { $lines = & git worktree list --porcelain 2>$null; $ok = ($LASTEXITCODE -eq 0) }
+    catch { $ok = $false }
+    finally { Pop-Location }
+    if (-not $ok) { return @() }
+    $nested = @()
+    foreach ($l in $lines) {
+        if ($l -match '^worktree\s+(.+)$') {
+            $wt = Resolve-FullPath ($Matches[1].Trim())
+            if (Test-PathUnder -Path $wt -Dir $rootFull) { $nested += $wt }   # strictly under root only
+        }
+    }
+    return $nested
+}
+
 function Move-PathTracked {
     # Move one path: git mv when tracked (preserves history), else Move-Item. Creates the
     # destination parent if needed. Shared by every move cmdlet's filesystem step.

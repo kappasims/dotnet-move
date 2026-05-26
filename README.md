@@ -131,10 +131,15 @@ DotnetMove can be used purely to inspect a repo. These commands are read-only an
 | Command | Reports |
 |---|---|
 | `Test-SolutionConsistency` | projects with divergent solution membership across solutions |
+| `Get-SolutionInventory` | full solution contents (projects of any type, folders, items) and projects in no solution |
 | `Find-PathReference` | path references in build/CI/hook scripts that no move reconciles |
 | `Test-UnityMetaIntegrity` | missing or orphan Unity `.meta` |
 | `Resolve-MoveEngine` | which engine a given path classifies to |
 | `Get-DotnetMoveCapability` | whether git and dotnet are present, plus the platform |
+
+`Get-SolutionInventory` reads `.sln`/`.slnx` directly (not just `dotnet sln list`), so it surfaces
+non-CLI project types (e.g. `.pssproj`), solution folders, solution items, and any project on disk
+that no solution references.
 
 ### Repairing
 
@@ -148,6 +153,10 @@ relocatable, missing, or ambiguous (read-only by default).
 | (none) | report the dangling entries and whether each can be repaired |
 | `-Fix` | re-point each relocatable entry at the project's new location |
 | `-Prune` | remove entries whose project is gone for good |
+
+To resolve the membership divergence that `Test-SolutionConsistency` reports, `Sync-Solution` adds
+each project to the solutions missing it (via `dotnet sln add`), making membership uniform. It only
+adds, never removes; preview with `-WhatIf` first.
 
 ### PowerShell usage
 
@@ -262,6 +271,7 @@ tests/                   Pester tests + fixtures
 |---|---|
 | [Find-PathReference](#find-pathreference) | Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party tool reconciles. |
 | [Get-DotnetMoveCapability](#get-dotnetmovecapability) | Resolve DotnetMove's external-tool capabilities (git, dotnet) and platform. |
+| [Get-SolutionInventory](#get-solutioninventory) | List the full contents of every solution in a repo - projects of any type, solution folders, and solution items - plus on-disk projects that no solution references. |
 | [Move-Dotnet](#move-dotnet) | Move any supported item and reconcile references, routing by detected type to the right per-namespace front door. |
 | [Move-DotnetFile](#move-dotnetfile) | Move a single managed .NET file and reconcile references, routing by extension to the right specialist. |
 | [Move-DotnetFolder](#move-dotnetfolder) | Move a folder of managed .NET projects, reconciling references. |
@@ -275,6 +285,7 @@ tests/                   Pester tests + fixtures
 | [Register-DotnetMvGitAlias](#register-dotnetmvgitalias) | Opt-in: register a `git dotnetmv` alias pointing at DotnetMove's forwarder. |
 | [Repair-SolutionReferences](#repair-solutionreferences) | Scan a repo for broken solution membership and dangling ProjectReferences and repair them by re-pointing each entry at the project's new location. |
 | [Resolve-MoveEngine](#resolve-moveengine) | Classify a path to the reconciliation engine that should move it: dotnet, native, unity, ps-script, ps-module, or unknown. |
+| [Sync-Solution](#sync-solution) | Resolve solution-membership divergence by adding each project to the solutions that are missing it, so every solution in the repo lists the same projects. |
 | [Test-SolutionConsistency](#test-solutionconsistency) | Report projects whose membership diverges across the solution files in a repo (present in some solutions but absent from others). |
 | [Unregister-DotnetMvGitAlias](#unregister-dotnetmvgitalias) | Remove the `git dotnetmv` alias registered by Register-DotnetMvGitAlias. |
 
@@ -362,6 +373,52 @@ Get-DotnetMoveCapability
 ```
 
 Returns an object with Platform, PSEdition, Git, Dotnet, and DotnetSupportsSlnx.
+
+### Get-SolutionInventory
+
+List the full contents of every solution in a repo - projects of any type, solution
+folders, and solution items - plus on-disk projects that no solution references.
+
+**Syntax**
+
+```powershell
+Get-SolutionInventory [[-RepoRoot] <string>] [<CommonParameters>]
+```
+
+Where Test-SolutionConsistency compares membership and Repair-SolutionReferences finds
+dangling entries, this gives the complete picture without reading the files by hand. It
+parses each .sln/.slnx directly (not via `dotnet sln list`, which only returns
+CLI-buildable projects), so it also surfaces non-CLI project types (e.g. .pssproj),
+solution folders, and loose solution items. It then compares against the projects on disk
+and flags any that are in no solution at all.
+
+Read-only: one record per item, so you can group, filter, or format it however you like.
+
+**Parameters**
+
+| Name | Type | Required | Pipeline | Description |
+|---|---|---|---|---|
+| `RepoRoot` | String | false | true (ByValue, ByPropertyName) | Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path property). Defaults to the enclosing git repo root. Nested git worktrees are skipped. |
+
+**Output**
+
+One pscustomobject per item with Solution (repo-relative, or '(none)'), Kind
+(Project | SolutionFolder | SolutionItem | UnreferencedProject), Type (project extension
+without the dot, else empty), Name, and Path (as stored in the solution, or repo-relative).
+
+**Examples**
+
+```powershell
+Get-SolutionInventory -RepoRoot . | Format-Table -AutoSize
+```
+
+Shows every project, folder, and item across all solutions, and any unreferenced project.
+
+```powershell
+Get-SolutionInventory | Where-Object Kind -eq 'UnreferencedProject'
+```
+
+Lists only the projects on disk that no solution includes.
 
 ### Move-Dotnet
 
@@ -954,6 +1011,53 @@ classify regardless); folder cases require the directory.
 dotnet
 Resolve-MoveEngine ./Assets/Art/logo.png     # -> unity
 ```
+
+### Sync-Solution
+
+Resolve solution-membership divergence by adding each project to the solutions that are
+missing it, so every solution in the repo lists the same projects.
+
+**Syntax**
+
+```powershell
+Sync-Solution [[-RepoRoot] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+The companion to Test-SolutionConsistency, which only reports divergence. This makes
+membership uniform: for every project present in at least one solution but absent from
+others, it adds the project to the solutions missing it, delegating to `dotnet sln add`
+(never hand-editing the .sln/.slnx). It only adds; it never removes, so a project in no
+solution is left alone (use Get-SolutionInventory to find those).
+
+Uniform membership is the assumption. If a solution is intentionally a subset, do not run
+this against the whole repo; preview with -WhatIf first and add specific projects by hand.
+
+**Parameters**
+
+| Name | Type | Required | Pipeline | Description |
+|---|---|---|---|---|
+| `RepoRoot` | String | false | true (ByValue, ByPropertyName) | Root to scan. Accepts pipeline input. Defaults to the enclosing git repo root. Nested git worktrees are skipped. |
+| `WhatIf` | SwitchParameter | false | false |  |
+| `Confirm` | SwitchParameter | false | false |  |
+
+**Output**
+
+One pscustomobject per addition with Solution (repo-relative) and Added (repo-relative
+project path).
+
+**Examples**
+
+```powershell
+Sync-Solution -RepoRoot . -WhatIf
+```
+
+Previews which projects would be added to which solutions to make membership uniform.
+
+```powershell
+Sync-Solution -RepoRoot .
+```
+
+Adds every divergent project to the solutions missing it.
 
 ### Test-SolutionConsistency
 

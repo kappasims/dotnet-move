@@ -17,6 +17,15 @@ Native projects do not fit the dotnet-CLI delegation model that managed projects
 
 C++/CLI is Windows-only (`<CLRSupport>`, `#pragma managed`, `<Windows.h>`), so this is gated.
 
+## Analyze/audit first (read-only)
+
+Before moving, inspect with the read-only surface instead of parsing `.sln`/`.vcxproj` by hand:
+`Test-SolutionConsistency` (membership divergence across solutions, `-Debug` for the full matrix;
+resolve a divergence with `dotnet sln <solution> add <project>`), `Repair-SolutionReferences` (no
+flags, to report dangling entries), `Find-PathReference`, and `Get-DotnetMoveCapability`. These
+cover solution membership for `.vcxproj` too; the native link settings are what `Move-NativeProject`
+reports separately.
+
 ## Use Move-NativeProject
 
 `Import-Module DotnetMove` loads the native engine on Windows (install it first if needed; never
