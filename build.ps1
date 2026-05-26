@@ -144,6 +144,11 @@ function Invoke-DocsTask {
         # is honored inconsistently), and escape < > so they are not read as HTML tags. Code
         # blocks are emitted separately and never passed through here.
         $Text = [regex]::Replace($Text, '\$\([^)]*\)|\$\w+', { param($mm) '`' + $mm.Value + '`' })
+        # Backtick bare parameter references (-Name) in prose. The lookbehind skips a hyphen
+        # already inside a word (cmdlets like Move-Item, Update-ModuleManifest) and anything
+        # already in a code span; requiring an uppercase first letter skips hyphenated words
+        # (non-terminating, cross-boundary, dot-source).
+        $Text = [regex]::Replace($Text, '(?<![\w`-])(-[A-Z][A-Za-z]+)\b', '`$1`')
         $Text.Replace('<', '&lt;').Replace('>', '&gt;')
     }
 
@@ -380,7 +385,7 @@ function Invoke-DocsTask {
         $refs = @()
         if ($emittedBy[$name]) { $refs += @(@($emittedBy[$name]) | Sort-Object -Unique | ForEach-Object { "[$_](#$($_.ToLower()))" }) }
         if ($nestedIn[$name]) { $refs += @(@($nestedIn[$name]) | Sort-Object -Unique | ForEach-Object { Format-TypeLink $_ }) }
-        if ($refs.Count) { [void]$sb.AppendLine((Format-Small ('[ ' + ($refs -join ', ') + ' ]'))); [void]$sb.AppendLine() }
+        if ($refs.Count) { [void]$sb.AppendLine((Format-Small ('[ ' + ($refs -join ' | ') + ' ]'))); [void]$sb.AppendLine() }
         if ($def.Summary) { [void]$sb.AppendLine((ConvertTo-MdText $def.Summary)); [void]$sb.AppendLine() }
         [void]$sb.AppendLine('```text')
         [void]$sb.AppendLine((Format-TypeCodeView $name $def))

@@ -461,7 +461,7 @@ native C++ front doors load DotnetMove.Unity / DotnetMove.Native on demand.
 
 "dotnet" here is the .NET-platform umbrella (CLR/CoreCLR), not just the dotnet CLI - the
 verb spans every engine. Each engine's behavior lives in its own cmdlet; this only routes.
--WhatIf/-Confirm/-Verbose propagate; -Force/-RepoRoot/-NoBuild are forwarded where the
+`-WhatIf`/`-Confirm`/`-Verbose` propagate; `-Force`/`-RepoRoot`/`-NoBuild` are forwarded where the
 target's engine accepts them.
 
 **Parameters**
@@ -479,11 +479,14 @@ target's engine accepts them.
 **Output**
 
 ```text
-managed .NET file        ->  Move-DotnetFile
-folder of .NET projects  ->  Move-DotnetFolder
-.ps1  .psd1  module      ->  Move-PowerShell
-.vcxproj                 ->  Move-NativeProject
-Unity asset  .meta       ->  Move-UnityAsset
+.csproj  .fsproj  .vbproj  ->  DotnetMove.MoveResult
+folder of .NET projects    ->  DotnetMove.TreeMoveResult
+.sln  .slnx                ->  DotnetMove.SolutionMoveResult
+.props  .targets           ->  DotnetMove.ImportMoveResult
+.ps1                       ->  DotnetMove.ScriptMoveResult
+.psd1  module folder       ->  DotnetMove.PSModuleMoveResult
+.vcxproj                   ->  DotnetMove.NativeMoveResult
+Unity asset  .meta         ->  DotnetMove.UnityMoveResult
 ```
 
 These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields; they are plain pscustomobjects with no shared base type. See [Type reference](#type-reference).
@@ -511,8 +514,8 @@ Move-DotnetFile [-Path] <string> -Destination <string> [-RepoRoot <string>] [-No
 Dispatches a managed .NET file to the right specialist by extension (see Output for the
 routing). Native (.vcxproj), PowerShell (.ps1/.psd1) and Unity assets are deliberately not
 handled here - use Move-NativeProject / Move-PowerShellScript / Move-PowerShellModule /
-Move-UnityAsset. -WhatIf/-Confirm/-Verbose propagate to the specialist; -Force and
--RepoRoot/-NoBuild are forwarded where the specialist accepts them.
+Move-UnityAsset. `-WhatIf`/`-Confirm`/`-Verbose` propagate to the specialist; `-Force` and
+`-RepoRoot`/`-NoBuild` are forwarded where the specialist accepts them.
 
 **Parameters**
 
@@ -559,8 +562,8 @@ Move-DotnetFolder [-Path] <string> -Destination <string> [-RepoRoot <string>] [-
 A folder move always goes through Move-DotnetProjectTree: it treats every managed
 project under the folder as one co-moving set and reconciles only the references that
 cross the folder boundary (internal references ride along unchanged). If the folder
-contains no managed projects, that specialist reports it. -WhatIf/-Confirm/-Verbose
-propagate; -Force/-RepoRoot/-NoBuild are forwarded.
+contains no managed projects, that specialist reports it. `-WhatIf`/`-Confirm`/`-Verbose`
+propagate; `-Force`/`-RepoRoot`/`-NoBuild` are forwarded.
 
 **Parameters**
 
@@ -616,10 +619,10 @@ resolve, moves the directory (git mv when tracked), then re-adds every link so t
 dotnet CLI recomputes fresh relative paths and preserves GUIDs. The solution and
 project XML (.sln/.slnx, .csproj) is never hand-edited.
 
-Diagnostics follow invocation: -Verbose narrates the plan, -Debug emits the full
+Diagnostics follow invocation: `-Verbose` narrates the plan, `-Debug` emits the full
 solution-membership matrix, and divergence (the project living in some but not all
-of the repo's solutions) is surfaced as a Warning (or, with -Strict, a non-
-terminating error honoring -ErrorAction).
+of the repo's solutions) is surfaced as a Warning (or, with `-Strict`, a non-
+terminating error honoring `-ErrorAction`).
 
 **Parameters**
 
@@ -687,7 +690,7 @@ unchanged because both move by the same delta. Everything is delegated to the do
 CLI; nothing is hand-edited.
 
 Like Move-DotnetProject: dotnet is required; git is used when available (else a
-confirmed plain-move fallback via -Force / ShouldContinue); supports -WhatIf.
+confirmed plain-move fallback via `-Force` / ShouldContinue); supports `-WhatIf`.
 
 **Parameters**
 
@@ -753,7 +756,7 @@ best-effort, path-only update), but a .vcxproj's native link settings are never
 reconciled off Windows; that remains Move-NativeProject's Windows-only job.
 
 dotnet is not required here; git is used when available (else confirmed plain-move
-fallback via -Force). Supports -WhatIf.
+fallback via `-Force`). Supports `-WhatIf`.
 
 **Parameters**
 
@@ -803,8 +806,8 @@ Move-PowerShell [-Path] <string> -Destination <string> [-RepoRoot <string>] [-Fo
 
 Dispatches a PowerShell item to the right specialist by type (see Output for the routing):
 the script specialist fixes dot-source/call references (AST-based), the module specialist
-reconciles the manifest. -WhatIf/-Confirm/-Verbose propagate to the specialist; -Force is
-forwarded, and -RepoRoot is forwarded to the script specialist (the module specialist has
+reconciles the manifest. `-WhatIf`/`-Confirm`/`-Verbose` propagate to the specialist; `-Force` is
+forwarded, and `-RepoRoot` is forwarded to the script specialist (the module specialist has
 no RepoRoot).
 
 **Parameters**
@@ -908,7 +911,7 @@ hand. A path built entirely from an expression (e.g. Join-Path ...) is not a str
 and cannot be detected at all - grep to be sure. Treat the result as "fixed what could
 be proven," not "guaranteed complete."
 
-git is used when available (else confirmed plain-move fallback via -Force). -WhatIf
+git is used when available (else confirmed plain-move fallback via `-Force`). `-WhatIf`
 supported; dotnet not required.
 
 **Parameters**
@@ -965,7 +968,7 @@ the file - .slnx &lt;Project Path="..."&gt; or the .sln project line - not a bli
 keeping each format's separator convention (/ for .slnx, \ for .sln). Project-to-project
 references are unaffected by a solution move and are left alone.
 
-git is used when available (else confirmed plain-move fallback via -Force). -WhatIf
+git is used when available (else confirmed plain-move fallback via `-Force`). `-WhatIf`
 supported. dotnet is not required.
 
 **Parameters**
@@ -1011,12 +1014,12 @@ reversible git-config line - it never edits PATH or installs anything.
 Register-DotnetMvGitAlias [[-Scope] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-Adds `alias.dotnetmv = !pwsh -NoProfile -File &lt;forwarder&gt;` to git config so
+Adds `alias.dotnetmv = !pwsh `-NoProfile` `-File` &lt;forwarder&gt;` to git config so
 `git dotnetmv &lt;src&gt; &lt;dst&gt;` works. "dotnet" is the .NET-platform umbrella: the verb
 branches by target type to the right engine - the .NET project model
 (csproj/sln/props), Unity (.meta/.asmdef), PowerShell (.ps1/.psd1), or native C++
 (.vcxproj). Scope is your choice (repo-local or global). Undo with
-Unregister-DotnetMvGitAlias. Use -WhatIf to see the exact `git config` command.
+Unregister-DotnetMvGitAlias. Use `-WhatIf` to see the exact `git config` command.
 
 **Parameters**
 
@@ -1062,23 +1065,23 @@ exists at the recorded path (usually because a project was moved or renamed with
 reconciling). Read-only by default: it returns one object per problem, each tagged with a
 Resolution of Relocatable, Missing, or Ambiguous.
 
-With -Fix it repairs every Relocatable entry: it searches the repo for a project file of the
+With `-Fix` it repairs every Relocatable entry: it searches the repo for a project file of the
 same name and re-points the entry at it through the dotnet CLI (remove the stale path, add
 the found one). When one project of that name exists it is used directly; when several do,
 the one that keeps the most of the original path's trailing folders is chosen, since a moved
 project usually keeps its own folder name. Entries it cannot resolve are left untouched and
 reported, Missing (no such project anywhere) or Ambiguous (several equally-good candidates).
 
-With -Prune it removes the Missing entries, the genuinely deleted ones, through the dotnet
-CLI. -Prune never touches Relocatable or Ambiguous entries. -Fix and -Prune can be combined.
+With `-Prune` it removes the Missing entries, the genuinely deleted ones, through the dotnet
+CLI. `-Prune` never touches Relocatable or Ambiguous entries. `-Fix` and `-Prune` can be combined.
 
 **Parameters**
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
 | <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Root to scan. Defaults to the enclosing git repo root of the current directory.</small> |
-| <small>`‑Fix`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Re-point each dangling entry at the moved project when its new location is unambiguous. Honors -WhatIf.</small> |
-| <small>`‑Prune`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Remove entries whose project cannot be found anywhere in the repo. Honors -WhatIf.</small> |
+| <small>`‑Fix`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Re-point each dangling entry at the moved project when its new location is unambiguous. Honors `-WhatIf`.</small> |
+| <small>`‑Prune`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Remove entries whose project cannot be found anywhere in the repo. Honors `-WhatIf`.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
 
@@ -1178,7 +1181,7 @@ others, it adds the project to the solutions missing it, delegating to `dotnet s
 solution is left alone (use Get-SolutionInventory to find those).
 
 Uniform membership is the assumption. If a solution is intentionally a subset, do not run
-this against the whole repo; preview with -WhatIf first and add specific projects by hand.
+this against the whole repo; preview with `-WhatIf` first and add specific projects by hand.
 
 **Parameters**
 
@@ -1230,7 +1233,7 @@ and compares its tag (the "available" version) against the installed module's Mo
 (the "installed" version). It prints what to do when behind, but performs no update - an
 agent or user runs it when they want to know.
 
-Needs network access to api.github.com. Honors -ErrorAction if the request fails (offline,
+Needs network access to api.github.com. Honors `-ErrorAction` if the request fails (offline,
 rate-limited, or no releases yet).
 
 **Parameters**
@@ -1276,7 +1279,7 @@ When a repo carries more than one solution (e.g. a classic .sln alongside a .sln
 they can drift out of sync so the same project is listed in one but not the other.
 This emits one object per divergent project and surfaces it through the standard streams
 so behavior follows invocation: by default it writes a Warning per divergent project;
--Strict escalates each to a non-terminating error (honoring -ErrorAction); -Debug adds the
+`-Strict` escalates each to a non-terminating error (honoring `-ErrorAction`); `-Debug` adds the
 full membership matrix of every solution and its projects.
 
 **Parameters**
@@ -1304,7 +1307,7 @@ DotnetMove.ConsistencyResult
 Test-SolutionConsistency -RepoRoot . -Debug
 ```
 
-Reports divergent projects, and with -Debug the full membership matrix.
+Reports divergent projects, and with `-Debug` the full membership matrix.
 
 ```powershell
 Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
@@ -1355,9 +1358,9 @@ Update-DotnetMove [[-Repository] <string>] [-Force] [-WhatIf] [-Confirm] [<Commo
 
 Checks GitHub for a newer release (via Test-DotnetMoveUpdate) and, if the installed version
 is behind, runs the release's install.ps1 to overwrite the modules on your module path. No
-git, no clone. Does nothing when already current unless -Force. Honors -WhatIf/-Confirm.
+git, no clone. Does nothing when already current unless `-Force`. Honors `-WhatIf`/`-Confirm`.
 
-After it runs, reload the module in the current session with `Import-Module DotnetMove -Force`.
+After it runs, reload the module in the current session with `Import-Module DotnetMove `-Force``.
 Needs network access to GitHub. When the module ships on the PowerShell Gallery this is
 superseded by `Update-Module DotnetMove`.
 
@@ -1529,8 +1532,8 @@ Test-UnityMetaIntegrity [[-Root] <string>] [-Strict] [<CommonParameters>]
 
 Walks the tree and pairs every asset (file or folder) with its '&lt;name&gt;.meta'.
 Emits one object per problem and surfaces it through the standard streams so behavior
-follows invocation: by default it writes a Warning per problem; -Strict escalates each to
-a non-terminating error (honoring -ErrorAction). Objects are always emitted so results are
+follows invocation: by default it writes a Warning per problem; `-Strict` escalates each to
+a non-terminating error (honoring `-ErrorAction`). Objects are always emitted so results are
 capturable/filterable.
 
 Ignores Unity-hidden entries (names starting with '.', folders ending with '~')
@@ -1631,7 +1634,7 @@ DotnetMove.GitAlias
 
 ### DotnetMove.ImportMoveResult
 
-<small>[ [Move-Dotnet](#move-dotnet), [Move-DotnetFile](#move-dotnetfile), [Move-MSBuildImport](#move-msbuildimport) ]</small>
+<small>[ [Move-Dotnet](#move-dotnet) | [Move-DotnetFile](#move-dotnetfile) | [Move-MSBuildImport](#move-msbuildimport) ]</small>
 
 Result of moving a shared MSBuild .props/.targets file and fixing its importers.
 
@@ -1661,7 +1664,7 @@ DotnetMove.MetaIntegrity
 
 ### DotnetMove.MoveResult
 
-<small>[ [Move-Dotnet](#move-dotnet), [Move-DotnetFile](#move-dotnetfile), [Move-DotnetProject](#move-dotnetproject) ]</small>
+<small>[ [Move-Dotnet](#move-dotnet) | [Move-DotnetFile](#move-dotnetfile) | [Move-DotnetProject](#move-dotnetproject) ]</small>
 
 Result of moving a .NET project folder and reconciling solutions and project references.
 
@@ -1680,7 +1683,7 @@ DotnetMove.MoveResult
 
 ### DotnetMove.NativeMoveResult
 
-<small>[ [Move-Dotnet](#move-dotnet), [Move-NativeProject](#move-nativeproject) ]</small>
+<small>[ [Move-Dotnet](#move-dotnet) | [Move-NativeProject](#move-nativeproject) ]</small>
 
 Result of moving a native / C++/CLI project (.vcxproj).
 
@@ -1712,7 +1715,7 @@ DotnetMove.PathReference
 
 ### DotnetMove.PSModuleMoveResult
 
-<small>[ [Move-Dotnet](#move-dotnet), [Move-PowerShell](#move-powershell), [Move-PowerShellModule](#move-powershellmodule) ]</small>
+<small>[ [Move-Dotnet](#move-dotnet) | [Move-PowerShell](#move-powershell) | [Move-PowerShellModule](#move-powershellmodule) ]</small>
 
 Result of moving a PowerShell module folder and reconciling its manifest.
 
@@ -1745,7 +1748,7 @@ DotnetMove.RepairResult
 
 ### DotnetMove.ScriptMoveResult
 
-<small>[ [Move-Dotnet](#move-dotnet), [Move-PowerShell](#move-powershell), [Move-PowerShellScript](#move-powershellscript) ]</small>
+<small>[ [Move-Dotnet](#move-dotnet) | [Move-PowerShell](#move-powershell) | [Move-PowerShellScript](#move-powershellscript) ]</small>
 
 Result of moving a standalone .ps1 and fixing dot-source/call paths.
 
@@ -1778,7 +1781,7 @@ DotnetMove.SolutionItem
 
 ### DotnetMove.SolutionMoveResult
 
-<small>[ [Move-Dotnet](#move-dotnet), [Move-DotnetFile](#move-dotnetfile), [Move-Solution](#move-solution) ]</small>
+<small>[ [Move-Dotnet](#move-dotnet) | [Move-DotnetFile](#move-dotnetfile) | [Move-Solution](#move-solution) ]</small>
 
 Result of moving a solution file and rebasing the relative project paths it stores.
 
@@ -1819,7 +1822,7 @@ DotnetMove.ToolInfo
 
 ### DotnetMove.TreeMoveResult
 
-<small>[ [Move-Dotnet](#move-dotnet), [Move-DotnetFolder](#move-dotnetfolder), [Move-DotnetProjectTree](#move-dotnetprojecttree) ]</small>
+<small>[ [Move-Dotnet](#move-dotnet) | [Move-DotnetFolder](#move-dotnetfolder) | [Move-DotnetProjectTree](#move-dotnetprojecttree) ]</small>
 
 Result of moving a folder of one or more .NET projects in one operation.
 
@@ -1837,7 +1840,7 @@ DotnetMove.TreeMoveResult
 
 ### DotnetMove.UnityMoveResult
 
-<small>[ [Move-Dotnet](#move-dotnet), [Move-UnityAsset](#move-unityasset) ]</small>
+<small>[ [Move-Dotnet](#move-dotnet) | [Move-UnityAsset](#move-unityasset) ]</small>
 
 Result of moving a Unity asset/folder while keeping its paired .meta file(s).
 
@@ -1855,7 +1858,7 @@ DotnetMove.UnityMoveResult
 
 ### DotnetMove.Update
 
-<small>[ [Test-DotnetMoveUpdate](#test-dotnetmoveupdate), [Update-DotnetMove](#update-dotnetmove) ]</small>
+<small>[ [Test-DotnetMoveUpdate](#test-dotnetmoveupdate) | [Update-DotnetMove](#update-dotnetmove) ]</small>
 
 Whether the installed DotnetMove is behind the latest GitHub release.
 

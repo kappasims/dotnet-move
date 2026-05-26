@@ -8,11 +8,14 @@
     # here when routing changes (and keep it in step with Resolve-MoveEngine / the dispatchers).
 
     'Move-Dotnet' = @'
-managed .NET file        ->  Move-DotnetFile
-folder of .NET projects  ->  Move-DotnetFolder
-.ps1  .psd1  module      ->  Move-PowerShell
-.vcxproj                 ->  Move-NativeProject
-Unity asset  .meta       ->  Move-UnityAsset
+.csproj  .fsproj  .vbproj  ->  DotnetMove.MoveResult
+folder of .NET projects    ->  DotnetMove.TreeMoveResult
+.sln  .slnx                ->  DotnetMove.SolutionMoveResult
+.props  .targets           ->  DotnetMove.ImportMoveResult
+.ps1                       ->  DotnetMove.ScriptMoveResult
+.psd1  module folder       ->  DotnetMove.PSModuleMoveResult
+.vcxproj                   ->  DotnetMove.NativeMoveResult
+Unity asset  .meta         ->  DotnetMove.UnityMoveResult
 '@
 
     'Move-DotnetFile' = @'
