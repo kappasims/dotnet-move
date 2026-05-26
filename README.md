@@ -24,7 +24,7 @@ like "move this project" (see [Skills](#skills)).
 
 # Contents
 
-- [Setup](#setup): [Requirements](#requirements), [Install](#install), [Updating](#updating)
+- [Setup](#setup): [Requirements](#requirements), [Footprint](#footprint), [Install](#install), [Updating](#updating)
 - [Usage](#usage): [Moving](#moving), [Undoing](#undoing), [Inspecting](#inspecting), [Repairing](#repairing)
 - [Interfaces](#interfaces): [PowerShell usage](#powershell-usage), [git usage](#git-usage), [Skills](#skills)
 - [For developers](#for-developers): [Build, test, install, docs](#build-test-install-docs), [Modules](#modules), [Layout](#layout)
@@ -39,6 +39,37 @@ like "move this project" (see [Skills](#skills)).
   solutions. Moving PowerShell or Unity files does not need it.
 - git is optional: with it, moves use `git mv` (history kept); without it, `-Force` does a plain
   `Move-Item` (no history). `Get-DotnetMoveCapability` reports what the machine has.
+
+## Footprint
+
+Everything DotnetMove creates or changes, so there are no surprises. It never uses AppData, never
+edits `PATH`, never auto-installs git or the .NET SDK, and sends no telemetry.
+
+Installing (the installer or `./build.ps1 -Task Install`):
+
+- Copies the module folders to your CurrentUser module path: `~/Documents/PowerShell/Modules`
+  (or `WindowsPowerShell` for 5.1) on Windows, `~/.local/share/powershell/Modules` elsewhere, or a
+  `-InstallPath` you choose (which you add to `$env:PSModulePath` yourself). That default path is
+  already on `$env:PSModulePath`; nothing else on the environment is touched.
+- Downloads the release zip to the system temp dir, extracts it, and deletes it when done. Install
+  and update are the only things that reach the network (`api.github.com` / `github.com`).
+
+Running a move:
+
+- Edits the target repo's solution/project files to reconcile the move. That is the operation
+  itself, done through first-party tooling (see [the contract](#build-test-install-docs)).
+- Writes a repo-local undo journal at `.dotnetmove/journal.jsonl`, plus a `.dotnetmove/.gitignore`
+  of `*` so git ignores the whole folder and your own `.gitignore` is untouched. On by default; see
+  [Undoing](#undoing) to opt out.
+- Snapshots the files it edits to the system temp dir for rollback, and removes the snapshot when
+  the move finishes (success or failure). Never written into the repo.
+
+Only when you ask:
+
+- `Register-DotnetMvGitAlias` adds one `alias.dotnetmv` line to your git config (repo-local, or
+  `~/.gitconfig` with `-Scope Global`); `Unregister-DotnetMvGitAlias` removes it.
+- `install.ps1 -NoJournal` sets `DOTNETMOVE_JOURNAL=off` persistently (a User environment variable
+  on Windows, a profile line on Linux/macOS) to turn the undo journal off.
 
 ## Install
 
