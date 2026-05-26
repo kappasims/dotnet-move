@@ -157,6 +157,20 @@ function Invoke-DocsTask {
     # Output section for cmdlets that route by extension/type, in place of a prose description.
     $dispatchDiagrams = Import-PowerShellDataFile ([System.IO.Path]::Combine($root, 'docs', 'dispatch-diagrams.psd1'))
 
+    # Fields (Name+Type) present in every one of the given types - the shared shape of a cmdlet
+    # that emits several result types, so the reference can say whether they are related or wholly
+    # heterogeneous. Returns the common field objects (from the first type), in declared order.
+    function Get-CommonFields {
+        param([string[]]$Names)
+        $defs = @($Names | Where-Object { $typeDefs.ContainsKey($_) } | ForEach-Object { $typeDefs[$_] })
+        if ($defs.Count -lt 2) { return @() }
+        $rest = @($defs | Select-Object -Skip 1)
+        @($defs[0].Fields) | Where-Object {
+            $f = $_
+            -not ($rest | Where-Object { -not (@($_.Fields) | Where-Object { $_.Name -eq $f.Name -and $_.Type -eq $f.Type }) })
+        }
+    }
+
     # GitHub heading anchor for a type entry: lowercase, drop all but [a-z0-9 -], spaces to dashes
     # (so 'DotnetMove.PathReference' -> 'dotnetmovepathreference').
     function Get-TypeAnchor { param([string]$Name) (($Name.ToLower() -replace '[^a-z0-9 -]', '') -replace ' ', '-') }
@@ -192,6 +206,10 @@ function Invoke-DocsTask {
         $t
     }
 
+    # Render reference-table text one font size down. <small> is the semantic "one step smaller"
+    # element and, unlike <sub>, does not shift the baseline; markdown inside it still renders.
+    function Format-Small { param([string]$Text) "<small>$Text</small>" }
+
     # Common parameters Get-Help lists without descriptions; supply our own so the table is complete.
     $commonDesc = @{
         WhatIf  = 'Preview the operation and report what would change, without modifying anything.'
@@ -208,14 +226,14 @@ function Invoke-DocsTask {
         $label = if ($nsLabel.ContainsKey($m)) { $nsLabel[$m] } else { $m }
         [void]$sb.AppendLine("**$label**")
         [void]$sb.AppendLine()
-        [void]$sb.AppendLine('| Command | What it does |')
+        [void]$sb.AppendLine('| ' + (Format-Small 'Command') + ' | ' + (Format-Small 'What it does') + ' |')
         [void]$sb.AppendLine('|:---|:---|')
         foreach ($c in (Get-Command -Module $m -CommandType Function | Sort-Object Name)) {
             $h = Get-Help $c.Name -Full | Where-Object { $_.Name -eq $c.Name } | Select-Object -First 1
             $blurb = ("$($h.Synopsis)" -replace '\s+', ' ').Trim()
             if ($blurb -match '^(.*?[.])(\s|$)') { $blurb = $matches[1] }
-            $link = '[' + $c.Name + '](#' + $c.Name.ToLower() + ')'
-            $blurbCell = (ConvertTo-MdText $blurb).Replace('|', '\|')
+            $link = Format-Small ('[' + $c.Name + '](#' + $c.Name.ToLower() + ')')
+            $blurbCell = Format-Small ((ConvertTo-MdText $blurb).Replace('|', '\|'))
             [void]$sb.AppendLine('| ' + $link + ' | ' + $blurbCell + ' |')
         }
         [void]$sb.AppendLine()
@@ -246,13 +264,14 @@ function Invoke-DocsTask {
             if ($params.Count) {
                 [void]$sb.AppendLine('**Parameters**')
                 [void]$sb.AppendLine()
-                [void]$sb.AppendLine('| Name | Type | Required | Pipeline | Description |')
+                $hdr = @('Name', 'Type', 'Required', 'Pipeline', 'Description') | ForEach-Object { Format-Small $_ }
+                [void]$sb.AppendLine('| ' + ($hdr -join ' | ') + ' |')
                 [void]$sb.AppendLine('|:---|:---|:---|:---|:---|')
                 foreach ($p in $params) {
                     $pdText = (Format-HelpText $p.description) -replace '\r?\n', ' '
                     if (-not $pdText -and $commonDesc.ContainsKey($p.name)) { $pdText = $commonDesc[$p.name] }
                     $pd = (ConvertTo-MdText $pdText).Replace('|', '\|')
-                    $cells = @(('-' + $p.name), "$($p.type.name)", "$($p.required)", "$($p.pipelineInput)", $pd)
+                    $cells = @(('-' + $p.name), "$($p.type.name)", "$($p.required)", "$($p.pipelineInput)", $pd) | ForEach-Object { Format-Small $_ }
                     [void]$sb.AppendLine('| ' + ($cells -join ' | ') + ' |')
                 }
                 [void]$sb.AppendLine()
@@ -295,6 +314,17 @@ function Invoke-DocsTask {
                     # No registered typedef (e.g. a plain string, or None) - render the prose as-is.
                     [void]$sb.AppendLine((ConvertTo-MdText $outRaw))
                 }
+                # When a command emits several types, say whether they are related or heterogeneous.
+                if ($registered.Count -gt 1) {
+                    $common = @(Get-CommonFields $registered)
+                    [void]$sb.AppendLine()
+                    if ($common.Count) {
+                        $shared = ($common | ForEach-Object { $_.Name }) -join ', '
+                        [void]$sb.AppendLine("These share a common shape ($shared) and each adds its own fields; they are plain pscustomobjects with no shared base type. See [Type reference](#type-reference).")
+                    } else {
+                        [void]$sb.AppendLine('These result types are heterogeneous - they share no common fields. See [Type reference](#type-reference).')
+                    }
+                }
                 [void]$sb.AppendLine()
             }
 
@@ -314,9 +344,10 @@ function Invoke-DocsTask {
         }
     }
 
-    # Output types: one entry per typedef, with the same code-view the commands link to, plus the
-    # back-references (which commands emit it, which types nest it). A type that is only nested in
-    # another (never emitted directly) is still listed so its link resolves.
+    # Type reference: its own top-level section (a sibling of the command reference), one entry per
+    # typedef with the same code-view the commands link to. Back-references (which commands emit it,
+    # which types nest it) sit as a callout right under each type name. A type that is only nested
+    # in another (never emitted directly) is still listed so its link resolves.
     $nestedIn = @{}
     foreach ($name in $typeDefs.Keys) {
         foreach ($f in @($typeDefs[$name].Fields)) {
@@ -324,23 +355,31 @@ function Invoke-DocsTask {
             if ($typeDefs.ContainsKey($ft)) { $nestedIn[$ft] = @($nestedIn[$ft]) + $name | Where-Object { $_ } }
         }
     }
-    [void]$sb.AppendLine('### Output types')
+    [void]$sb.AppendLine('## Type reference')
     [void]$sb.AppendLine()
-    [void]$sb.AppendLine('The shapes the commands above return. Each is a `pscustomobject`; arrays are collected by a caller (a collecting variable is `$null` when nothing is emitted). `type?` may be `$null`; `type[]` is an array; a `DotnetMove.*` field is itself one of these types.')
+    [void]$sb.AppendLine('The shapes the commands return. Each is a single `pscustomobject`; a trailing `[]` on the type line means a command emits zero or more of them (a collection, `$null` when empty) - the object itself is not an array. In a field, `type[]` is an array-valued field, `type?` may be `$null`, and a `DotnetMove.*` field is itself one of these types.')
     [void]$sb.AppendLine()
-    foreach ($name in ($typeDefs.Keys | Sort-Object)) {
+    $sortedTypes = @($typeDefs.Keys | Sort-Object)
+    [void]$sb.AppendLine('| ' + (Format-Small 'Type') + ' | ' + (Format-Small 'Represents') + ' |')
+    [void]$sb.AppendLine('|:---|:---|')
+    foreach ($name in $sortedTypes) {
+        $sm = (ConvertTo-MdText ("$($typeDefs[$name].Summary)")).Replace('|', '\|')
+        [void]$sb.AppendLine('| ' + (Format-Small (Format-TypeLink $name)) + ' | ' + (Format-Small $sm) + ' |')
+    }
+    [void]$sb.AppendLine()
+    foreach ($name in $sortedTypes) {
         $def = $typeDefs[$name]
-        [void]$sb.AppendLine("#### $name")
+        [void]$sb.AppendLine("### $name")
         [void]$sb.AppendLine()
+        $refs = @()
+        if ($emittedBy[$name]) { $refs += 'emitted by ' + ((@($emittedBy[$name]) | Sort-Object -Unique | ForEach-Object { "[$_](#$($_.ToLower()))" }) -join ', ') }
+        if ($nestedIn[$name]) { $refs += 'nested in ' + ((@($nestedIn[$name]) | Sort-Object -Unique | ForEach-Object { Format-TypeLink $_ }) -join ', ') }
+        if ($refs.Count) { [void]$sb.AppendLine('(' + ($refs -join '; ') + ')'); [void]$sb.AppendLine() }
         if ($def.Summary) { [void]$sb.AppendLine((ConvertTo-MdText $def.Summary)); [void]$sb.AppendLine() }
         [void]$sb.AppendLine('```text')
         [void]$sb.AppendLine((Format-TypeCodeView $name $def))
         [void]$sb.AppendLine('```')
         [void]$sb.AppendLine()
-        $refs = @()
-        if ($emittedBy[$name]) { $refs += 'Emitted by ' + ((@($emittedBy[$name]) | Sort-Object -Unique | ForEach-Object { "[$_](#$($_.ToLower()))" }) -join ', ') }
-        if ($nestedIn[$name]) { $refs += 'Nested in ' + ((@($nestedIn[$name]) | Sort-Object -Unique | ForEach-Object { Format-TypeLink $_ }) -join ', ') }
-        if ($refs.Count) { [void]$sb.AppendLine(($refs -join '. ') + '.'); [void]$sb.AppendLine() }
     }
 
     # Inject into the marked section of README.md (replacing it in place, or appending the
