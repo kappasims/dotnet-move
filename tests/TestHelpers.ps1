@@ -9,6 +9,13 @@
 # importing any engine module.
 Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'DotnetMove.Shared', 'DotnetMove.Shared.psd1')) -Force -Global
 
+# Redirect the per-user undo journal to a throwaway temp dir for the whole test session, so moves in
+# the suite never write into the real LocalAppData/Application Support store. Each test file
+# dot-sources this; set it once.
+if (-not $env:DOTNETMOVE_JOURNAL_HOME) {
+    $env:DOTNETMOVE_JOURNAL_HOME = Join-Path ([System.IO.Path]::GetTempPath()) ('dnm-jhome-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+}
+
 function New-TempRoot {
     # Create a throwaway temp directory and return its CANONICAL path. On macOS the temp root
     # /var/folders/... is a symlink to /private/var/folders/...; if a fixture used the /var form,

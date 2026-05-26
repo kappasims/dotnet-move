@@ -94,7 +94,7 @@ Use the raw CLI, never a text editor:
 
 ## Undoing a move
 
-Every move is journaled inside the git directory (`.git/dotnetmove/journal.jsonl`), so you can reverse it later -
+Every move is journaled to a per-user data directory (LocalAppData on Windows, ~/Library/Application Support on macOS, ~/.local/share on Linux), so you can reverse it later -
 even in a new session - with `Undo-DotnetMove`. It replays the inverse (the same move with source
 and destination swapped), re-reconciling from the current state.
 

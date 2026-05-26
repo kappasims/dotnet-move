@@ -68,7 +68,7 @@ warnings) tells you exactly what to verify or hand-fix afterward.
 
 ## Undoing a move
 
-Every move is journaled inside the git directory (`.git/dotnetmove/journal.jsonl`), so you can reverse it later -
+Every move is journaled to a per-user data directory (LocalAppData on Windows, ~/Library/Application Support on macOS, ~/.local/share on Linux), so you can reverse it later -
 even in a new session - with `Undo-DotnetMove`. It replays the inverse (moves the `.vcxproj` folder
 and its `.vcxproj.filters` back, re-doing solution membership); re-check the native link settings
 it reports, the same as for a forward move.

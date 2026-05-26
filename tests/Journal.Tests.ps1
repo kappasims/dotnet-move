@@ -20,7 +20,7 @@ BeforeAll {
 }
 
 Describe 'Move journal + Undo-DotnetMove' {
-    It 'journals a move under the git dir and Undo reverses it, popping the entry' {
+    It 'journals a move in the per-user store and Undo reverses it, popping the entry' {
         $root = New-JournalFixture
         try {
             $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
@@ -28,11 +28,12 @@ Describe 'Move journal + Undo-DotnetMove' {
 
             (Join-Path $root (Join-Path 'libs' (Join-Path 'Lib' ('Lib.csproj')))) | Should -Exist
             @(Get-MoveJournalEntries -RepoRoot $root).Count | Should -Be 1
-            # The journal lives inside the git dir, so it is never tracked and never in the working tree.
-            (Join-Path $root (Join-Path '.git' (Join-Path 'dotnetmove' ('journal.jsonl')))) | Should -Exist
+            # The journal lives in the per-user store (outside the repo), so the working tree is untouched.
+            (Get-MoveJournalPath -RepoRoot $root) | Should -Exist
+            (Join-Path $root (Join-Path '.git' ('dotnetmove'))) | Should -Not -Exist
             (Join-Path $root '.dotnetmove') | Should -Not -Exist
             Push-Location $root
-            try { (& git status --porcelain) -join "`n" | Should -Not -Match 'dotnetmove' }
+            try { (& git status --porcelain) -join "`n" | Should -Not -Match 'dotnetmove|journal' }
             finally { Pop-Location }
 
             Undo-DotnetMove -RepoRoot $root -Confirm:$false | Out-Null
@@ -50,7 +51,7 @@ Describe 'Move journal + Undo-DotnetMove' {
         try {
             $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
             Move-DotnetProject -Project $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepoRoot $root -NoBuild -Confirm:$false | Out-Null
-            (Join-Path $root (Join-Path '.git' ('dotnetmove'))) | Should -Not -Exist
+            (Get-MoveJournalPath -RepoRoot $root) | Should -Not -Exist
             @(Get-MoveJournalEntries -RepoRoot $root).Count | Should -Be 0
         } finally {
             $env:DOTNETMOVE_JOURNAL = $prev

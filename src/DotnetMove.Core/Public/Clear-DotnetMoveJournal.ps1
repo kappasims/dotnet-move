@@ -4,8 +4,8 @@ function Clear-DotnetMoveJournal {
         Delete a repository's move journal, discarding its undo history.
 
     .DESCRIPTION
-        Removes the journal file (under the git dir, .git/dotnetmove/journal.jsonl, or the temp
-        fallback with no git). The journal prunes itself on every write (entries older than the age
+        Removes this repository's journal file from the per-user store (LocalAppData on Windows,
+        ~/Library/Application Support on macOS, ~/.local/share on Linux). The journal prunes itself on every write (entries older than the age
         cap, then oldest-first past the size cap), so this is rarely needed; use it to wipe the undo
         history outright. After clearing, Undo-DotnetMove has nothing to reverse until the next move.
         It does not change whether journaling is on - use Set-DotnetMoveJournal for that.
