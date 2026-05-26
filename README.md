@@ -22,6 +22,14 @@ the link settings it cannot safely rewrite rather than guessing at them.
 For AI agents, the repo ships Claude Code skills that run these commands, triggering on phrases
 like "move this project" (see [Skills](#skills)).
 
+# Contents
+
+- [Setup](#setup): [Requirements](#requirements), [Install](#install), [Updating](#updating)
+- [Usage](#usage): [Moving](#moving), [Undoing](#undoing), [Inspecting](#inspecting), [Repairing](#repairing)
+- [Interfaces](#interfaces): [PowerShell usage](#powershell-usage), [git usage](#git-usage), [Skills](#skills)
+- [For developers](#for-developers): [Build, test, install, docs](#build-test-install-docs), [Modules](#modules), [Layout](#layout)
+- [Reference](#reference): [command reference](#command-reference), [output types](#output-types)
+
 # Setup
 
 ## Requirements
@@ -85,7 +93,7 @@ Nothing updates automatically. `Test-DotnetMoveUpdate` checks GitHub for a newer
 separate files: refresh them with `git pull` in a clone, or re-sync `.claude/skills` if installed
 globally. (Once on the PowerShell Gallery, `Update-Module DotnetMove` replaces this.)
 
-# Tasks
+# Usage
 
 ## Moving
 
