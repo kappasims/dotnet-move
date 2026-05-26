@@ -36,9 +36,7 @@ function Move-DotnetProject {
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
     .OUTPUTS
-        A single DotnetMove.MoveResult object: Engine, Source, Destination (strings), Performed
-        (bool), SkippedCount, ConsumerCount, OwnRefCount (ints), Solutions (string[], the solution
-        names updated), and Built (bool, or $null with -NoBuild).
+        DotnetMove.MoveResult
 
     .EXAMPLE
         Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
@@ -51,7 +49,7 @@ function Move-DotnetProject {
         Same move, taking the project from the pipeline.
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.MoveResult')]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path', 'PSPath')]

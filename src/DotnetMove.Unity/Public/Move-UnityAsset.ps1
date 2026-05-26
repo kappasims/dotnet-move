@@ -31,10 +31,7 @@ function Move-UnityAsset {
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
     .OUTPUTS
-        A single DotnetMove.UnityMoveResult object: Engine, Source, Destination (strings),
-        Performed (bool), SkippedCount (int), MetaMoved (bool), IsAsmdef (bool), and ReferencedBy
-        (string[], asmdefs that reference a moved .asmdef - informational, since refs are by
-        name/GUID and survive).
+        DotnetMove.UnityMoveResult
 
     .EXAMPLE
         Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/Tarragon -WhatIf
@@ -42,7 +39,7 @@ function Move-UnityAsset {
         Previews moving the asset and its .meta together so GUID references survive.
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.UnityMoveResult')]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path', 'PSPath')]

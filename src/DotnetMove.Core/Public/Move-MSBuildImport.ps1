@@ -37,10 +37,7 @@ function Move-MSBuildImport {
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
     .OUTPUTS
-        A single DotnetMove.ImportMoveResult object: Engine, Source, Destination (strings),
-        Performed (bool), SkippedCount, ImportersFixed, OwnImportsFixed (ints, counts of files
-        fixed), and AutoImported (bool, true when the moved file is a by-location import like
-        Directory.Build.props whose inheritance scope changed).
+        DotnetMove.ImportMoveResult
 
     .EXAMPLE
         Move-MSBuildImport -Path ./Shared.props -Destination ./build/Shared.props
@@ -48,7 +45,7 @@ function Move-MSBuildImport {
         Moves the shared props and fixes the Import path in every project that consumes it.
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.ImportMoveResult')]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'PSPath')]

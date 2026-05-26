@@ -31,10 +31,7 @@ function Repair-SolutionReferences {
         Remove entries whose project cannot be found anywhere in the repo. Honors -WhatIf.
 
     .OUTPUTS
-        Emits zero or more pscustomobjects, one per dangling entry (a caller collects them as an
-        array). Each has: Kind, Resolution, Missing, NewPath, Container, MissingAbs (all strings),
-        and Candidates (string[], the same-named project files found, used to resolve NewPath).
-        Emits no objects when there are no dangling entries (a collecting variable is `$null`).
+        DotnetMove.RepairResult - one per dangling entry.
 
     .EXAMPLE
         Repair-SolutionReferences -RepoRoot .
@@ -52,7 +49,7 @@ function Repair-SolutionReferences {
         Previews relocating the movable entries and removing the ones whose project is gone.
     #>
     [CmdletBinding(SupportsShouldProcess)]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.RepairResult')]
     param(
         [Parameter(Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path', 'PSPath')]

@@ -20,8 +20,7 @@ function Update-DotnetMove {
         owner/name of the GitHub repository. Defaults to the project repository.
 
     .OUTPUTS
-        The DotnetMove.Update record from Test-DotnetMoveUpdate (Installed, Latest, Tag,
-        UpdateAvailable, Url), so the decision is inspectable. Nothing on a failed check.
+        DotnetMove.Update - the record from Test-DotnetMoveUpdate, so the decision is inspectable. Nothing on a failed check.
 
     .EXAMPLE
         Update-DotnetMove
@@ -34,7 +33,7 @@ function Update-DotnetMove {
         Reports what it would do without downloading or installing.
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.Update')]
     param(
         [switch]$Force,
         [ValidatePattern('^[^/]+/[^/]+$')]

@@ -19,10 +19,7 @@ function Get-SolutionInventory {
         property). Defaults to the enclosing git repo root. Nested git worktrees are skipped.
 
     .OUTPUTS
-        Emits zero or more pscustomobjects, one per item (a caller collects them as an array).
-        Each has (all strings): Solution (repo-relative, or '(none)'), Kind (Project |
-        SolutionFolder | SolutionItem | UnreferencedProject), Type (project extension without the
-        dot, else empty), Name, and Path (as stored in the solution, or repo-relative).
+        DotnetMove.SolutionItem - one per item.
 
     .EXAMPLE
         Get-SolutionInventory -RepoRoot . | Format-Table -AutoSize
@@ -35,7 +32,7 @@ function Get-SolutionInventory {
         Lists only the projects on disk that no solution includes.
     #>
     [CmdletBinding()]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.SolutionItem')]
     param(
         [Parameter(Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path', 'PSPath')]

@@ -33,9 +33,7 @@ function Move-PowerShellScript {
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
     .OUTPUTS
-        A single DotnetMove.ScriptMoveResult object: Engine, Source, Destination (strings),
-        Performed (bool), SkippedCount, ReferencersFixed, OwnRefsFixed, and UnresolvedRefs - all
-        ints (UnresolvedRefs is a count of possible dynamic references to verify, not a list).
+        DotnetMove.ScriptMoveResult
 
     .EXAMPLE
         Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1
@@ -43,7 +41,7 @@ function Move-PowerShellScript {
         Moves the script and rewrites the dot-source and call paths in scripts that reference it.
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.ScriptMoveResult')]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'PSPath')]

@@ -34,9 +34,7 @@ function Move-DotnetProjectTree {
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
     .OUTPUTS
-        A single DotnetMove.TreeMoveResult object: Engine, Source, Destination (strings),
-        Performed (bool), SkippedCount, ProjectsMoved, ConsumerCount (ints), and Built (bool, or
-        $null with -NoBuild).
+        DotnetMove.TreeMoveResult
 
     .EXAMPLE
         Move-DotnetProjectTree -Path ./src/Group -Destination ./libs/Group
@@ -44,7 +42,7 @@ function Move-DotnetProjectTree {
         Moves every project under src/Group as one set, reconciling only cross-boundary references.
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.TreeMoveResult')]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'PSPath')]

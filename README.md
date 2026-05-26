@@ -21,7 +21,7 @@ like "move this project" (see [Skills](#skills)).
 
 - For users: [Requirements](#requirements), [Install](#install), [Updating](#updating), [Moving](#moving), [Inspecting](#inspecting), [Repairing](#repairing), [PowerShell usage](#powershell-usage), [git usage](#git-usage), [Skills](#skills)
 - For developers: [Build, test, install, docs](#build-test-install-docs), [Modules](#modules), [Layout](#layout)
-- [Reference](#reference): every command, grouped by namespace
+- [Reference](#reference): every command, grouped by namespace, then the [output types](#output-types) they return
 
 ## For users
 
@@ -262,42 +262,42 @@ tests/                   Pester tests + fixtures
 
 **.NET and PowerShell**
 
-| Command | What it does |
-|---|---|
-| [Find-PathReference](#find-pathreference) | Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party tool reconciles. |
-| [Get-DotnetMoveCapability](#get-dotnetmovecapability) | Resolve DotnetMove's external-tool capabilities (git, dotnet) and platform. |
-| [Get-SolutionInventory](#get-solutioninventory) | List the full contents of every solution in a repo - projects of any type, solution folders, and solution items - plus on-disk projects that no solution references. |
-| [Move-Dotnet](#move-dotnet) | Move any supported item and reconcile references, routing by detected type to the right per-namespace front door. |
-| [Move-DotnetFile](#move-dotnetfile) | Move a single managed .NET file and reconcile references, routing by extension to the right specialist. |
-| [Move-DotnetFolder](#move-dotnetfolder) | Move a folder of managed .NET projects, reconciling references. |
-| [Move-DotnetProject](#move-dotnetproject) | Move a .NET project folder and reconcile every solution and project reference that points at it, delegating all path/GUID changes to the dotnet CLI. |
-| [Move-DotnetProjectTree](#move-dotnetprojecttree) | Move a folder that contains one or more managed .NET projects, reconciling solution membership and every external project reference in one operation. |
-| [Move-MSBuildImport](#move-msbuildimport) | Move a shared MSBuild .props/.targets file and fix every project (or other props/targets) that imports it via &lt;Import Project="..."&gt;. |
-| [Move-PowerShell](#move-powershell) | Move a PowerShell item and reconcile references, routing by type to the right specialist. |
-| [Move-PowerShellModule](#move-powershellmodule) | Move a PowerShell module folder and reconcile its manifest, delegating manifest edits to Update-ModuleManifest rather than hand-editing the .psd1. |
-| [Move-PowerShellScript](#move-powershellscript) | Move a standalone .ps1 script and fix the relative paths in scripts that dot-source or call it (and the moved script's own dot-source/call paths). |
-| [Move-Solution](#move-solution) | Move a solution file (.sln/.slnx) and rebase the relative project paths it stores, so every project it references still resolves from the solution's new location. |
-| [Register-DotnetMvGitAlias](#register-dotnetmvgitalias) | Opt-in: register a `git dotnetmv` alias pointing at DotnetMove's forwarder. |
-| [Repair-SolutionReferences](#repair-solutionreferences) | Scan a repo for broken solution membership and dangling ProjectReferences and repair them by re-pointing each entry at the project's new location. |
-| [Resolve-MoveEngine](#resolve-moveengine) | Classify a path to the reconciliation engine that should move it: dotnet, native, unity, ps-script, ps-module, or unknown. |
-| [Sync-Solution](#sync-solution) | Resolve solution-membership divergence by adding each project to the solutions that are missing it, so every solution in the repo lists the same projects. |
-| [Test-DotnetMoveUpdate](#test-dotnetmoveupdate) | Check GitHub for a newer DotnetMove release and report whether the installed version is behind. |
-| [Test-SolutionConsistency](#test-solutionconsistency) | Report projects whose membership diverges across the solution files in a repo (present in some solutions but absent from others). |
-| [Unregister-DotnetMvGitAlias](#unregister-dotnetmvgitalias) | Remove the `git dotnetmv` alias registered by Register-DotnetMvGitAlias. |
-| [Update-DotnetMove](#update-dotnetmove) | Update an installed DotnetMove to the latest GitHub release, in place. |
+| <sub>Command</sub> | <sub>What it does</sub> |
+|:---|:---|
+| <sub>[Find-PathReference](#find-pathreference)</sub> | <sub>Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party tool reconciles.</sub> |
+| <sub>[Get-DotnetMoveCapability](#get-dotnetmovecapability)</sub> | <sub>Resolve DotnetMove's external-tool capabilities (git, dotnet) and platform.</sub> |
+| <sub>[Get-SolutionInventory](#get-solutioninventory)</sub> | <sub>List the full contents of every solution in a repo - projects of any type, solution folders, and solution items - plus on-disk projects that no solution references.</sub> |
+| <sub>[Move-Dotnet](#move-dotnet)</sub> | <sub>Move any supported item and reconcile references, routing by detected type to the right per-namespace front door.</sub> |
+| <sub>[Move-DotnetFile](#move-dotnetfile)</sub> | <sub>Move a single managed .NET file and reconcile references, routing by extension to the right specialist.</sub> |
+| <sub>[Move-DotnetFolder](#move-dotnetfolder)</sub> | <sub>Move a folder of managed .NET projects, reconciling references.</sub> |
+| <sub>[Move-DotnetProject](#move-dotnetproject)</sub> | <sub>Move a .NET project folder and reconcile every solution and project reference that points at it, delegating all path/GUID changes to the dotnet CLI.</sub> |
+| <sub>[Move-DotnetProjectTree](#move-dotnetprojecttree)</sub> | <sub>Move a folder that contains one or more managed .NET projects, reconciling solution membership and every external project reference in one operation.</sub> |
+| <sub>[Move-MSBuildImport](#move-msbuildimport)</sub> | <sub>Move a shared MSBuild .props/.targets file and fix every project (or other props/targets) that imports it via &lt;Import Project="..."&gt;.</sub> |
+| <sub>[Move-PowerShell](#move-powershell)</sub> | <sub>Move a PowerShell item and reconcile references, routing by type to the right specialist.</sub> |
+| <sub>[Move-PowerShellModule](#move-powershellmodule)</sub> | <sub>Move a PowerShell module folder and reconcile its manifest, delegating manifest edits to Update-ModuleManifest rather than hand-editing the .psd1.</sub> |
+| <sub>[Move-PowerShellScript](#move-powershellscript)</sub> | <sub>Move a standalone .ps1 script and fix the relative paths in scripts that dot-source or call it (and the moved script's own dot-source/call paths).</sub> |
+| <sub>[Move-Solution](#move-solution)</sub> | <sub>Move a solution file (.sln/.slnx) and rebase the relative project paths it stores, so every project it references still resolves from the solution's new location.</sub> |
+| <sub>[Register-DotnetMvGitAlias](#register-dotnetmvgitalias)</sub> | <sub>Opt-in: register a `git dotnetmv` alias pointing at DotnetMove's forwarder.</sub> |
+| <sub>[Repair-SolutionReferences](#repair-solutionreferences)</sub> | <sub>Scan a repo for broken solution membership and dangling ProjectReferences and repair them by re-pointing each entry at the project's new location.</sub> |
+| <sub>[Resolve-MoveEngine](#resolve-moveengine)</sub> | <sub>Classify a path to the reconciliation engine that should move it: dotnet, native, unity, ps-script, ps-module, or unknown.</sub> |
+| <sub>[Sync-Solution](#sync-solution)</sub> | <sub>Resolve solution-membership divergence by adding each project to the solutions that are missing it, so every solution in the repo lists the same projects.</sub> |
+| <sub>[Test-DotnetMoveUpdate](#test-dotnetmoveupdate)</sub> | <sub>Check GitHub for a newer DotnetMove release and report whether the installed version is behind.</sub> |
+| <sub>[Test-SolutionConsistency](#test-solutionconsistency)</sub> | <sub>Report projects whose membership diverges across the solution files in a repo (present in some solutions but absent from others).</sub> |
+| <sub>[Unregister-DotnetMvGitAlias](#unregister-dotnetmvgitalias)</sub> | <sub>Remove the `git dotnetmv` alias registered by Register-DotnetMvGitAlias.</sub> |
+| <sub>[Update-DotnetMove](#update-dotnetmove)</sub> | <sub>Update an installed DotnetMove to the latest GitHub release, in place.</sub> |
 
 **native C++ (Windows)**
 
-| Command | What it does |
-|---|---|
-| [Move-NativeProject](#move-nativeproject) | Move a native / C++/CLI project (.vcxproj). |
+| <sub>Command</sub> | <sub>What it does</sub> |
+|:---|:---|
+| <sub>[Move-NativeProject](#move-nativeproject)</sub> | <sub>Move a native / C++/CLI project (.vcxproj).</sub> |
 
 **Unity**
 
-| Command | What it does |
-|---|---|
-| [Move-UnityAsset](#move-unityasset) | Move a Unity asset or folder while keeping its paired .meta file(s), so the GUIDs that scene/prefab/asmdef references depend on survive the move. |
-| [Test-UnityMetaIntegrity](#test-unitymetaintegrity) | Report Unity .meta integrity problems under a root: assets missing a .meta, and orphan .meta files whose asset is gone. |
+| <sub>Command</sub> | <sub>What it does</sub> |
+|:---|:---|
+| <sub>[Move-UnityAsset](#move-unityasset)</sub> | <sub>Move a Unity asset or folder while keeping its paired .meta file(s), so the GUIDs that scene/prefab/asmdef references depend on survive the move.</sub> |
+| <sub>[Test-UnityMetaIntegrity](#test-unitymetaintegrity)</sub> | <sub>Report Unity .meta integrity problems under a root: assets missing a .meta, and orphan .meta files whose asset is gone.</sub> |
 
 ### Find-PathReference
 
@@ -325,17 +325,24 @@ Run it before a move (to see what will break) or after (searching the old path).
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `Path` | String | true | true (ByValue, ByPropertyName) | The item being/that was moved. Accepts pipeline input. |
-| `RepoRoot` | String | false | false | Root to scan. Defaults to the enclosing git repo root. |
-| `AdditionalGlob` | String[] | false | false | Extra repo-relative globs to include in the candidate set (e.g. 'deploy/*.sh'). |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`Path`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>The item being/that was moved. Accepts pipeline input.</sub> |
+| <sub>`RepoRoot`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Root to scan. Defaults to the enclosing git repo root.</sub> |
+| <sub>`AdditionalGlob`</sub> | <sub>String[]</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Extra repo-relative globs to include in the candidate set (e.g. 'deploy/*.sh').</sub> |
 
 **Output**
 
-Emits zero or more pscustomobjects, one per matching line (a caller collects them as an
-array). Each has: File (string), Line (int), Confidence (string, High|Low), and Text
-(string). Emits no objects when no references are found (a collecting variable is ``$null``).
+Returns zero or more [DotnetMove.PathReference](#dotnetmovepathreference), collected as an array (`$null` when none).
+One per matching line.
+
+```text
+DotnetMove.PathReference[]
+  File        string  repo-relative file containing the line
+  Line        int     1-based line number
+  Confidence  string  High | Low
+  Text        string  the matching line
+```
 
 **Examples**
 
@@ -362,9 +369,16 @@ target), and git is optional (without it, moves fall back to a plain move (Power
 
 **Output**
 
-A single DotnetMove.Capability object: Platform (string), PSEdition (string),
-DotnetSupportsSlnx (bool), and Git and Dotnet - each itself a nested object with Present
-(bool), Version (string), and Path (string).
+Returns a single [DotnetMove.Capability](#dotnetmovecapability).
+
+```text
+DotnetMove.Capability
+  Platform            string
+  PSEdition           string
+  DotnetSupportsSlnx  bool
+  Git                 DotnetMove.ToolInfo
+  Dotnet              DotnetMove.ToolInfo
+```
 
 **Examples**
 
@@ -396,16 +410,23 @@ Read-only: one record per item, so you can group, filter, or format it however y
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `RepoRoot` | String | false | true (ByValue, ByPropertyName) | Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path property). Defaults to the enclosing git repo root. Nested git worktrees are skipped. |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`RepoRoot`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path property). Defaults to the enclosing git repo root. Nested git worktrees are skipped.</sub> |
 
 **Output**
 
-Emits zero or more pscustomobjects, one per item (a caller collects them as an array).
-Each has (all strings): Solution (repo-relative, or '(none)'), Kind (Project |
-SolutionFolder | SolutionItem | UnreferencedProject), Type (project extension without the
-dot, else empty), Name, and Path (as stored in the solution, or repo-relative).
+Returns zero or more [DotnetMove.SolutionItem](#dotnetmovesolutionitem), collected as an array.
+One per item.
+
+```text
+DotnetMove.SolutionItem[]
+  Solution  string  repo-relative, or '(none)' for an unreferenced project
+  Kind      string  Project | SolutionFolder | SolutionItem | UnreferencedProject
+  Type      string  project extension without the dot, else empty
+  Name      string
+  Path      string  as stored in the solution, or repo-relative
+```
 
 **Examples**
 
@@ -449,20 +470,28 @@ target's engine accepts them.
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `Path` | String | true | true (ByValue, ByPropertyName) | The item to move (file or folder). Accepts pipeline input. |
-| `Destination` | String | true | false | New path - passed through to the engine. |
-| `RepoRoot` | String | false | false | Repo root the engine scans for references. Defaults to the enclosing git repo root. Not used by the Unity engine. |
-| `NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build'. Only the .NET engine builds; ignored by the others. |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. Forwarded to the engine. |
-| `WhatIf` | SwitchParameter | false | false |  |
-| `Confirm` | SwitchParameter | false | false |  |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`Path`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>The item to move (file or folder). Accepts pipeline input.</sub> |
+| <sub>`Destination`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>false</sub> | <sub>New path - passed through to the engine.</sub> |
+| <sub>`RepoRoot`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Repo root the engine scans for references. Defaults to the enclosing git repo root. Not used by the Unity engine.</sub> |
+| <sub>`NoBuild`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Skip the verifying 'dotnet build'. Only the .NET engine builds; ignored by the others.</sub> |
+| <sub>`Force`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. Forwarded to the engine.</sub> |
+| <sub>`WhatIf`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Preview the operation and report what would change, without modifying anything.</sub> |
+| <sub>`Confirm`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Prompt for confirmation before each change.</sub> |
 
 **Output**
 
-A single move-result object from the engine it routes to (its concrete type and properties
-vary by engine; see that engine's command for the exact shape).
+The result object from the engine it routes to; the concrete type varies by engine.
+
+- [DotnetMove.MoveResult](#dotnetmovemoveresult)
+- [DotnetMove.TreeMoveResult](#dotnetmovetreemoveresult)
+- [DotnetMove.SolutionMoveResult](#dotnetmovesolutionmoveresult)
+- [DotnetMove.ImportMoveResult](#dotnetmoveimportmoveresult)
+- [DotnetMove.ScriptMoveResult](#dotnetmovescriptmoveresult)
+- [DotnetMove.ModuleMoveResult](#dotnetmovemodulemoveresult)
+- [DotnetMove.NativeMoveResult](#dotnetmovenativemoveresult)
+- [DotnetMove.UnityMoveResult](#dotnetmoveunitymoveresult)
 
 **Examples**
 
@@ -492,21 +521,23 @@ Move-UnityAsset. -WhatIf/-Confirm/-Verbose propagate to the specialist; -Force a
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `Path` | String | true | true (ByValue, ByPropertyName) | The .NET file to move. Accepts pipeline input. |
-| `Destination` | String | true | false | New path (file or folder) - passed through to the specialist. |
-| `RepoRoot` | String | false | false | Repo root the specialist scans for references. Defaults to the enclosing git repo root. |
-| `NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build' (forwarded to the project/import specialist). |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
-| `WhatIf` | SwitchParameter | false | false |  |
-| `Confirm` | SwitchParameter | false | false |  |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`Path`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>The .NET file to move. Accepts pipeline input.</sub> |
+| <sub>`Destination`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>false</sub> | <sub>New path (file or folder) - passed through to the specialist.</sub> |
+| <sub>`RepoRoot`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Repo root the specialist scans for references. Defaults to the enclosing git repo root.</sub> |
+| <sub>`NoBuild`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Skip the verifying 'dotnet build' (forwarded to the project/import specialist).</sub> |
+| <sub>`Force`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</sub> |
+| <sub>`WhatIf`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Preview the operation and report what would change, without modifying anything.</sub> |
+| <sub>`Confirm`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Prompt for confirmation before each change.</sub> |
 
 **Output**
 
-A single result object from the .NET specialist it routes to: a DotnetMove.MoveResult,
-DotnetMove.SolutionMoveResult, or DotnetMove.ImportMoveResult (see Move-DotnetProject,
-Move-Solution, or Move-MSBuildImport for the exact shape).
+The result object from the .NET specialist it routes to, by file extension.
+
+- [DotnetMove.MoveResult](#dotnetmovemoveresult)
+- [DotnetMove.SolutionMoveResult](#dotnetmovesolutionmoveresult)
+- [DotnetMove.ImportMoveResult](#dotnetmoveimportmoveresult)
 
 **Examples**
 
@@ -536,21 +567,32 @@ propagate; -Force/-RepoRoot/-NoBuild are forwarded.
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `Path` | String | true | true (ByValue, ByPropertyName) | The folder to move. Accepts pipeline input. |
-| `Destination` | String | true | false | New folder path. |
-| `RepoRoot` | String | false | false | Repo root scanned for references. Defaults to the enclosing git repo root. |
-| `NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build' (forwarded to Move-DotnetProjectTree). |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
-| `WhatIf` | SwitchParameter | false | false |  |
-| `Confirm` | SwitchParameter | false | false |  |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`Path`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>The folder to move. Accepts pipeline input.</sub> |
+| <sub>`Destination`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>false</sub> | <sub>New folder path.</sub> |
+| <sub>`RepoRoot`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Repo root scanned for references. Defaults to the enclosing git repo root.</sub> |
+| <sub>`NoBuild`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Skip the verifying 'dotnet build' (forwarded to Move-DotnetProjectTree).</sub> |
+| <sub>`Force`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</sub> |
+| <sub>`WhatIf`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Preview the operation and report what would change, without modifying anything.</sub> |
+| <sub>`Confirm`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Prompt for confirmation before each change.</sub> |
 
 **Output**
 
-A single DotnetMove.TreeMoveResult object (from Move-DotnetProjectTree): Engine, Source,
-Destination (strings), Performed (bool), SkippedCount, ProjectsMoved, ConsumerCount (ints),
-and Built (bool, or `$null` with -NoBuild).
+Returns a single [DotnetMove.TreeMoveResult](#dotnetmovetreemoveresult).
+From Move-DotnetProjectTree.
+
+```text
+DotnetMove.TreeMoveResult
+  Engine         string
+  Source         string
+  Destination    string
+  Performed      bool    false under -WhatIf
+  SkippedCount   int
+  ProjectsMoved  int
+  ConsumerCount  int     external references repointed
+  Built          bool?   $null with -NoBuild
+```
 
 **Examples**
 
@@ -584,22 +626,33 @@ terminating error honoring -ErrorAction).
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `Project` | String | true | true (ByValue, ByPropertyName) | Path to the project file (.csproj/.fsproj/.vbproj). Accepts pipeline input - pipe a path string or any object with a FullName/Path property (e.g. Get-Item output). |
-| `Destination` | String | true | false | New folder for the project. The project file and its sibling contents move here. |
-| `RepoRoot` | String | false | false | Root to scan for solutions/consumers. Defaults to the enclosing git repo root. |
-| `Strict` | SwitchParameter | false | false | Escalate solution-divergence warnings to non-terminating errors. |
-| `NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build' at the end. |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
-| `WhatIf` | SwitchParameter | false | false |  |
-| `Confirm` | SwitchParameter | false | false |  |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`Project`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>Path to the project file (.csproj/.fsproj/.vbproj). Accepts pipeline input - pipe a path string or any object with a FullName/Path property (e.g. Get-Item output).</sub> |
+| <sub>`Destination`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>false</sub> | <sub>New folder for the project. The project file and its sibling contents move here.</sub> |
+| <sub>`RepoRoot`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Root to scan for solutions/consumers. Defaults to the enclosing git repo root.</sub> |
+| <sub>`Strict`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Escalate solution-divergence warnings to non-terminating errors.</sub> |
+| <sub>`NoBuild`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Skip the verifying 'dotnet build' at the end.</sub> |
+| <sub>`Force`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</sub> |
+| <sub>`WhatIf`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Preview the operation and report what would change, without modifying anything.</sub> |
+| <sub>`Confirm`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Prompt for confirmation before each change.</sub> |
 
 **Output**
 
-A single DotnetMove.MoveResult object: Engine, Source, Destination (strings), Performed
-(bool), SkippedCount, ConsumerCount, OwnRefCount (ints), Solutions (string[], the solution
-names updated), and Built (bool, or `$null` with -NoBuild).
+Returns a single [DotnetMove.MoveResult](#dotnetmovemoveresult).
+
+```text
+DotnetMove.MoveResult
+  Engine         string
+  Source         string
+  Destination    string
+  Performed      bool      false under -WhatIf
+  SkippedCount   int
+  ConsumerCount  int       external references repointed
+  OwnRefCount    int       the moved project's own references rebased
+  Solutions      string[]  solution names updated
+  Built          bool?     $null with -NoBuild
+```
 
 **Examples**
 
@@ -641,21 +694,31 @@ confirmed plain-move fallback via -Force / ShouldContinue); supports -WhatIf.
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `Path` | String | true | true (ByValue, ByPropertyName) | The folder to move. Accepts pipeline input. |
-| `Destination` | String | true | false | The new folder path. |
-| `RepoRoot` | String | false | false | Root to scan. Defaults to the enclosing git repo root. |
-| `NoBuild` | SwitchParameter | false | false | Skip the verifying build of the moved projects. |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
-| `WhatIf` | SwitchParameter | false | false |  |
-| `Confirm` | SwitchParameter | false | false |  |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`Path`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>The folder to move. Accepts pipeline input.</sub> |
+| <sub>`Destination`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>false</sub> | <sub>The new folder path.</sub> |
+| <sub>`RepoRoot`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Root to scan. Defaults to the enclosing git repo root.</sub> |
+| <sub>`NoBuild`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Skip the verifying build of the moved projects.</sub> |
+| <sub>`Force`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</sub> |
+| <sub>`WhatIf`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Preview the operation and report what would change, without modifying anything.</sub> |
+| <sub>`Confirm`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Prompt for confirmation before each change.</sub> |
 
 **Output**
 
-A single DotnetMove.TreeMoveResult object: Engine, Source, Destination (strings),
-Performed (bool), SkippedCount, ProjectsMoved, ConsumerCount (ints), and Built (bool, or
-`$null` with -NoBuild).
+Returns a single [DotnetMove.TreeMoveResult](#dotnetmovetreemoveresult).
+
+```text
+DotnetMove.TreeMoveResult
+  Engine         string
+  Source         string
+  Destination    string
+  Performed      bool    false under -WhatIf
+  SkippedCount   int
+  ProjectsMoved  int
+  ConsumerCount  int     external references repointed
+  Built          bool?   $null with -NoBuild
+```
 
 **Examples**
 
@@ -697,21 +760,30 @@ fallback via -Force). Supports -WhatIf.
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `Path` | String | true | true (ByValue, ByPropertyName) | The .props/.targets file to move. Accepts pipeline input. |
-| `Destination` | String | true | false | New file path (or a folder, in which case the file keeps its name). |
-| `RepoRoot` | String | false | false | Root to scan for importers. Defaults to the enclosing git repo root. |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
-| `WhatIf` | SwitchParameter | false | false |  |
-| `Confirm` | SwitchParameter | false | false |  |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`Path`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>The .props/.targets file to move. Accepts pipeline input.</sub> |
+| <sub>`Destination`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>false</sub> | <sub>New file path (or a folder, in which case the file keeps its name).</sub> |
+| <sub>`RepoRoot`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Root to scan for importers. Defaults to the enclosing git repo root.</sub> |
+| <sub>`Force`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</sub> |
+| <sub>`WhatIf`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Preview the operation and report what would change, without modifying anything.</sub> |
+| <sub>`Confirm`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Prompt for confirmation before each change.</sub> |
 
 **Output**
 
-A single DotnetMove.ImportMoveResult object: Engine, Source, Destination (strings),
-Performed (bool), SkippedCount, ImportersFixed, OwnImportsFixed (ints, counts of files
-fixed), and AutoImported (bool, true when the moved file is a by-location import like
-Directory.Build.props whose inheritance scope changed).
+Returns a single [DotnetMove.ImportMoveResult](#dotnetmoveimportmoveresult).
+
+```text
+DotnetMove.ImportMoveResult
+  Engine           string
+  Source           string
+  Destination      string
+  Performed        bool    false under -WhatIf
+  SkippedCount     int
+  ImportersFixed   int     files whose <Import> was rewritten
+  OwnImportsFixed  int     the moved file's own imports rewritten
+  AutoImported     bool    true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
+```
 
 **Examples**
 
@@ -740,19 +812,21 @@ Dispatches by target type:
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `Path` | String | true | true (ByValue, ByPropertyName) | The PowerShell item to move: a .ps1 script, a .psd1 manifest, or a module folder. Accepts pipeline input. |
-| `Destination` | String | true | false | New path - passed through to the specialist. |
-| `RepoRoot` | String | false | false | Repo root scanned for referencing scripts. Defaults to the enclosing git repo root. Forwarded to the script specialist only (the module specialist has no RepoRoot). |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
-| `WhatIf` | SwitchParameter | false | false |  |
-| `Confirm` | SwitchParameter | false | false |  |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`Path`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>The PowerShell item to move: a .ps1 script, a .psd1 manifest, or a module folder. Accepts pipeline input.</sub> |
+| <sub>`Destination`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>false</sub> | <sub>New path - passed through to the specialist.</sub> |
+| <sub>`RepoRoot`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Repo root scanned for referencing scripts. Defaults to the enclosing git repo root. Forwarded to the script specialist only (the module specialist has no RepoRoot).</sub> |
+| <sub>`Force`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</sub> |
+| <sub>`WhatIf`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Preview the operation and report what would change, without modifying anything.</sub> |
+| <sub>`Confirm`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Prompt for confirmation before each change.</sub> |
 
 **Output**
 
-A single result object: a DotnetMove.ScriptMoveResult (.ps1) or DotnetMove.ModuleMoveResult
-(module); see Move-PowerShellScript / Move-PowerShellModule for the exact shape.
+The result object from the PowerShell specialist it routes to, by item type.
+
+- [DotnetMove.ScriptMoveResult](#dotnetmovescriptmoveresult)
+- [DotnetMove.ModuleMoveResult](#dotnetmovemodulemoveresult)
 
 **Examples**
 
@@ -782,18 +856,27 @@ and any path computed at runtime, cannot be reconciled automatically.
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `ModulePath` | String | true | true (ByValue, ByPropertyName) | Path to the module folder, or directly to its .psd1 manifest. |
-| `Destination` | String | true | false | New module folder. |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
-| `WhatIf` | SwitchParameter | false | false |  |
-| `Confirm` | SwitchParameter | false | false |  |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`ModulePath`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>Path to the module folder, or directly to its .psd1 manifest.</sub> |
+| <sub>`Destination`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>false</sub> | <sub>New module folder.</sub> |
+| <sub>`Force`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</sub> |
+| <sub>`WhatIf`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Preview the operation and report what would change, without modifying anything.</sub> |
+| <sub>`Confirm`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Prompt for confirmation before each change.</sub> |
 
 **Output**
 
-A single DotnetMove.ModuleMoveResult object: Engine, Source, Destination (strings),
-Performed (bool), SkippedCount (int), and Manifest (string, the manifest file name).
+Returns a single [DotnetMove.ModuleMoveResult](#dotnetmovemodulemoveresult).
+
+```text
+DotnetMove.ModuleMoveResult
+  Engine        string
+  Source        string
+  Destination   string
+  Performed     bool    false under -WhatIf
+  SkippedCount  int
+  Manifest      string  the manifest file name
+```
 
 **Examples**
 
@@ -831,20 +914,30 @@ supported; dotnet not required.
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `Path` | String | true | true (ByValue, ByPropertyName) | The .ps1 to move. Accepts pipeline input. |
-| `Destination` | String | true | false | New file path (or a folder, in which case the script keeps its name). |
-| `RepoRoot` | String | false | false | Root to scan for referencing scripts. Defaults to the enclosing git repo root. |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
-| `WhatIf` | SwitchParameter | false | false |  |
-| `Confirm` | SwitchParameter | false | false |  |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`Path`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>The .ps1 to move. Accepts pipeline input.</sub> |
+| <sub>`Destination`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>false</sub> | <sub>New file path (or a folder, in which case the script keeps its name).</sub> |
+| <sub>`RepoRoot`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Root to scan for referencing scripts. Defaults to the enclosing git repo root.</sub> |
+| <sub>`Force`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</sub> |
+| <sub>`WhatIf`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Preview the operation and report what would change, without modifying anything.</sub> |
+| <sub>`Confirm`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Prompt for confirmation before each change.</sub> |
 
 **Output**
 
-A single DotnetMove.ScriptMoveResult object: Engine, Source, Destination (strings),
-Performed (bool), SkippedCount, ReferencersFixed, OwnRefsFixed, and UnresolvedRefs - all
-ints (UnresolvedRefs is a count of possible dynamic references to verify, not a list).
+Returns a single [DotnetMove.ScriptMoveResult](#dotnetmovescriptmoveresult).
+
+```text
+DotnetMove.ScriptMoveResult
+  Engine            string
+  Source            string
+  Destination       string
+  Performed         bool    false under -WhatIf
+  SkippedCount      int
+  ReferencersFixed  int     scripts whose path to the moved file was rewritten
+  OwnRefsFixed      int     the moved script's own paths rewritten
+  UnresolvedRefs    int     count of possible dynamic references to verify, not a list
+```
 
 **Examples**
 
@@ -878,19 +971,27 @@ supported. dotnet is not required.
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `Path` | String | true | true (ByValue, ByPropertyName) | The .sln/.slnx file to move. Accepts pipeline input. |
-| `Destination` | String | true | false | New file path (or a folder, in which case the solution keeps its name). |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
-| `WhatIf` | SwitchParameter | false | false |  |
-| `Confirm` | SwitchParameter | false | false |  |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`Path`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>The .sln/.slnx file to move. Accepts pipeline input.</sub> |
+| <sub>`Destination`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>false</sub> | <sub>New file path (or a folder, in which case the solution keeps its name).</sub> |
+| <sub>`Force`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</sub> |
+| <sub>`WhatIf`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Preview the operation and report what would change, without modifying anything.</sub> |
+| <sub>`Confirm`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Prompt for confirmation before each change.</sub> |
 
 **Output**
 
-A single DotnetMove.SolutionMoveResult object: Engine, Source, Destination (strings),
-Performed (bool), SkippedCount (int), and ProjectsRebased (int, count of stored paths
-rewritten).
+Returns a single [DotnetMove.SolutionMoveResult](#dotnetmovesolutionmoveresult).
+
+```text
+DotnetMove.SolutionMoveResult
+  Engine           string
+  Source           string
+  Destination      string
+  Performed        bool    false under -WhatIf
+  SkippedCount     int
+  ProjectsRebased  int     stored paths rewritten
+```
 
 **Examples**
 
@@ -920,16 +1021,23 @@ Unregister-DotnetMvGitAlias. Use -WhatIf to see the exact `git config` command.
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `Scope` | String | false | false | 'Local' (this repo, default) or 'Global' (~/.gitconfig). |
-| `WhatIf` | SwitchParameter | false | false |  |
-| `Confirm` | SwitchParameter | false | false |  |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`Scope`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>false</sub> | <sub>'Local' (this repo, default) or 'Global' (~/.gitconfig).</sub> |
+| <sub>`WhatIf`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Preview the operation and report what would change, without modifying anything.</sub> |
+| <sub>`Confirm`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Prompt for confirmation before each change.</sub> |
 
 **Output**
 
-A single DotnetMove.GitAlias object: Alias, Scope, Forwarder, and Command (all strings; the
-last is the git config command that was/would be run).
+Returns a single [DotnetMove.GitAlias](#dotnetmovegitalias).
+
+```text
+DotnetMove.GitAlias
+  Alias      string
+  Scope      string
+  Forwarder  string
+  Command    string  the git config command that was/would be run
+```
 
 **Examples**
 
@@ -967,20 +1075,29 @@ CLI. -Prune never touches Relocatable or Ambiguous entries. -Fix and -Prune can 
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `RepoRoot` | String | false | true (ByValue, ByPropertyName) | Root to scan. Defaults to the enclosing git repo root of the current directory. |
-| `Fix` | SwitchParameter | false | false | Re-point each dangling entry at the moved project when its new location is unambiguous. Honors -WhatIf. |
-| `Prune` | SwitchParameter | false | false | Remove entries whose project cannot be found anywhere in the repo. Honors -WhatIf. |
-| `WhatIf` | SwitchParameter | false | false |  |
-| `Confirm` | SwitchParameter | false | false |  |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`RepoRoot`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>Root to scan. Defaults to the enclosing git repo root of the current directory.</sub> |
+| <sub>`Fix`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Re-point each dangling entry at the moved project when its new location is unambiguous. Honors -WhatIf.</sub> |
+| <sub>`Prune`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Remove entries whose project cannot be found anywhere in the repo. Honors -WhatIf.</sub> |
+| <sub>`WhatIf`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Preview the operation and report what would change, without modifying anything.</sub> |
+| <sub>`Confirm`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Prompt for confirmation before each change.</sub> |
 
 **Output**
 
-Emits zero or more pscustomobjects, one per dangling entry (a caller collects them as an
-array). Each has: Kind, Resolution, Missing, NewPath, Container, MissingAbs (all strings),
-and Candidates (string[], the same-named project files found, used to resolve NewPath).
-Emits no objects when there are no dangling entries (a collecting variable is ``$null``).
+Returns zero or more [DotnetMove.RepairResult](#dotnetmoverepairresult), collected as an array (`$null` when none).
+One per dangling entry.
+
+```text
+DotnetMove.RepairResult[]
+  Kind        string
+  Resolution  string
+  Missing     string
+  NewPath     string
+  Container   string
+  MissingAbs  string
+  Candidates  string[]  same-named project files found, used to resolve NewPath
+```
 
 **Examples**
 
@@ -1020,9 +1137,9 @@ classify regardless); folder cases require the directory.
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `Path` | String | true | true (ByValue, ByPropertyName) | The item to classify. Accepts pipeline input. |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`Path`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>The item to classify. Accepts pipeline input.</sub> |
 
 **Output**
 
@@ -1057,18 +1174,22 @@ this against the whole repo; preview with -WhatIf first and add specific project
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `RepoRoot` | String | false | true (ByValue, ByPropertyName) | Root to scan. Accepts pipeline input. Defaults to the enclosing git repo root. Nested git worktrees are skipped. |
-| `WhatIf` | SwitchParameter | false | false |  |
-| `Confirm` | SwitchParameter | false | false |  |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`RepoRoot`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>Root to scan. Accepts pipeline input. Defaults to the enclosing git repo root. Nested git worktrees are skipped.</sub> |
+| <sub>`WhatIf`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Preview the operation and report what would change, without modifying anything.</sub> |
+| <sub>`Confirm`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Prompt for confirmation before each change.</sub> |
 
 **Output**
 
-Emits zero or more pscustomobjects, one per addition (a caller collects them as an array).
-Each has (both strings): Solution (repo-relative) and Added (repo-relative project path).
-Emits no objects when every solution already contains every project (a collecting variable
-is ``$null``).
+Returns zero or more [DotnetMove.SyncResult](#dotnetmovesyncresult), collected as an array (`$null` when none).
+One per project added.
+
+```text
+DotnetMove.SyncResult[]
+  Solution  string  repo-relative
+  Added     string  repo-relative project path
+```
 
 **Examples**
 
@@ -1106,15 +1227,23 @@ rate-limited, or no releases yet).
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `Repository` | String | false | false | owner/name of the GitHub repository to check. Defaults to the project repository. |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`Repository`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>false</sub> | <sub>owner/name of the GitHub repository to check. Defaults to the project repository.</sub> |
 
 **Output**
 
-A single pscustomobject: Installed ([version]), Latest ([version], or `$null` if the tag
-could not be parsed), Tag (string), UpdateAvailable (bool), and Url (string). Returns
-no object (writes a non-terminating error) when the release cannot be fetched.
+Returns a single [DotnetMove.Update](#dotnetmoveupdate).
+None (writes a non-terminating error) when the release cannot be fetched.
+
+```text
+DotnetMove.Update
+  Installed        version
+  Latest           version?  $null if the tag could not be parsed
+  Tag              string
+  UpdateAvailable  bool
+  Url              string
+```
 
 **Examples**
 
@@ -1144,17 +1273,22 @@ full membership matrix of every solution and its projects.
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `RepoRoot` | String | false | true (ByValue, ByPropertyName) | Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path property such as Get-Item output). Defaults to the enclosing git repo root. |
-| `Strict` | SwitchParameter | false | false | Escalate divergences from warnings to non-terminating errors. |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`RepoRoot`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path property such as Get-Item output). Defaults to the enclosing git repo root.</sub> |
+| <sub>`Strict`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Escalate divergences from warnings to non-terminating errors.</sub> |
 
 **Output**
 
-Emits zero or more pscustomobjects to the pipeline, one per divergent project (a caller
-collects them as an array). Each has: Project (string, the project path), PresentIn
-(string[], solution paths that list it), and AbsentFrom (string[], solution paths that
-do not). Emits no objects when membership is consistent (a collecting variable is ``$null``).
+Returns zero or more [DotnetMove.ConsistencyResult](#dotnetmoveconsistencyresult), collected as an array (`$null` when none).
+One per divergent project.
+
+```text
+DotnetMove.ConsistencyResult[]
+  Project     string
+  PresentIn   string[]  solution paths that list it
+  AbsentFrom  string[]  solution paths that do not
+```
 
 **Examples**
 
@@ -1182,11 +1316,11 @@ Unregister-DotnetMvGitAlias [[-Scope] <string>] [-WhatIf] [-Confirm] [<CommonPar
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `Scope` | String | false | false | 'Local' (this repo, default) or 'Global'. |
-| `WhatIf` | SwitchParameter | false | false |  |
-| `Confirm` | SwitchParameter | false | false |  |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`Scope`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>false</sub> | <sub>'Local' (this repo, default) or 'Global'.</sub> |
+| <sub>`WhatIf`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Preview the operation and report what would change, without modifying anything.</sub> |
+| <sub>`Confirm`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Prompt for confirmation before each change.</sub> |
 
 **Output**
 
@@ -1221,17 +1355,26 @@ superseded by `Update-Module DotnetMove`.
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `Force` | SwitchParameter | false | false | Reinstall the latest release even if the installed version is already current. |
-| `Repository` | String | false | false | owner/name of the GitHub repository. Defaults to the project repository. |
-| `WhatIf` | SwitchParameter | false | false |  |
-| `Confirm` | SwitchParameter | false | false |  |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`Force`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Reinstall the latest release even if the installed version is already current.</sub> |
+| <sub>`Repository`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>false</sub> | <sub>owner/name of the GitHub repository. Defaults to the project repository.</sub> |
+| <sub>`WhatIf`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Preview the operation and report what would change, without modifying anything.</sub> |
+| <sub>`Confirm`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Prompt for confirmation before each change.</sub> |
 
 **Output**
 
-The DotnetMove.Update record from Test-DotnetMoveUpdate (Installed, Latest, Tag,
-UpdateAvailable, Url), so the decision is inspectable. Nothing on a failed check.
+Returns a single [DotnetMove.Update](#dotnetmoveupdate).
+The record from Test-DotnetMoveUpdate, so the decision is inspectable. Nothing on a failed check.
+
+```text
+DotnetMove.Update
+  Installed        version
+  Latest           version?  $null if the tag could not be parsed
+  Tag              string
+  UpdateAvailable  bool
+  Url              string
+```
 
 **Examples**
 
@@ -1272,21 +1415,30 @@ MSBuild paths yet - surfacing them beats silently mis-editing them.
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `Project` | String | true | true (ByValue, ByPropertyName) | Path to the .vcxproj. Accepts pipeline input. |
-| `Destination` | String | true | false | New folder for the project. |
-| `RepoRoot` | String | false | false | Root to scan for solutions. Defaults to the enclosing git repo root. |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
-| `WhatIf` | SwitchParameter | false | false |  |
-| `Confirm` | SwitchParameter | false | false |  |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`Project`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>Path to the .vcxproj. Accepts pipeline input.</sub> |
+| <sub>`Destination`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>false</sub> | <sub>New folder for the project.</sub> |
+| <sub>`RepoRoot`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Root to scan for solutions. Defaults to the enclosing git repo root.</sub> |
+| <sub>`Force`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</sub> |
+| <sub>`WhatIf`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Preview the operation and report what would change, without modifying anything.</sub> |
+| <sub>`Confirm`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Prompt for confirmation before each change.</sub> |
 
 **Output**
 
-A single DotnetMove.NativeMoveResult object: Engine, Source, Destination (strings),
-Performed (bool), SkippedCount (int), HadFilters (bool), Solutions (string[], the solution
-names updated), and UnreconciledSettings (object[], one per native path setting that must
-be verified/fixed by hand - each with the setting name and value).
+Returns a single [DotnetMove.NativeMoveResult](#dotnetmovenativemoveresult).
+
+```text
+DotnetMove.NativeMoveResult
+  Engine                string
+  Source                string
+  Destination           string
+  Performed             bool      false under -WhatIf
+  SkippedCount          int
+  HadFilters            bool      a paired .vcxproj.filters moved too
+  Solutions             string[]  solution names updated
+  UnreconciledSettings  object[]  one per native path setting to verify by hand; each has the setting name and value
+```
 
 **Examples**
 
@@ -1322,21 +1474,30 @@ Android, etc.) are plain fields untouched by a move, so mobile layouts are prese
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `AssetPath` | String | true | true (ByValue, ByPropertyName) | Asset file or folder to move (under Assets/ or a package). Accepts pipeline input. |
-| `Destination` | String | true | false | New path for the asset/folder. |
-| `RepoRoot` | String | false | false | Root to scan for asmdef referencers. Defaults to the enclosing git repo root. |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
-| `WhatIf` | SwitchParameter | false | false |  |
-| `Confirm` | SwitchParameter | false | false |  |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`AssetPath`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>Asset file or folder to move (under Assets/ or a package). Accepts pipeline input.</sub> |
+| <sub>`Destination`</sub> | <sub>String</sub> | <sub>true</sub> | <sub>false</sub> | <sub>New path for the asset/folder.</sub> |
+| <sub>`RepoRoot`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Root to scan for asmdef referencers. Defaults to the enclosing git repo root.</sub> |
+| <sub>`Force`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</sub> |
+| <sub>`WhatIf`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Preview the operation and report what would change, without modifying anything.</sub> |
+| <sub>`Confirm`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Prompt for confirmation before each change.</sub> |
 
 **Output**
 
-A single DotnetMove.UnityMoveResult object: Engine, Source, Destination (strings),
-Performed (bool), SkippedCount (int), MetaMoved (bool), IsAsmdef (bool), and ReferencedBy
-(string[], asmdefs that reference a moved .asmdef - informational, since refs are by
-name/GUID and survive).
+Returns a single [DotnetMove.UnityMoveResult](#dotnetmoveunitymoveresult).
+
+```text
+DotnetMove.UnityMoveResult
+  Engine        string
+  Source        string
+  Destination   string
+  Performed     bool      false under -WhatIf
+  SkippedCount  int
+  MetaMoved     bool      the paired .meta moved too
+  IsAsmdef      bool      the moved asset is an .asmdef
+  ReferencedBy  string[]  asmdefs that reference a moved .asmdef; informational, refs are by name/GUID and survive
+```
 
 **Examples**
 
@@ -1369,16 +1530,21 @@ and the Library/Temp/obj caches.
 
 **Parameters**
 
-| Name | Type | Required | Pipeline | Description |
-|---|---|---|---|---|
-| `Root` | String | false | true (ByValue, ByPropertyName) | Folder to scan (typically an 'Assets' folder). Accepts pipeline input. Defaults to the current directory. |
-| `Strict` | SwitchParameter | false | false | Escalate problems from warnings to non-terminating errors. |
+| <sub>Name</sub> | <sub>Type</sub> | <sub>Required</sub> | <sub>Pipeline</sub> | <sub>Description</sub> |
+|:---|:---|:---|:---|:---|
+| <sub>`Root`</sub> | <sub>String</sub> | <sub>false</sub> | <sub>true (ByValue, ByPropertyName)</sub> | <sub>Folder to scan (typically an 'Assets' folder). Accepts pipeline input. Defaults to the current directory.</sub> |
+| <sub>`Strict`</sub> | <sub>SwitchParameter</sub> | <sub>false</sub> | <sub>false</sub> | <sub>Escalate problems from warnings to non-terminating errors.</sub> |
 
 **Output**
 
-Emits zero or more pscustomobjects, one per problem (a caller collects them as an array).
-Each has (both strings): Kind (MissingMeta | OrphanMeta) and Path. Emits no objects when
-integrity is intact (a collecting variable is ``$null``).
+Returns zero or more [DotnetMove.MetaIntegrity](#dotnetmovemetaintegrity), collected as an array (`$null` when none).
+One per problem.
+
+```text
+DotnetMove.MetaIntegrity[]
+  Kind  string  MissingMeta | OrphanMeta
+  Path  string
+```
 
 **Examples**
 
@@ -1387,5 +1553,290 @@ Test-UnityMetaIntegrity -Root ./Assets -Strict
 ```
 
 Reports MissingMeta and OrphanMeta under Assets, one non-terminating error each.
+
+### Output types
+
+The shapes the commands above return. Each is a `pscustomobject`; arrays are collected by a caller (a collecting variable is `$null` when nothing is emitted). `type?` may be `$null`; `type[]` is an array; a `DotnetMove.*` field is itself one of these types.
+
+#### DotnetMove.Capability
+
+DotnetMove's resolved external-tool capabilities and platform - the 'what can I do here' probe.
+
+```text
+DotnetMove.Capability
+  Platform            string
+  PSEdition           string
+  DotnetSupportsSlnx  bool
+  Git                 DotnetMove.ToolInfo
+  Dotnet              DotnetMove.ToolInfo
+```
+
+Emitted by [Get-DotnetMoveCapability](#get-dotnetmovecapability).
+
+#### DotnetMove.ConsistencyResult
+
+One project whose solution membership diverges across the repo.
+
+```text
+DotnetMove.ConsistencyResult[]
+  Project     string
+  PresentIn   string[]  solution paths that list it
+  AbsentFrom  string[]  solution paths that do not
+```
+
+Emitted by [Test-SolutionConsistency](#test-solutionconsistency).
+
+#### DotnetMove.GitAlias
+
+The git dotnetmv alias registration (or what would be registered).
+
+```text
+DotnetMove.GitAlias
+  Alias      string
+  Scope      string
+  Forwarder  string
+  Command    string  the git config command that was/would be run
+```
+
+Emitted by [Register-DotnetMvGitAlias](#register-dotnetmvgitalias).
+
+#### DotnetMove.ImportMoveResult
+
+Result of moving a shared MSBuild .props/.targets file and fixing its importers.
+
+```text
+DotnetMove.ImportMoveResult
+  Engine           string
+  Source           string
+  Destination      string
+  Performed        bool    false under -WhatIf
+  SkippedCount     int
+  ImportersFixed   int     files whose <Import> was rewritten
+  OwnImportsFixed  int     the moved file's own imports rewritten
+  AutoImported     bool    true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
+```
+
+Emitted by [Move-Dotnet](#move-dotnet), [Move-DotnetFile](#move-dotnetfile), [Move-MSBuildImport](#move-msbuildimport).
+
+#### DotnetMove.MetaIntegrity
+
+One Unity .meta integrity problem: an asset missing a .meta, or an orphan .meta.
+
+```text
+DotnetMove.MetaIntegrity[]
+  Kind  string  MissingMeta | OrphanMeta
+  Path  string
+```
+
+Emitted by [Test-UnityMetaIntegrity](#test-unitymetaintegrity).
+
+#### DotnetMove.ModuleMoveResult
+
+Result of moving a PowerShell module folder and reconciling its manifest.
+
+```text
+DotnetMove.ModuleMoveResult
+  Engine        string
+  Source        string
+  Destination   string
+  Performed     bool    false under -WhatIf
+  SkippedCount  int
+  Manifest      string  the manifest file name
+```
+
+Emitted by [Move-Dotnet](#move-dotnet), [Move-PowerShell](#move-powershell), [Move-PowerShellModule](#move-powershellmodule).
+
+#### DotnetMove.MoveResult
+
+Result of moving a .NET project folder and reconciling solutions and project references.
+
+```text
+DotnetMove.MoveResult
+  Engine         string
+  Source         string
+  Destination    string
+  Performed      bool      false under -WhatIf
+  SkippedCount   int
+  ConsumerCount  int       external references repointed
+  OwnRefCount    int       the moved project's own references rebased
+  Solutions      string[]  solution names updated
+  Built          bool?     $null with -NoBuild
+```
+
+Emitted by [Move-Dotnet](#move-dotnet), [Move-DotnetFile](#move-dotnetfile), [Move-DotnetProject](#move-dotnetproject).
+
+#### DotnetMove.NativeMoveResult
+
+Result of moving a native / C++/CLI project (.vcxproj).
+
+```text
+DotnetMove.NativeMoveResult
+  Engine                string
+  Source                string
+  Destination           string
+  Performed             bool      false under -WhatIf
+  SkippedCount          int
+  HadFilters            bool      a paired .vcxproj.filters moved too
+  Solutions             string[]  solution names updated
+  UnreconciledSettings  object[]  one per native path setting to verify by hand; each has the setting name and value
+```
+
+Emitted by [Move-Dotnet](#move-dotnet), [Move-NativeProject](#move-nativeproject).
+
+#### DotnetMove.PathReference
+
+One build/CI/hook/container line that hardcodes a moved path and that no first-party tool reconciles.
+
+```text
+DotnetMove.PathReference[]
+  File        string  repo-relative file containing the line
+  Line        int     1-based line number
+  Confidence  string  High | Low
+  Text        string  the matching line
+```
+
+Emitted by [Find-PathReference](#find-pathreference).
+
+#### DotnetMove.RepairResult
+
+One dangling solution-membership or ProjectReference entry that was (or would be) repaired.
+
+```text
+DotnetMove.RepairResult[]
+  Kind        string
+  Resolution  string
+  Missing     string
+  NewPath     string
+  Container   string
+  MissingAbs  string
+  Candidates  string[]  same-named project files found, used to resolve NewPath
+```
+
+Emitted by [Repair-SolutionReferences](#repair-solutionreferences).
+
+#### DotnetMove.ScriptMoveResult
+
+Result of moving a standalone .ps1 and fixing dot-source/call paths.
+
+```text
+DotnetMove.ScriptMoveResult
+  Engine            string
+  Source            string
+  Destination       string
+  Performed         bool    false under -WhatIf
+  SkippedCount      int
+  ReferencersFixed  int     scripts whose path to the moved file was rewritten
+  OwnRefsFixed      int     the moved script's own paths rewritten
+  UnresolvedRefs    int     count of possible dynamic references to verify, not a list
+```
+
+Emitted by [Move-Dotnet](#move-dotnet), [Move-PowerShell](#move-powershell), [Move-PowerShellScript](#move-powershellscript).
+
+#### DotnetMove.SolutionItem
+
+One entry in the full contents of a solution (or a project on disk that no solution references).
+
+```text
+DotnetMove.SolutionItem[]
+  Solution  string  repo-relative, or '(none)' for an unreferenced project
+  Kind      string  Project | SolutionFolder | SolutionItem | UnreferencedProject
+  Type      string  project extension without the dot, else empty
+  Name      string
+  Path      string  as stored in the solution, or repo-relative
+```
+
+Emitted by [Get-SolutionInventory](#get-solutioninventory).
+
+#### DotnetMove.SolutionMoveResult
+
+Result of moving a solution file and rebasing the relative project paths it stores.
+
+```text
+DotnetMove.SolutionMoveResult
+  Engine           string
+  Source           string
+  Destination      string
+  Performed        bool    false under -WhatIf
+  SkippedCount     int
+  ProjectsRebased  int     stored paths rewritten
+```
+
+Emitted by [Move-Dotnet](#move-dotnet), [Move-DotnetFile](#move-dotnetfile), [Move-Solution](#move-solution).
+
+#### DotnetMove.SyncResult
+
+One project added to a solution that was missing it, to resolve membership divergence.
+
+```text
+DotnetMove.SyncResult[]
+  Solution  string  repo-relative
+  Added     string  repo-relative project path
+```
+
+Emitted by [Sync-Solution](#sync-solution).
+
+#### DotnetMove.ToolInfo
+
+Presence and version of one external tool (git or dotnet).
+
+```text
+DotnetMove.ToolInfo
+  Present  bool    found on PATH
+  Version  string
+  Path     string
+```
+
+Nested in [DotnetMove.Capability](#dotnetmovecapability).
+
+#### DotnetMove.TreeMoveResult
+
+Result of moving a folder of one or more .NET projects in one operation.
+
+```text
+DotnetMove.TreeMoveResult
+  Engine         string
+  Source         string
+  Destination    string
+  Performed      bool    false under -WhatIf
+  SkippedCount   int
+  ProjectsMoved  int
+  ConsumerCount  int     external references repointed
+  Built          bool?   $null with -NoBuild
+```
+
+Emitted by [Move-Dotnet](#move-dotnet), [Move-DotnetFolder](#move-dotnetfolder), [Move-DotnetProjectTree](#move-dotnetprojecttree).
+
+#### DotnetMove.UnityMoveResult
+
+Result of moving a Unity asset/folder while keeping its paired .meta file(s).
+
+```text
+DotnetMove.UnityMoveResult
+  Engine        string
+  Source        string
+  Destination   string
+  Performed     bool      false under -WhatIf
+  SkippedCount  int
+  MetaMoved     bool      the paired .meta moved too
+  IsAsmdef      bool      the moved asset is an .asmdef
+  ReferencedBy  string[]  asmdefs that reference a moved .asmdef; informational, refs are by name/GUID and survive
+```
+
+Emitted by [Move-Dotnet](#move-dotnet), [Move-UnityAsset](#move-unityasset).
+
+#### DotnetMove.Update
+
+Whether the installed DotnetMove is behind the latest GitHub release.
+
+```text
+DotnetMove.Update
+  Installed        version
+  Latest           version?  $null if the tag could not be parsed
+  Tag              string
+  UpdateAvailable  bool
+  Url              string
+```
+
+Emitted by [Test-DotnetMoveUpdate](#test-dotnetmoveupdate), [Update-DotnetMove](#update-dotnetmove).
 
 <!-- END GENERATED REFERENCE -->

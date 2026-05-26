@@ -28,9 +28,7 @@ function Move-DotnetFile {
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
     .OUTPUTS
-        A single result object from the .NET specialist it routes to: a DotnetMove.MoveResult,
-        DotnetMove.SolutionMoveResult, or DotnetMove.ImportMoveResult (see Move-DotnetProject,
-        Move-Solution, or Move-MSBuildImport for the exact shape).
+        The result object from the .NET specialist it routes to, by file extension.
 
     .EXAMPLE
         Move-DotnetFile -Path ./Demo.slnx -Destination ./build/Demo.slnx
@@ -42,7 +40,7 @@ function Move-DotnetFile {
     # dispatcher only routes (the specialist calls ShouldProcess), so suppress the rule here.
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '', Justification = 'Delegates to a specialist cmdlet that calls ShouldProcess')]
     [CmdletBinding(SupportsShouldProcess)]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.MoveResult', 'DotnetMove.SolutionMoveResult', 'DotnetMove.ImportMoveResult')]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'PSPath')]

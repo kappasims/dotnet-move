@@ -30,10 +30,7 @@ function Move-NativeProject {
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
     .OUTPUTS
-        A single DotnetMove.NativeMoveResult object: Engine, Source, Destination (strings),
-        Performed (bool), SkippedCount (int), HadFilters (bool), Solutions (string[], the solution
-        names updated), and UnreconciledSettings (object[], one per native path setting that must
-        be verified/fixed by hand - each with the setting name and value).
+        DotnetMove.NativeMoveResult
 
     .EXAMPLE
         Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo -WhatIf
@@ -41,7 +38,7 @@ function Move-NativeProject {
         Previews the native move and reports the MSBuild path settings it cannot reconcile.
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.NativeMoveResult')]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path', 'PSPath')]

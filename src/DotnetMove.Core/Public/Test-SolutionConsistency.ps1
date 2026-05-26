@@ -20,10 +20,7 @@ function Test-SolutionConsistency {
         Escalate divergences from warnings to non-terminating errors.
 
     .OUTPUTS
-        Emits zero or more pscustomobjects to the pipeline, one per divergent project (a caller
-        collects them as an array). Each has: Project (string, the project path), PresentIn
-        (string[], solution paths that list it), and AbsentFrom (string[], solution paths that
-        do not). Emits no objects when membership is consistent (a collecting variable is `$null`).
+        DotnetMove.ConsistencyResult - one per divergent project.
 
     .EXAMPLE
         Test-SolutionConsistency -RepoRoot . -Debug
@@ -36,7 +33,7 @@ function Test-SolutionConsistency {
         Checks several repos from the pipeline, raising a non-terminating error per divergence.
     #>
     [CmdletBinding()]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.ConsistencyResult')]
     param(
         [Parameter(Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path', 'PSPath')]

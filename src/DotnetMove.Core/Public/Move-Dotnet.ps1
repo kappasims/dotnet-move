@@ -37,8 +37,7 @@ function Move-Dotnet {
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. Forwarded to the engine.
 
     .OUTPUTS
-        A single move-result object from the engine it routes to (its concrete type and properties
-        vary by engine; see that engine's command for the exact shape).
+        The result object from the engine it routes to; the concrete type varies by engine.
 
     .EXAMPLE
         Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
@@ -50,7 +49,7 @@ function Move-Dotnet {
     # only routes (the engine cmdlet calls ShouldProcess), so suppress the rule here.
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '', Justification = 'Delegates to an engine cmdlet that calls ShouldProcess')]
     [CmdletBinding(SupportsShouldProcess)]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.MoveResult', 'DotnetMove.TreeMoveResult', 'DotnetMove.SolutionMoveResult', 'DotnetMove.ImportMoveResult', 'DotnetMove.ScriptMoveResult', 'DotnetMove.ModuleMoveResult', 'DotnetMove.NativeMoveResult', 'DotnetMove.UnityMoveResult')]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'PSPath')]

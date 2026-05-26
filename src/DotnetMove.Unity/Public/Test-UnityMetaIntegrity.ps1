@@ -23,9 +23,7 @@ function Test-UnityMetaIntegrity {
         Escalate problems from warnings to non-terminating errors.
 
     .OUTPUTS
-        Emits zero or more pscustomobjects, one per problem (a caller collects them as an array).
-        Each has (both strings): Kind (MissingMeta | OrphanMeta) and Path. Emits no objects when
-        integrity is intact (a collecting variable is `$null`).
+        DotnetMove.MetaIntegrity - one per problem.
 
     .EXAMPLE
         Test-UnityMetaIntegrity -Root ./Assets -Strict
@@ -33,7 +31,7 @@ function Test-UnityMetaIntegrity {
         Reports MissingMeta and OrphanMeta under Assets, one non-terminating error each.
     #>
     [CmdletBinding()]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.MetaIntegrity')]
     param(
         [Parameter(Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path', 'PSPath')]

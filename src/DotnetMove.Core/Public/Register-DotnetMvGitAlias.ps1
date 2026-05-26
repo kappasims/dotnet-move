@@ -16,8 +16,7 @@ function Register-DotnetMvGitAlias {
         'Local' (this repo, default) or 'Global' (~/.gitconfig).
 
     .OUTPUTS
-        A single DotnetMove.GitAlias object: Alias, Scope, Forwarder, and Command (all strings; the
-        last is the git config command that was/would be run).
+        DotnetMove.GitAlias
 
     .EXAMPLE
         Register-DotnetMvGitAlias -Scope Global -WhatIf
@@ -25,7 +24,7 @@ function Register-DotnetMvGitAlias {
         Prints the exact git config command it would run, without changing anything.
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.GitAlias')]
     param(
         [ValidateSet('Local', 'Global')]
         [string]$Scope = 'Local'

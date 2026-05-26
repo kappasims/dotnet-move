@@ -19,10 +19,7 @@ function Sync-Solution {
         worktrees are skipped.
 
     .OUTPUTS
-        Emits zero or more pscustomobjects, one per addition (a caller collects them as an array).
-        Each has (both strings): Solution (repo-relative) and Added (repo-relative project path).
-        Emits no objects when every solution already contains every project (a collecting variable
-        is `$null`).
+        DotnetMove.SyncResult - one per project added.
 
     .EXAMPLE
         Sync-Solution -RepoRoot . -WhatIf
@@ -35,7 +32,7 @@ function Sync-Solution {
         Adds every divergent project to the solutions missing it.
     #>
     [CmdletBinding(SupportsShouldProcess)]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.SyncResult')]
     param(
         [Parameter(Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path', 'PSPath')]

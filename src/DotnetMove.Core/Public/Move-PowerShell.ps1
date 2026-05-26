@@ -26,8 +26,7 @@ function Move-PowerShell {
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
     .OUTPUTS
-        A single result object: a DotnetMove.ScriptMoveResult (.ps1) or DotnetMove.ModuleMoveResult
-        (module); see Move-PowerShellScript / Move-PowerShellModule for the exact shape.
+        The result object from the PowerShell specialist it routes to, by item type.
 
     .EXAMPLE
         Move-PowerShell -Path ./tools/Mayo -Destination ./modules/Mayo -WhatIf
@@ -39,7 +38,7 @@ function Move-PowerShell {
     # dispatcher only routes (the specialist calls ShouldProcess), so suppress the rule here.
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '', Justification = 'Delegates to a specialist cmdlet that calls ShouldProcess')]
     [CmdletBinding(SupportsShouldProcess)]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.ScriptMoveResult', 'DotnetMove.ModuleMoveResult')]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'PSPath')]

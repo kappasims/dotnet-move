@@ -10,9 +10,7 @@ function Get-DotnetMoveCapability {
         target), and git is optional (without it, moves fall back to a plain move (PowerShell `Move-Item`) with no history preserved).
 
     .OUTPUTS
-        A single DotnetMove.Capability object: Platform (string), PSEdition (string),
-        DotnetSupportsSlnx (bool), and Git and Dotnet - each itself a nested object with Present
-        (bool), Version (string), and Path (string).
+        DotnetMove.Capability
 
     .EXAMPLE
         Get-DotnetMoveCapability
@@ -20,7 +18,7 @@ function Get-DotnetMoveCapability {
         Returns an object with Platform, PSEdition, Git, Dotnet, and DotnetSupportsSlnx.
     #>
     [CmdletBinding()]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.Capability')]
     param()
 
     $git = Get-ExternalTool -Name git

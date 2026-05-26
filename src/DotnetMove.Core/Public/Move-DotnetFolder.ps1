@@ -28,9 +28,7 @@ function Move-DotnetFolder {
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
     .OUTPUTS
-        A single DotnetMove.TreeMoveResult object (from Move-DotnetProjectTree): Engine, Source,
-        Destination (strings), Performed (bool), SkippedCount, ProjectsMoved, ConsumerCount (ints),
-        and Built (bool, or $null with -NoBuild).
+        DotnetMove.TreeMoveResult - from Move-DotnetProjectTree.
 
     .EXAMPLE
         Move-DotnetFolder -Path ./src/Group -Destination ./libs/Group -WhatIf
@@ -42,7 +40,7 @@ function Move-DotnetFolder {
     # dispatcher only routes (the specialist calls ShouldProcess), so suppress the rule here.
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '', Justification = 'Delegates to a specialist cmdlet that calls ShouldProcess')]
     [CmdletBinding(SupportsShouldProcess)]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.TreeMoveResult')]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'PSPath')]

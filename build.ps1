@@ -131,6 +131,9 @@ function Invoke-DocsTask {
     foreach ($m in $modules) {
         Import-Module ([System.IO.Path]::Combine($root, 'src', $m, "$m.psd1")) -Force
     }
+    # Document only the public engine modules. DotnetMove.Shared is internal infrastructure (its
+    # helpers are not part of the user-facing API), so it is imported above but not listed here.
+    $docModules = @($modules | Where-Object { $_ -ne 'DotnetMove.Shared' })
 
     function Format-HelpText { param($Field) (($Field | ForEach-Object { $_.Text }) -join "`n").Trim() }
     # Escape characters that markdown would otherwise eat in prose: '<...>' renders as an HTML
@@ -144,28 +147,82 @@ function Invoke-DocsTask {
         $Text.Replace('<', '&lt;').Replace('>', '&gt;')
     }
 
+    # Output-type registry (typedefs). Each cmdlet declares the type(s) it emits via
+    # [OutputType('DotnetMove.X')]; we look the name up here to render a link + a terse code-view
+    # of its structure, and to build the "Output types" section. Single source of truth for shapes.
+    $typeDefs = Import-PowerShellDataFile ([System.IO.Path]::Combine($root, 'docs', 'output-types.psd1'))
+    $typeAlt = ($typeDefs.Keys | ForEach-Object { [regex]::Escape($_) }) -join '|'
+
+    # GitHub heading anchor for a type entry: lowercase, drop all but [a-z0-9 -], spaces to dashes
+    # (so 'DotnetMove.PathReference' -> 'dotnetmovepathreference').
+    function Get-TypeAnchor { param([string]$Name) (($Name.ToLower() -replace '[^a-z0-9 -]', '') -replace ' ', '-') }
+    function Format-TypeLink { param([string]$Name) "[$Name](#$(Get-TypeAnchor $Name))" }
+
+    # Terse, monospaced rendering of a type's structure: a header line (the type name, with [] when
+    # the commands emit an array) then one aligned line per field: name, type, optional note.
+    function Format-TypeCodeView {
+        param([string]$Name, [hashtable]$Def)
+        $fields = @($Def.Fields)
+        $nameW = ($fields | ForEach-Object { $_.Name.Length } | Measure-Object -Maximum).Maximum
+        $typeW = ($fields | ForEach-Object { $_.Type.Length } | Measure-Object -Maximum).Maximum
+        $lines = @($Name + $(if ($Def.Array) { '[]' } else { '' }))
+        foreach ($f in $fields) {
+            $line = '  ' + $f.Name.PadRight($nameW) + '  ' + $f.Type.PadRight($typeW)
+            if ($f.Note) { $line += '  ' + $f.Note }
+            $lines += $line.TrimEnd()
+        }
+        $lines -join "`n"
+    }
+
+    # Strip a leading run of registered type names (and | , / separators, and a trailing - or :)
+    # from the .OUTPUTS prose, leaving only the extra human note (e.g. 'one per matching line').
+    function Get-OutputsNote {
+        param([string]$Text)
+        $t = ($Text -replace '\s+', ' ').Trim()
+        if ($typeAlt) {
+            $t = [regex]::Replace($t, "^($typeAlt)(\s*[|,/]\s*($typeAlt))*", '')
+            $t = $t -replace '^\s*[-:]\s*', ''
+        }
+        $t = $t.Trim()
+        if ($t) { $t = $t.Substring(0, 1).ToUpper() + $t.Substring(1) }
+        $t
+    }
+
+    # Wrap a table cell/header in <sub> so the reference tables render one font size down (GitHub
+    # strips inline style=, but honors <sub>); markdown inside (links, code spans) still renders.
+    function Format-Sub { param([string]$Text) "<sub>$Text</sub>" }
+
+    # Common parameters Get-Help lists without descriptions; supply our own so the table is complete.
+    $commonDesc = @{
+        WhatIf  = 'Preview the operation and report what would change, without modifying anything.'
+        Confirm = 'Prompt for confirmation before each change.'
+    }
+
     $sb = [System.Text.StringBuilder]::new()
+    $emittedBy = @{}   # type name -> @(command names) that declare it via [OutputType]
     $nsLabel = @{ 'DotnetMove.Core' = '.NET and PowerShell'; 'DotnetMove.Unity' = 'Unity'; 'DotnetMove.Native' = 'native C++ (Windows)' }
 
     # Table of contents, grouped by namespace: each command links to its detail entry, with a
     # one-sentence blurb from the synopsis.
-    foreach ($m in $modules) {
+    foreach ($m in $docModules) {
         $label = if ($nsLabel.ContainsKey($m)) { $nsLabel[$m] } else { $m }
         [void]$sb.AppendLine("**$label**")
         [void]$sb.AppendLine()
-        [void]$sb.AppendLine('| Command | What it does |')
-        [void]$sb.AppendLine('|---|---|')
+        [void]$sb.AppendLine('| ' + (Format-Sub 'Command') + ' | ' + (Format-Sub 'What it does') + ' |')
+        [void]$sb.AppendLine('|:---|:---|')
         foreach ($c in (Get-Command -Module $m -CommandType Function | Sort-Object Name)) {
             $h = Get-Help $c.Name -Full | Where-Object { $_.Name -eq $c.Name } | Select-Object -First 1
             $blurb = ("$($h.Synopsis)" -replace '\s+', ' ').Trim()
             if ($blurb -match '^(.*?[.])(\s|$)') { $blurb = $matches[1] }
-            [void]$sb.AppendLine("| [$($c.Name)](#$($c.Name.ToLower())) | $((ConvertTo-MdText $blurb).Replace('|', '\|')) |")
+            $link = Format-Sub ('[' + $c.Name + '](#' + $c.Name.ToLower() + ')')
+            $blurbCell = Format-Sub ((ConvertTo-MdText $blurb).Replace('|', '\|'))
+            [void]$sb.AppendLine('| ' + $link + ' | ' + $blurbCell + ' |')
         }
         [void]$sb.AppendLine()
     }
 
     # Per-command detail (flat; the TOC above provides the namespace grouping).
-    foreach ($m in $modules) {
+    foreach ($m in $docModules) {
         foreach ($c in (Get-Command -Module $m -CommandType Function | Sort-Object Name)) {
             # Get-Help treats the name as a pattern, so 'Move-Dotnet' also matches Move-Dotnet*;
             # keep the exact match.
@@ -189,20 +246,57 @@ function Invoke-DocsTask {
             if ($params.Count) {
                 [void]$sb.AppendLine('**Parameters**')
                 [void]$sb.AppendLine()
-                [void]$sb.AppendLine('| Name | Type | Required | Pipeline | Description |')
-                [void]$sb.AppendLine('|---|---|---|---|---|')
+                $hdr = @('Name', 'Type', 'Required', 'Pipeline', 'Description') | ForEach-Object { Format-Sub $_ }
+                [void]$sb.AppendLine('| ' + ($hdr -join ' | ') + ' |')
+                [void]$sb.AppendLine('|:---|:---|:---|:---|:---|')
                 foreach ($p in $params) {
-                    $pd = (ConvertTo-MdText ((Format-HelpText $p.description) -replace '\r?\n', ' ')).Replace('|', '\|')
-                    [void]$sb.AppendLine("| ``$($p.name)`` | $($p.type.name) | $($p.required) | $($p.pipelineInput) | $pd |")
+                    $pdText = (Format-HelpText $p.description) -replace '\r?\n', ' '
+                    if (-not $pdText -and $commonDesc.ContainsKey($p.name)) { $pdText = $commonDesc[$p.name] }
+                    $pd = (ConvertTo-MdText $pdText).Replace('|', '\|')
+                    $cells = @(
+                        (Format-Sub ('`' + $p.name + '`')),
+                        (Format-Sub "$($p.type.name)"),
+                        (Format-Sub "$($p.required)"),
+                        (Format-Sub "$($p.pipelineInput)"),
+                        (Format-Sub $pd)
+                    )
+                    [void]$sb.AppendLine('| ' + ($cells -join ' | ') + ' |')
                 }
                 [void]$sb.AppendLine()
             }
 
-            $outputs = @($h.returnValues.returnValue | ForEach-Object { ("$($_.type.name) " + (Format-HelpText $_.description)).Trim() } | Where-Object { $_ })
-            if ($outputs.Count) {
+            # Reconstruct the raw .OUTPUTS prose (Get-Help splits it unpredictably across type.name
+            # and description), then take the type(s) from the structured [OutputType] attribute.
+            $outRaw = (@($h.returnValues.returnValue | ForEach-Object { ("$($_.type.name) " + (Format-HelpText $_.description)).Trim() }) -join ' ').Trim()
+            $outNote = Get-OutputsNote $outRaw
+            $typeNames = @((Get-Command $c.Name).OutputType | ForEach-Object { $_.Name } | Where-Object { $_ })
+            $registered = @($typeNames | Where-Object { $typeDefs.ContainsKey($_) })
+            foreach ($t in $registered) { $emittedBy[$t] = @($emittedBy[$t]) + $c.Name | Where-Object { $_ } }
+
+            if ($registered.Count -or $outRaw) {
                 [void]$sb.AppendLine('**Output**')
                 [void]$sb.AppendLine()
-                foreach ($out in $outputs) { [void]$sb.AppendLine((ConvertTo-MdText $out)) }
+                if ($registered.Count -eq 1) {
+                    $t = $registered[0]; $def = $typeDefs[$t]
+                    $lead = if ($def.Array) {
+                        "Returns zero or more $(Format-TypeLink $t), collected as an array" + $(if ($def.EmptyIsNull) { ' (`$null` when none)' } else { '' }) + '.'
+                    } else {
+                        "Returns a single $(Format-TypeLink $t)."
+                    }
+                    [void]$sb.AppendLine($lead)
+                    if ($outNote) { [void]$sb.AppendLine((ConvertTo-MdText $outNote)) }
+                    [void]$sb.AppendLine()
+                    [void]$sb.AppendLine('```text')
+                    [void]$sb.AppendLine((Format-TypeCodeView $t $def))
+                    [void]$sb.AppendLine('```')
+                } elseif ($registered.Count -gt 1) {
+                    [void]$sb.AppendLine((ConvertTo-MdText ($(if ($outNote) { $outNote } else { 'The result object from the command it routes to; the concrete type varies.' }))))
+                    [void]$sb.AppendLine()
+                    foreach ($t in $registered) { [void]$sb.AppendLine("- $(Format-TypeLink $t)") }
+                } else {
+                    # No registered typedef (e.g. a plain string, or None) - render the prose as-is.
+                    [void]$sb.AppendLine((ConvertTo-MdText $outRaw))
+                }
                 [void]$sb.AppendLine()
             }
 
@@ -222,6 +316,35 @@ function Invoke-DocsTask {
         }
     }
 
+    # Output types: one entry per typedef, with the same code-view the commands link to, plus the
+    # back-references (which commands emit it, which types nest it). A type that is only nested in
+    # another (never emitted directly) is still listed so its link resolves.
+    $nestedIn = @{}
+    foreach ($name in $typeDefs.Keys) {
+        foreach ($f in @($typeDefs[$name].Fields)) {
+            $ft = $f.Type -replace '[\[\]?]', ''
+            if ($typeDefs.ContainsKey($ft)) { $nestedIn[$ft] = @($nestedIn[$ft]) + $name | Where-Object { $_ } }
+        }
+    }
+    [void]$sb.AppendLine('### Output types')
+    [void]$sb.AppendLine()
+    [void]$sb.AppendLine('The shapes the commands above return. Each is a `pscustomobject`; arrays are collected by a caller (a collecting variable is `$null` when nothing is emitted). `type?` may be `$null`; `type[]` is an array; a `DotnetMove.*` field is itself one of these types.')
+    [void]$sb.AppendLine()
+    foreach ($name in ($typeDefs.Keys | Sort-Object)) {
+        $def = $typeDefs[$name]
+        [void]$sb.AppendLine("#### $name")
+        [void]$sb.AppendLine()
+        if ($def.Summary) { [void]$sb.AppendLine((ConvertTo-MdText $def.Summary)); [void]$sb.AppendLine() }
+        [void]$sb.AppendLine('```text')
+        [void]$sb.AppendLine((Format-TypeCodeView $name $def))
+        [void]$sb.AppendLine('```')
+        [void]$sb.AppendLine()
+        $refs = @()
+        if ($emittedBy[$name]) { $refs += 'Emitted by ' + ((@($emittedBy[$name]) | Sort-Object -Unique | ForEach-Object { "[$_](#$($_.ToLower()))" }) -join ', ') }
+        if ($nestedIn[$name]) { $refs += 'Nested in ' + ((@($nestedIn[$name]) | Sort-Object -Unique | ForEach-Object { Format-TypeLink $_ }) -join ', ') }
+        if ($refs.Count) { [void]$sb.AppendLine(($refs -join '. ') + '.'); [void]$sb.AppendLine() }
+    }
+
     # Inject into the marked section of README.md (replacing it in place, or appending the
     # section if the markers are not present yet).
     $begin = '<!-- BEGIN GENERATED REFERENCE -->'
@@ -239,7 +362,7 @@ function Invoke-DocsTask {
         $readme = $readme.TrimEnd() + "`n`n## Reference`n`n" + $section + "`n"
     }
     [System.IO.File]::WriteAllText($readmePath, $readme, [System.Text.UTF8Encoding]::new($false))
-    Write-Host "Wrote the Command reference section of README.md ($((Get-Command -Module $modules -CommandType Function).Count) cmdlets)." -ForegroundColor Green
+    Write-Host "Wrote the Command reference section of README.md ($((Get-Command -Module $docModules -CommandType Function).Count) cmdlets)." -ForegroundColor Green
 }
 
 function Invoke-ReleaseTask {

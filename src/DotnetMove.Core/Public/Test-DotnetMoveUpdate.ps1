@@ -18,9 +18,7 @@ function Test-DotnetMoveUpdate {
         owner/name of the GitHub repository to check. Defaults to the project repository.
 
     .OUTPUTS
-        A single pscustomobject: Installed ([version]), Latest ([version], or $null if the tag
-        could not be parsed), Tag (string), UpdateAvailable (bool), and Url (string). Returns
-        no object (writes a non-terminating error) when the release cannot be fetched.
+        DotnetMove.Update - none (writes a non-terminating error) when the release cannot be fetched.
 
     .EXAMPLE
         Test-DotnetMoveUpdate
@@ -28,7 +26,7 @@ function Test-DotnetMoveUpdate {
         Reports whether a newer release exists and, if so, how to update.
     #>
     [CmdletBinding()]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.Update')]
     param(
         [ValidatePattern('^[^/]+/[^/]+$')]
         [string]$Repository = 'kappasims/dotnet-move'

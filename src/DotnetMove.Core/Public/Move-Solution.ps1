@@ -26,9 +26,7 @@ function Move-Solution {
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
     .OUTPUTS
-        A single DotnetMove.SolutionMoveResult object: Engine, Source, Destination (strings),
-        Performed (bool), SkippedCount (int), and ProjectsRebased (int, count of stored paths
-        rewritten).
+        DotnetMove.SolutionMoveResult
 
     .EXAMPLE
         Move-Solution -Path ./Demo.slnx -Destination ./build/Demo.slnx
@@ -36,7 +34,7 @@ function Move-Solution {
         Moves the solution and rebases each stored project path to resolve from build/.
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.SolutionMoveResult')]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'PSPath')]

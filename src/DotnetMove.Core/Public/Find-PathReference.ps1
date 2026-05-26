@@ -28,9 +28,7 @@ function Find-PathReference {
         Extra repo-relative globs to include in the candidate set (e.g. 'deploy/*.sh').
 
     .OUTPUTS
-        Emits zero or more pscustomobjects, one per matching line (a caller collects them as an
-        array). Each has: File (string), Line (int), Confidence (string, High|Low), and Text
-        (string). Emits no objects when no references are found (a collecting variable is `$null`).
+        DotnetMove.PathReference - one per matching line.
 
     .EXAMPLE
         Find-PathReference -Path ./lib/Tarragon.csproj
@@ -38,7 +36,7 @@ function Find-PathReference {
         Lists the build/CI/hook lines that hardcode lib/Tarragon.csproj so you can fix them by hand.
     #>
     [CmdletBinding()]
-    [OutputType([pscustomobject])]
+    [OutputType('DotnetMove.PathReference')]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'PSPath')]
