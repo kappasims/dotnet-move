@@ -1596,8 +1596,8 @@ behind. On-demand and read-only: it never updates anything itself.
 Test-DotnetMoveUpdate [[-Repository] <string>] [<CommonParameters>]
 ```
 
-DotnetMove is installed from a clone (not yet on the PowerShell Gallery), so there is no
-automatic update channel. This is the pull-based check: it GETs the latest GitHub release
+DotnetMove does not update automatically, however it is installed (PowerShell Gallery,
+installer, or a clone). This is the pull-based check: it GETs the latest GitHub release
 and compares its tag (the "available" version) against the installed module's ModuleVersion
 (the "installed" version). It prints what to do when behind, but performs no update - an
 agent or user runs it when they want to know.
@@ -1812,8 +1812,8 @@ is behind, runs the release's install.ps1 to overwrite the modules on your modul
 git, no clone. Does nothing when already current unless `-Force`. Honors `-WhatIf`/`-Confirm`.
 
 After it runs, reload the module in the current session with `Import-Module DotnetMove -Force`.
-Needs network access to GitHub. When the module ships on the PowerShell Gallery this is
-superseded by `Update-Module DotnetMove`.
+Needs network access to GitHub. For Gallery installs, `Update-Module DotnetMove` is the
+simpler path; this command updates installer/clone installs in place from the GitHub release.
 
 **Parameters**
 
