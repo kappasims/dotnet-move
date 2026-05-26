@@ -25,4 +25,9 @@ function script:Import-EngineSibling {
 Import-EngineSibling -Name 'DotnetMove.Shared'
 Import-EngineSibling -Name 'DotnetMove.Core'
 Import-EngineSibling -Name 'DotnetMove.Unity'
-if (Test-IsWindowsHost) { Import-EngineSibling -Name 'DotnetMove.Native' }
+# Native is capability-based: load it only on Windows, and best-effort - if it fails to load, the
+# rest of the toolkit still works (native moves are simply unavailable).
+if (Test-IsWindowsHost) {
+    try { Import-EngineSibling -Name 'DotnetMove.Native' }
+    catch { Write-Warning "DotnetMove: the native C++ engine (DotnetMove.Native) did not load; native (.vcxproj) moves are unavailable. $($_.Exception.Message)" }
+}

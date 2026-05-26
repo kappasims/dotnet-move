@@ -13,7 +13,16 @@ $ErrorActionPreference = 'Stop'
 # DotnetMove.Core (which exports Move-Dotnet) is always required.
 if (-not (Get-Command Move-Dotnet -ErrorAction SilentlyContinue)) {
     $coreManifest = [System.IO.Path]::Combine($PSScriptRoot, '..', 'DotnetMove.Core.psd1')
-    if (Test-Path -LiteralPath $coreManifest) { Import-Module $coreManifest -Force } else { Import-Module DotnetMove.Core -ErrorAction Stop }
+    if (Test-Path -LiteralPath $coreManifest) {
+        # Running from a clone: Core's RequiredModules (DotnetMove.Shared) is not on the module
+        # path, so load the sibling Shared module by path first. When installed, Import-Module by
+        # name (below) resolves the dependency from the module path instead.
+        $sharedManifest = [System.IO.Path]::Combine($PSScriptRoot, '..', '..', 'DotnetMove.Shared', 'DotnetMove.Shared.psd1')
+        if (Test-Path -LiteralPath $sharedManifest) { Import-Module $sharedManifest -Force }
+        Import-Module $coreManifest -Force
+    } else {
+        Import-Module DotnetMove.Core -ErrorAction Stop
+    }
 }
 
 # Parse git-style args: first two non-flag tokens are source/destination.
