@@ -1,9 +1,9 @@
 function Resolve-SymlinkPath {
     # Resolve symlinked ancestors of an absolute path, segment by segment, over the portion that
     # exists; any not-yet-existing tail (e.g. a move destination) is appended unchanged. This makes
-    # our paths match the canonical form git and the dotnet CLI use - on macOS the temp/repo root
+    # our paths match the canonical form git and the dotnet CLI use - on macOS the temp/repository root
     # /var/folders/... is a symlink to /private/var/folders/..., and without this our /var-form
-    # paths diverge from dotnet sln / git bookkeeping, breaking reconciliation on a repo under a
+    # paths diverge from dotnet sln / git bookkeeping, breaking reconciliation on a repository under a
     # symlinked directory.
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$Full)
@@ -120,7 +120,7 @@ function Select-BestSuffixMatch {
 function Test-PathOverlap {
     # True if two directory paths overlap: identical, or one nested inside the other. Used to
     # refuse a move whose destination sits inside the source (or vice versa) - that move cannot
-    # complete and would otherwise leave a half-reconciled repo behind.
+    # complete and would otherwise leave a half-reconciled repository behind.
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$A,
           [Parameter(Mandatory)][string]$B)

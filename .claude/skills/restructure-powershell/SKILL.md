@@ -29,7 +29,7 @@ Before moving, use the read-only surface rather than grepping by hand: `Find-Pat
 build/CI/hook scripts that hardcode a path), `Resolve-MoveEngine` (how a path classifies), and
 `Get-DotnetMoveCapability` (git present? platform?). `Test-SolutionConsistency`,
 `Get-SolutionInventory`, `Repair-SolutionReferences`, and `Sync-Solution` are .NET-solution tools;
-reach for them when a PowerShell repo also carries `.csproj`/`.sln`. `Get-SolutionInventory` in
+reach for them when a PowerShell repository also carries `.csproj`/`.sln`. `Get-SolutionInventory` in
 particular lists non-CLI project types a PowerShell solution may include, such as a `.pssproj`,
 which `dotnet sln list` does not surface.
 
@@ -85,7 +85,7 @@ Undo-DotnetMove -WhatIf   # preview reversing the most recent move
 Undo-DotnetMove           # reverse the most recent move (call again to walk back)
 ```
 
-Journaling is on by default and self-gitignored (it never touches the repo's `.gitignore`). Opt out
+Journaling is on by default and self-gitignored (it never touches the repository's `.gitignore`). Opt out
 with `$env:DOTNETMOVE_JOURNAL = 'off'`. See the [README](https://github.com/kappasims/dotnet-move).
 
 ## The `git dotnetmv` verb (optional; ask first)

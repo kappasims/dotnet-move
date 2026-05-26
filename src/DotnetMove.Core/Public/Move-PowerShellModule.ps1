@@ -87,7 +87,7 @@ function Move-PowerShellModule {
         }
         $items = @( New-MoveItem -Description "refresh manifest $manifestName (FileList + validate)" -Reattach $manifestFix -ReattachArgs @($newDir, $newManifest) )
 
-        $move = { param($UseGit, $Src, $Dst, $Repo) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repo }
+        $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repository }
         $repoRoot = Get-RepoRoot -StartPath $moduleDir
         $planResult = Invoke-MovePlan -Caption "Move module $manifestName" -Items $items -Move $move `
             -MoveArgs @($ctx.UseGit, $moduleDir, $newDir, $repoRoot)

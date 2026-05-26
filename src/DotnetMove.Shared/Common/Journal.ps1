@@ -36,7 +36,7 @@ function Add-MoveJournalEntry {
     $dir = Join-Path $RepoRoot '.dotnetmove'
     if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
     # Self-ignore: a .gitignore of '*' makes git treat the whole .dotnetmove/ folder (the journal and
-    # this file) as ignored, so nothing is ever committed and the repo's own .gitignore is untouched.
+    # this file) as ignored, so nothing is ever committed and the repository's own .gitignore is untouched.
     $gi = Join-Path $dir '.gitignore'
     if (-not (Test-Path -LiteralPath $gi)) { [System.IO.File]::WriteAllText($gi, "*`n", [System.Text.UTF8Encoding]::new($false)) }
     $entry = [ordered]@{

@@ -101,7 +101,7 @@ function Move-Solution {
                 $items += New-MoveItem -Description "rebase path: $($e.Stored) -> $rel" `
                     -Reattach $rebaseSb -ReattachArgs @($newPath, $old, $new, $counter)
             }
-            $move = { param($UseGit, $Src, $Dst, $Repo) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repo }
+            $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repository }
 
             $planResult = Invoke-MovePlan -Caption "Move solution $name" -Items $items -Move $move `
                 -MoveArgs @($ctx.UseGit, $src, $newPath, $repoFull)

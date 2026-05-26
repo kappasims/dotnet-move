@@ -30,7 +30,7 @@ function Get-PowerShellScriptReferences {
         if ([string]::IsNullOrWhiteSpace($raw) -or $raw -notmatch '\.ps1$') { continue }
         $expanded = $raw -replace '\$PSScriptRoot', $dir
         if ($expanded -match '\$') { $out += [pscustomobject]@{ Raw = $raw; Abs = $null; Unresolved = $true }; continue }
-        # Normalize Windows-style '\' separators to the platform's so a repo authored on Windows
+        # Normalize Windows-style '\' separators to the platform's so a repository authored on Windows
         # still resolves on Unix (where '\' is a literal path character, not a separator).
         $expanded = $expanded.Replace('\', [System.IO.Path]::DirectorySeparatorChar)
         $abs = if ([System.IO.Path]::IsPathRooted($expanded)) { [System.IO.Path]::GetFullPath($expanded) }

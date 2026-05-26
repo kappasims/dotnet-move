@@ -19,7 +19,7 @@ function Move-PowerShell {
         New path - passed through to the specialist.
 
     .PARAMETER RepoRoot
-        Repo root scanned for referencing scripts. Defaults to the enclosing git repo root.
+        Repository root scanned for referencing scripts. Defaults to the enclosing git repository root.
         Forwarded to the script specialist only (the module specialist has no RepoRoot).
 
     .PARAMETER Force

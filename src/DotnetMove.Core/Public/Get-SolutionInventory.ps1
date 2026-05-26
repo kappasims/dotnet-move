@@ -1,7 +1,7 @@
 function Get-SolutionInventory {
     <#
     .SYNOPSIS
-        List the full contents of every solution in a repo - projects of any type, solution
+        List the full contents of every solution in a repository - projects of any type, solution
         folders, and solution items - plus on-disk projects that no solution references.
 
     .DESCRIPTION
@@ -16,7 +16,7 @@ function Get-SolutionInventory {
 
     .PARAMETER RepoRoot
         Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path
-        property). Defaults to the enclosing git repo root. Nested git worktrees are skipped.
+        property). Defaults to the enclosing git repository root. Nested git worktrees are skipped.
 
     .OUTPUTS
         DotnetMove.SolutionItem - one per item.

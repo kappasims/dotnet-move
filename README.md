@@ -19,7 +19,7 @@ paths, MSBuild `<Import>`s, a script's dot-source/call references). Beyond manag
 PowerShell modules and scripts, Unity `.meta` GUIDs, and native C++ `.vcxproj` projects, reporting
 the link settings it cannot safely rewrite rather than guessing at them.
 
-For AI agents, the repo ships Claude Code skills that run these commands, triggering on phrases
+For AI agents, the repository ships Claude Code skills that run these commands, triggering on phrases
 like "move this project" (see [Skills](#skills)).
 
 # Setup
@@ -47,17 +47,17 @@ Everything DotnetMove creates or changes, so there are no surprises:
 
 **Running a move:**
 
-- Edits the target repo's solution/project files to reconcile the move. That is the operation
-  itself, done through first-party tooling (see [the contract](#building)).
+- Edits the target repository's solution/project files to reconcile the move. That is the operation
+  itself, done through first-party tooling (see [the Contract](#the-contract)).
 - Writes an undo journal to a `.dotnetmove/` folder at the repository root (`.dotnetmove/journal.jsonl`), plus a `.dotnetmove/.gitignore`
   of `*` so git ignores the whole folder and your own `.gitignore` is untouched. On by default; see
   [Undoing](#undoing) to opt out.
 - Snapshots the files it edits to the system temp dir for rollback, and removes the snapshot when
-  the move finishes (success or failure). Never written into the repo.
+  the move finishes (success or failure). Never written into the repository.
 
 **Only when you ask:**
 
-- `Register-DotnetMvGitAlias` adds one `alias.dotnetmv` line to your git config (repo-local, or
+- `Register-DotnetMvGitAlias` adds one `alias.dotnetmv` line to your git config (repository-local, or
   `~/.gitconfig` with `-Scope Global`); `Unregister-DotnetMvGitAlias` removes it.
 - `install.ps1 -NoJournal` sets `DOTNETMOVE_JOURNAL=off` persistently (a User environment variable
   on Windows, a profile line on Linux/macOS) to turn the undo journal off.
@@ -204,7 +204,7 @@ on for you.
 
 ## Inspecting
 
-DotnetMove can be used purely to inspect a repo. These commands are read-only and change nothing.
+DotnetMove can be used purely to inspect a repository. These commands are read-only and change nothing.
 
 | <small>Command</small> | <small>Reports</small> |
 |:---|:---|
@@ -218,7 +218,7 @@ DotnetMove can be used purely to inspect a repo. These commands are read-only an
 
 ## Repairing
 
-It can also fix a repo whose solution entries or `<ProjectReference>`s were left dangling by a
+It can also fix a repository whose solution entries or `<ProjectReference>`s were left dangling by a
 move done outside DotnetMove, without moving anything itself. `Repair-SolutionReferences` finds
 entries pointing at a project that no longer exists at the recorded path and reports each as
 relocatable, missing, or ambiguous (read-only by default).
@@ -293,6 +293,24 @@ the commands above:
 
 # For developers
 
+## The Contract
+
+The guarantee behind every move:
+
+- **Never hand-write solution or project files.** Every path/GUID change is delegated to
+  first-party tooling:
+  - `dotnet sln add/remove` and `dotnet add/remove reference` for solution membership and references
+  - `git mv` for the move itself (a plain `Move-Item` only under `-Force`, when git is absent)
+  - `Update-ModuleManifest` for PowerShell module manifests
+- **The only exceptions** are formats no first-party tool reconciles, rewritten in place through the
+  BOM-preserving `Set-Raw*` helpers:
+  - a solution's stored project paths
+  - MSBuild `<Import>` paths
+  - a script's dot-source/call references
+- **Reads** parse files directly only where no first-party reader surfaces what is needed.
+- **Enforced, not just promised:** `tests/FirstPartyDrift.Tests.ps1` fails the build if a new file
+  writes file content or a new cmdlet calls the raw writers.
+
 ## Building
 
 ```powershell
@@ -318,12 +336,6 @@ available engine in one call (native on Windows only).
 Per-push CI (`.github/workflows/ci.yml`) runs the suite on windows-latest (PowerShell 7) and
 Windows PowerShell 5.1, plus lint. Linux and macOS are on-demand (`platforms.yml`, via
 `tools/Invoke-PlatformCI.ps1`); run them before a release.
-
-Contract: moves never hand-write solution/project files; every path/GUID change goes through
-first-party tooling (`dotnet sln`/`reference`, `git mv`, `Update-ModuleManifest`). The unavoidable
-hand-writes - formats no CLI reconciles, solution stored paths, `<Import>` paths, script dot-source
-paths - go through the BOM-preserving `Set-Raw*` helpers, which `tests/FirstPartyDrift.Tests.ps1`
-locks down. Reads parse files directly only where no first-party reader suffices.
 
 ## Modules
 
@@ -367,7 +379,7 @@ tests/                   Pester tests + fixtures
 |:---|:---|
 | <small>[Find-PathReference](#find-pathreference)</small> | <small>Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party tool reconciles.</small> |
 | <small>[Get-DotnetMoveCapability](#get-dotnetmovecapability)</small> | <small>Resolve DotnetMove's external-tool capabilities (git, dotnet) and platform.</small> |
-| <small>[Get-SolutionInventory](#get-solutioninventory)</small> | <small>List the full contents of every solution in a repo - projects of any type, solution folders, and solution items - plus on-disk projects that no solution references.</small> |
+| <small>[Get-SolutionInventory](#get-solutioninventory)</small> | <small>List the full contents of every solution in a repository - projects of any type, solution folders, and solution items - plus on-disk projects that no solution references.</small> |
 | <small>[Move-Dotnet](#move-dotnet)</small> | <small>Move any supported item and reconcile references, routing by detected type to the right per-namespace front door.</small> |
 | <small>[Move-DotnetFile](#move-dotnetfile)</small> | <small>Move a single managed .NET file and reconcile references, routing by extension to the right specialist.</small> |
 | <small>[Move-DotnetFolder](#move-dotnetfolder)</small> | <small>Move a folder of managed .NET projects, reconciling references.</small> |
@@ -379,11 +391,11 @@ tests/                   Pester tests + fixtures
 | <small>[Move-PowerShellScript](#move-powershellscript)</small> | <small>Move a standalone .ps1 script and fix the relative paths in scripts that dot-source or call it (and the moved script's own dot-source/call paths).</small> |
 | <small>[Move-Solution](#move-solution)</small> | <small>Move a solution file (.sln/.slnx) and rebase the relative project paths it stores, so every project it references still resolves from the solution's new location.</small> |
 | <small>[Register-DotnetMvGitAlias](#register-dotnetmvgitalias)</small> | <small>Opt-in: register a `git dotnetmv` alias pointing at DotnetMove's forwarder.</small> |
-| <small>[Repair-SolutionReferences](#repair-solutionreferences)</small> | <small>Scan a repo for broken solution membership and dangling ProjectReferences and repair them by re-pointing each entry at the project's new location.</small> |
+| <small>[Repair-SolutionReferences](#repair-solutionreferences)</small> | <small>Scan a repository for broken solution membership and dangling ProjectReferences and repair them by re-pointing each entry at the project's new location.</small> |
 | <small>[Resolve-MoveEngine](#resolve-moveengine)</small> | <small>Classify a path to the reconciliation engine that should move it: dotnet, native, unity, ps-script, ps-module, or unknown.</small> |
-| <small>[Sync-Solution](#sync-solution)</small> | <small>Resolve solution-membership divergence by adding each project to the solutions that are missing it, so every solution in the repo lists the same projects.</small> |
+| <small>[Sync-Solution](#sync-solution)</small> | <small>Resolve solution-membership divergence by adding each project to the solutions that are missing it, so every solution in the repository lists the same projects.</small> |
 | <small>[Test-DotnetMoveUpdate](#test-dotnetmoveupdate)</small> | <small>Check GitHub for a newer DotnetMove release and report whether the installed version is behind.</small> |
-| <small>[Test-SolutionConsistency](#test-solutionconsistency)</small> | <small>Report projects whose membership diverges across the solution files in a repo (present in some solutions but absent from others).</small> |
+| <small>[Test-SolutionConsistency](#test-solutionconsistency)</small> | <small>Report projects whose membership diverges across the solution files in a repository (present in some solutions but absent from others).</small> |
 | <small>[Undo-DotnetMove](#undo-dotnetmove)</small> | <small>Reverse a previous DotnetMove move, using the journal at the repository root.</small> |
 | <small>[Unregister-DotnetMvGitAlias](#unregister-dotnetmvgitalias)</small> | <small>Remove the `git dotnetmv` alias registered by Register-DotnetMvGitAlias.</small> |
 | <small>[Update-DotnetMove](#update-dotnetmove)</small> | <small>Update an installed DotnetMove to the latest GitHub release, in place.</small> |
@@ -421,7 +433,7 @@ regex could corrupt logic). This detects the class of such files (by location + 
 not a hardcoded filename list) and reports lines that reference the given path, so you
 (or an agent) can fix them deliberately. It never edits anything.
 
-Two confidence tiers: High when the item's repo-relative path appears (e.g.
+Two confidence tiers: High when the item's repository-relative path appears (e.g.
 'lib/Tarragon.csproj' or 'lib\Tarragon.csproj'), Low when only the bare leaf name appears (e.g.
 'Tarragon.csproj'), which is likely but not certain.
 
@@ -432,8 +444,8 @@ Run it before a move (to see what will break) or after (searching the old path).
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
 | <small>`‑Path`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>The item being/that was moved. Accepts pipeline input.</small> |
-| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan. Defaults to the enclosing git repo root.</small> |
-| <small>`‑AdditionalGlob`</small> | <small>String[]</small> | <small>false</small> | <small>false</small> | <small>Extra repo-relative globs to include in the candidate set (e.g. 'deploy/*.sh').</small> |
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan. Defaults to the enclosing git repository root.</small> |
+| <small>`‑AdditionalGlob`</small> | <small>String[]</small> | <small>false</small> | <small>false</small> | <small>Extra repository-relative globs to include in the candidate set (e.g. 'deploy/*.sh').</small> |
 
 **Output**
 
@@ -457,7 +469,7 @@ Find-PathReference -Path ./lib/Tarragon.csproj
 # Scan the old path after a move to find what still points at it
 Find-PathReference -Path ./libs/Tarragon/Tarragon.csproj
 
-# Widen the candidate set with extra repo-relative globs
+# Widen the candidate set with extra repository-relative globs
 Find-PathReference -Path ./lib/Tarragon.csproj -AdditionalGlob 'deploy/*.sh','*.psake.ps1'
 ```
 
@@ -503,7 +515,7 @@ Returns an object with Platform, PSEdition, Git, Dotnet, and DotnetSupportsSlnx.
 
 ### Get-SolutionInventory
 
-List the full contents of every solution in a repo - projects of any type, solution
+List the full contents of every solution in a repository - projects of any type, solution
 folders, and solution items - plus on-disk projects that no solution references.
 
 **Syntax**
@@ -525,7 +537,7 @@ Read-only: one record per item, so you can group, filter, or format it however y
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path property). Defaults to the enclosing git repo root. Nested git worktrees are skipped.</small> |
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path property). Defaults to the enclosing git repository root. Nested git worktrees are skipped.</small> |
 
 **Output**
 
@@ -586,7 +598,7 @@ target's engine accepts them.
 |:---|:---|:---|:---|:---|
 | <small>`‑Path`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>The item to move (file or folder). Accepts pipeline input.</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>New path - passed through to the engine.</small> |
-| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repo root the engine scans for references. Defaults to the enclosing git repo root. Not used by the Unity engine.</small> |
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repository root the engine scans for references. Defaults to the enclosing git repository root. Not used by the Unity engine.</small> |
 | <small>`‑NoBuild`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip the verifying 'dotnet build'. Only the .NET engine builds; ignored by the others.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. Forwarded to the engine.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
@@ -622,7 +634,7 @@ Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs
 # Any supported type routes through the same call (here a PowerShell module folder)
 Move-Dotnet -Path ./tools/Mayo -Destination ./modules/Mayo
 
-# No git in the repo? -Force falls back to a plain Move-Item (history not preserved)
+# No git in the repository? -Force falls back to a plain Move-Item (history not preserved)
 Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -Force
 ```
 
@@ -651,7 +663,7 @@ Move-UnityAsset. `-WhatIf`/`-Confirm`/`-Verbose` propagate to the specialist; `-
 |:---|:---|:---|:---|:---|
 | <small>`‑Path`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>The .NET file to move. Accepts pipeline input.</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>New path (file or folder) - passed through to the specialist.</small> |
-| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repo root the specialist scans for references. Defaults to the enclosing git repo root.</small> |
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repository root the specialist scans for references. Defaults to the enclosing git repository root.</small> |
 | <small>`‑NoBuild`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip the verifying 'dotnet build' (forwarded to the project/import specialist).</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
@@ -706,7 +718,7 @@ propagate; `-Force`/`-RepoRoot`/`-NoBuild` are forwarded.
 |:---|:---|:---|:---|:---|
 | <small>`‑Path`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>The folder to move. Accepts pipeline input.</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>New folder path.</small> |
-| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repo root scanned for references. Defaults to the enclosing git repo root.</small> |
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repository root scanned for references. Defaults to the enclosing git repository root.</small> |
 | <small>`‑NoBuild`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip the verifying 'dotnet build' (forwarded to Move-DotnetProjectTree).</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
@@ -760,7 +772,7 @@ project XML (.sln/.slnx, .csproj) is never hand-edited.
 
 Diagnostics follow invocation: `-Verbose` narrates the plan, `-Debug` emits the full
 solution-membership matrix, and divergence (the project living in some but not all
-of the repo's solutions) is surfaced as a Warning (or, with `-Strict`, a non-
+of the repository's solutions) is surfaced as a Warning (or, with `-Strict`, a non-
 terminating error honoring `-ErrorAction`).
 
 **Parameters**
@@ -769,7 +781,7 @@ terminating error honoring `-ErrorAction`).
 |:---|:---|:---|:---|:---|
 | <small>`‑Project`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Path to the project file (.csproj/.fsproj/.vbproj). Accepts pipeline input - pipe a path string or any object with a FullName/Path property (e.g. Get-Item output).</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>Where to move the project folder, following `git mv` rules: if Destination is an existing directory the folder moves into it (keeping its name, e.g. './libs' -&gt; './libs/Tarragon'); otherwise Destination is the project's new folder path (a rename, './libs/Tarragon'). The project file and its sibling contents move as one. Errors if the resulting folder exists.</small> |
-| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for solutions/consumers. Defaults to the enclosing git repo root.</small> |
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for solutions/consumers. Defaults to the enclosing git repository root.</small> |
 | <small>`‑Strict`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Escalate solution-divergence warnings to non-terminating errors.</small> |
 | <small>`‑NoBuild`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip the verifying 'dotnet build' at the end.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
@@ -847,7 +859,7 @@ confirmed plain-move fallback via `-Force` / ShouldContinue); supports `-WhatIf`
 |:---|:---|:---|:---|:---|
 | <small>`‑Path`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>The folder to move. Accepts pipeline input.</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>Where to move the folder, following `git mv` rules: an existing directory means move into it (keeping the name); otherwise it is the folder's new path. Errors if the result exists.</small> |
-| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan. Defaults to the enclosing git repo root.</small> |
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan. Defaults to the enclosing git repository root.</small> |
 | <small>`‑NoBuild`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip the verifying build of the moved projects.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
@@ -923,7 +935,7 @@ fallback via `-Force`). Supports `-WhatIf`.
 |:---|:---|:---|:---|:---|
 | <small>`‑Path`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>The .props/.targets file to move. Accepts pipeline input.</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>New file path (or a folder, in which case the file keeps its name).</small> |
-| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for importers. Defaults to the enclosing git repo root.</small> |
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for importers. Defaults to the enclosing git repository root.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
@@ -982,7 +994,7 @@ no RepoRoot).
 |:---|:---|:---|:---|:---|
 | <small>`‑Path`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>The PowerShell item to move: a .ps1 script, a .psd1 manifest, or a module folder. Accepts pipeline input.</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>New path - passed through to the specialist.</small> |
-| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repo root scanned for referencing scripts. Defaults to the enclosing git repo root. Forwarded to the script specialist only (the module specialist has no RepoRoot).</small> |
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repository root scanned for referencing scripts. Defaults to the enclosing git repository root. Forwarded to the script specialist only (the module specialist has no RepoRoot).</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
@@ -1100,7 +1112,7 @@ supported; dotnet not required.
 |:---|:---|:---|:---|:---|
 | <small>`‑Path`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>The .ps1 to move. Accepts pipeline input.</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>New file path (or a folder, in which case the script keeps its name).</small> |
-| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for referencing scripts. Defaults to the enclosing git repo root.</small> |
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for referencing scripts. Defaults to the enclosing git repository root.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
@@ -1212,14 +1224,14 @@ Adds `alias.dotnetmv = !pwsh -NoProfile -File <forwarder>` to git config so
 `git dotnetmv <src> <dst>` works. "dotnet" is the .NET-platform umbrella: the verb
 branches by target type to the right engine - the .NET project model
 (csproj/sln/props), Unity (.meta/.asmdef), PowerShell (.ps1/.psd1), or native C++
-(.vcxproj). Scope is your choice (repo-local or global). Undo with
+(.vcxproj). Scope is your choice (repository-local or global). Undo with
 Unregister-DotnetMvGitAlias. Use `-WhatIf` to see the exact `git config` command.
 
 **Parameters**
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑Scope`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>'Local' (this repo, default) or 'Global' (~/.gitconfig).</small> |
+| <small>`‑Scope`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>'Local' (this repository, default) or 'Global' (~/.gitconfig).</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
 
@@ -1241,7 +1253,7 @@ DotnetMove.GitAlias
 # Preview the exact git config command (changes nothing)
 Register-DotnetMvGitAlias -Scope Global -WhatIf
 
-# Register for this repo only (default scope is Local)
+# Register for this repository only (default scope is Local)
 Register-DotnetMvGitAlias
 
 # Register globally, in ~/.gitconfig
@@ -1252,7 +1264,7 @@ Register-DotnetMvGitAlias -Scope Global
 
 ### Repair-SolutionReferences
 
-Scan a repo for broken solution membership and dangling ProjectReferences and repair them
+Scan a repository for broken solution membership and dangling ProjectReferences and repair them
 by re-pointing each entry at the project's new location.
 
 **Syntax**
@@ -1266,7 +1278,7 @@ exists at the recorded path (usually because a project was moved or renamed with
 reconciling). Read-only by default: it returns one object per problem, each tagged with a
 Resolution of Relocatable, Missing, or Ambiguous.
 
-With `-Fix` it repairs every Relocatable entry: it searches the repo for a project file of the
+With `-Fix` it repairs every Relocatable entry: it searches the repository for a project file of the
 same name and re-points the entry at it through the dotnet CLI (remove the stale path, add
 the found one). When one project of that name exists it is used directly; when several do,
 the one that keeps the most of the original path's trailing folders is chosen, since a moved
@@ -1280,9 +1292,9 @@ CLI. `-Prune` never touches Relocatable or Ambiguous entries. `-Fix` and `-Prune
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Root to scan. Defaults to the enclosing git repo root of the current directory.</small> |
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Root to scan. Defaults to the enclosing git repository root of the current directory.</small> |
 | <small>`‑Fix`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Re-point each dangling entry at the moved project when its new location is unambiguous. Honors `-WhatIf`.</small> |
-| <small>`‑Prune`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Remove entries whose project cannot be found anywhere in the repo. Honors `-WhatIf`.</small> |
+| <small>`‑Prune`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Remove entries whose project cannot be found anywhere in the repository. Honors `-WhatIf`.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
 
@@ -1373,7 +1385,7 @@ Resolve-MoveEngine ./Aleppo/Aleppo.vcxproj
 ### Sync-Solution
 
 Resolve solution-membership divergence by adding each project to the solutions that are
-missing it, so every solution in the repo lists the same projects.
+missing it, so every solution in the repository lists the same projects.
 
 **Syntax**
 
@@ -1388,13 +1400,13 @@ others, it adds the project to the solutions missing it, delegating to `dotnet s
 solution is left alone (use Get-SolutionInventory to find those).
 
 Uniform membership is the assumption. If a solution is intentionally a subset, do not run
-this against the whole repo; preview with `-WhatIf` first and add specific projects by hand.
+this against the whole repository; preview with `-WhatIf` first and add specific projects by hand.
 
 **Parameters**
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Root to scan. Accepts pipeline input. Defaults to the enclosing git repo root. Nested git worktrees are skipped.</small> |
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Root to scan. Accepts pipeline input. Defaults to the enclosing git repository root. Nested git worktrees are skipped.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
 
@@ -1475,7 +1487,7 @@ Test-DotnetMoveUpdate -Repository myfork/dotnet-move
 
 ### Test-SolutionConsistency
 
-Report projects whose membership diverges across the solution files in a repo
+Report projects whose membership diverges across the solution files in a repository
 (present in some solutions but absent from others).
 
 **Syntax**
@@ -1484,7 +1496,7 @@ Report projects whose membership diverges across the solution files in a repo
 Test-SolutionConsistency [[-RepoRoot] <string>] [-Strict] [<CommonParameters>]
 ```
 
-When a repo carries more than one solution (e.g. a classic .sln alongside a .slnx),
+When a repository carries more than one solution (e.g. a classic .sln alongside a .slnx),
 they can drift out of sync so the same project is listed in one but not the other.
 This emits one object per divergent project and surfaces it through the standard streams
 so behavior follows invocation: by default it writes a Warning per divergent project;
@@ -1495,7 +1507,7 @@ full membership matrix of every solution and its projects.
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path property such as Get-Item output). Defaults to the enclosing git repo root.</small> |
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path property such as Get-Item output). Defaults to the enclosing git repository root.</small> |
 | <small>`‑Strict`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Escalate divergences from warnings to non-terminating errors.</small> |
 
 **Output**
@@ -1522,7 +1534,7 @@ Test-SolutionConsistency -RepoRoot . -Debug
 # Escalate divergence to non-terminating errors (e.g. to gate CI)
 Test-SolutionConsistency -RepoRoot . -Strict
 
-# Check several repos from the pipeline
+# Check several repositories from the pipeline
 Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
 ```
 
@@ -1555,7 +1567,7 @@ conflict with moves made after it, so prefer undoing in reverse order.
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repo whose journal to use. Defaults to the enclosing git repo root.</small> |
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repository whose journal to use. Defaults to the enclosing git repository root.</small> |
 | <small>`‑Id`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Undo the entry with this journal id instead of the most recent.</small> |
 | <small>`‑List`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>List the journal (oldest first) and return without undoing anything.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
@@ -1598,7 +1610,7 @@ Unregister-DotnetMvGitAlias [[-Scope] <string>] [-WhatIf] [-Confirm] [<CommonPar
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑Scope`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>'Local' (this repo, default) or 'Global'.</small> |
+| <small>`‑Scope`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>'Local' (this repository, default) or 'Global'.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
 
@@ -1609,7 +1621,7 @@ None.
 **Examples**
 
 ```powershell
-# Remove the alias for this repo (default scope is Local)
+# Remove the alias for this repository (default scope is Local)
 Unregister-DotnetMvGitAlias
 
 # Remove the global alias from ~/.gitconfig
@@ -1704,7 +1716,7 @@ MSBuild paths yet - surfacing them beats silently mis-editing them.
 |:---|:---|:---|:---|:---|
 | <small>`‑Project`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Path to the .vcxproj. Accepts pipeline input.</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>Where to move the project folder, following `git mv` rules: an existing directory means move into it (keeping the name); otherwise it is the new folder path. Errors if it exists.</small> |
-| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for solutions. Defaults to the enclosing git repo root.</small> |
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for solutions. Defaults to the enclosing git repository root.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
@@ -1770,7 +1782,7 @@ Android, etc.) are plain fields untouched by a move, so mobile layouts are prese
 |:---|:---|:---|:---|:---|
 | <small>`‑AssetPath`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Asset file or folder to move (under Assets/ or a package). Accepts pipeline input.</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>Where to move the asset/folder, following `git mv` rules: an existing directory means move into it (keeping the name); otherwise it is the new path. Errors if it exists.</small> |
-| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for asmdef referencers. Defaults to the enclosing git repo root.</small> |
+| <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for asmdef referencers. Defaults to the enclosing git repository root.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |

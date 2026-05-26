@@ -22,7 +22,7 @@ function Move-Dotnet {
         New path - passed through to the engine.
 
     .PARAMETER RepoRoot
-        Repo root the engine scans for references. Defaults to the enclosing git repo root.
+        Repository root the engine scans for references. Defaults to the enclosing git repository root.
         Not used by the Unity engine.
 
     .PARAMETER NoBuild
@@ -43,7 +43,7 @@ function Move-Dotnet {
         Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs
         # Any supported type routes through the same call (here a PowerShell module folder)
         Move-Dotnet -Path ./tools/Mayo -Destination ./modules/Mayo
-        # No git in the repo? -Force falls back to a plain Move-Item (history not preserved)
+        # No git in the repository? -Force falls back to a plain Move-Item (history not preserved)
         Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -Force
     #>
 

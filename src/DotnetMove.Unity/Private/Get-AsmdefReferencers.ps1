@@ -16,7 +16,7 @@ function Get-AsmdefReferencers {
         if ($m) { $guid = $m.Matches[0].Groups[1].Value }
     }
     $referencers = @()
-    # Exclude Unity caches anchored at the repo root (not "Temp" anywhere - the OS temp dir
+    # Exclude Unity caches anchored at the repository root (not "Temp" anywhere - the OS temp dir
     # itself contains that segment), plus .git.
     $rootLen = (Resolve-FullPath $RepoRoot).TrimEnd('\', '/').Length
     $asmdefs = Get-ChildItem -LiteralPath $RepoRoot -Recurse -File -ErrorAction SilentlyContinue |

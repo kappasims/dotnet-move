@@ -3,7 +3,7 @@ name: restructure-dotnet
 description: Use when moving, relocating, or restructuring managed .NET projects: moving a .csproj/.fsproj/.vbproj folder, reorganizing solution layout, or extracting a project into its own assembly. Triggers on "move this project", "restructure", "reorganize the solution", "extract into its own folder/assembly". Do not hand-edit .sln/.slnx/.csproj. For PowerShell modules/scripts use restructure-powershell; for native C++/.vcxproj use restructure-native.
 ---
 
-# Restructuring managed .NET repos (cross-platform)
+# Restructuring managed .NET repositories (cross-platform)
 
 Purpose (full overview: the [DotnetMove README](https://github.com/kappasims/dotnet-move)): a move
 that fixes what it would otherwise break. Dragging a project in Visual Studio reconciles the
@@ -25,7 +25,7 @@ the user to the project's install steps and let them run them; never auto-instal
 
 ## Analyze/audit first (read-only)
 
-To understand a repo before touching it, use these; do not parse solution/project files by hand:
+To understand a repository before touching it, use these; do not parse solution/project files by hand:
 
 - `Test-SolutionConsistency` - projects whose membership diverges across solutions (`-Debug` for
   the full solution/project matrix).
@@ -63,7 +63,7 @@ folder already exists, so it never silently overwrites or double-nests.
 
 ## Inspecting and repairing (no move)
 
-These work on an existing repo without moving anything. Inspect first, then repair if needed.
+These work on an existing repository without moving anything. Inspect first, then repair if needed.
 
 ```powershell
 Get-SolutionInventory     -RepoRoot .          # full contents of every solution + projects in none
@@ -104,7 +104,7 @@ Undo-DotnetMove -WhatIf   # preview reversing the most recent move
 Undo-DotnetMove           # reverse the most recent move (call again to walk back)
 ```
 
-Journaling is on by default and self-gitignored (it never touches the repo's `.gitignore`). Opt out
+Journaling is on by default and self-gitignored (it never touches the repository's `.gitignore`). Opt out
 with `$env:DOTNETMOVE_JOURNAL = 'off'`. See the [README](https://github.com/kappasims/dotnet-move).
 
 ## The `git dotnetmv` verb (optional; ask first)

@@ -9,7 +9,7 @@ function Test-PathBearingFile {
     $rel = ($File.FullName.Substring($RootLen).TrimStart('\', '/')) -replace '\\', '/'
     $name = $File.Name
     # Skip caches / vendored / the tool's own test clones - matched on the path relative to the
-    # repo root (so a repo that itself lives under e.g. test-subjects/ is not wholly excluded).
+    # repository root (so a repository that itself lives under e.g. test-subjects/ is not wholly excluded).
     if ($rel -match '(^|/)(\.git|bin|obj|\.vs|node_modules|test-subjects)/') { return $false }
     # CI definitions
     if ($rel -match '^\.github/workflows/.*\.ya?ml$') { return $true }
@@ -20,7 +20,7 @@ function Test-PathBearingFile {
     # build / container files (by name, anywhere)
     if ($name -in 'Makefile', 'makefile', 'GNUmakefile', 'Dockerfile') { return $true }
     if ($name -like 'docker-compose*.yml' -or $name -like 'docker-compose*.yaml') { return $true }
-    # build/automation scripts: only at repo root or in known automation dirs (don't scan every
+    # build/automation scripts: only at repository root or in known automation dirs (don't scan every
     # source script - that would flag the project's own code and be noisy).
     if ($File.Extension.ToLowerInvariant() -in '.ps1', '.sh', '.bat', '.cmd', '.py') {
         if ($rel -notmatch '/') { return $true }
@@ -30,7 +30,7 @@ function Test-PathBearingFile {
 }
 
 function Get-PathBearingFile {
-    # Discover the class of path-hardcoding files in a repo (see Test-PathBearingFile).
+    # Discover the class of path-hardcoding files in a repository (see Test-PathBearingFile).
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$RepoRoot,

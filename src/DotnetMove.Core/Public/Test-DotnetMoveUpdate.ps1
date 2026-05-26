@@ -37,7 +37,7 @@ function Test-DotnetMoveUpdate {
     $installed = $MyInvocation.MyCommand.Module.Version
     if (-not $installed) { $installed = (Get-Module DotnetMove.Core | Select-Object -First 1).Version }
 
-    $uri = "https://api.github.com/repos/$Repository/releases/latest"
+    $uri = "https://api.github.com/repositories/$Repository/releases/latest"
     $release = $null
     try {
         $release = Invoke-RestMethod -Uri $uri -Headers @{ 'User-Agent' = 'DotnetMove'; 'Accept' = 'application/vnd.github+json' } -ErrorAction Stop

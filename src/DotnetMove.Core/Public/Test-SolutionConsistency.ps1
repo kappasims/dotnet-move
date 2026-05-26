@@ -1,11 +1,11 @@
 function Test-SolutionConsistency {
     <#
     .SYNOPSIS
-        Report projects whose membership diverges across the solution files in a repo
+        Report projects whose membership diverges across the solution files in a repository
         (present in some solutions but absent from others).
 
     .DESCRIPTION
-        When a repo carries more than one solution (e.g. a classic .sln alongside a .slnx),
+        When a repository carries more than one solution (e.g. a classic .sln alongside a .slnx),
         they can drift out of sync so the same project is listed in one but not the other.
         This emits one object per divergent project and surfaces it through the standard streams
         so behavior follows invocation: by default it writes a Warning per divergent project;
@@ -14,7 +14,7 @@ function Test-SolutionConsistency {
 
     .PARAMETER RepoRoot
         Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path
-        property such as Get-Item output). Defaults to the enclosing git repo root.
+        property such as Get-Item output). Defaults to the enclosing git repository root.
 
     .PARAMETER Strict
         Escalate divergences from warnings to non-terminating errors.
@@ -29,7 +29,7 @@ function Test-SolutionConsistency {
         Test-SolutionConsistency -RepoRoot . -Debug
         # Escalate divergence to non-terminating errors (e.g. to gate CI)
         Test-SolutionConsistency -RepoRoot . -Strict
-        # Check several repos from the pipeline
+        # Check several repositories from the pipeline
         Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
     #>
     [CmdletBinding()]
@@ -60,7 +60,7 @@ function Test-SolutionConsistency {
             foreach ($p in $m.Projects) { Write-Debug "    $p" }
         }
 
-        # Repo-relative solution names so two solutions with the same file name in different
+        # Repository-relative solution names so two solutions with the same file name in different
         # folders are still distinguishable (a bare leaf would render them identically).
         function _rel([string]$p) { (Get-RelativePathSafe -From $RepoRoot -To $p) }
 

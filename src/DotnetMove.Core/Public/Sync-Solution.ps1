@@ -2,7 +2,7 @@ function Sync-Solution {
     <#
     .SYNOPSIS
         Resolve solution-membership divergence by adding each project to the solutions that are
-        missing it, so every solution in the repo lists the same projects.
+        missing it, so every solution in the repository lists the same projects.
 
     .DESCRIPTION
         The companion to Test-SolutionConsistency, which only reports divergence. This makes
@@ -12,10 +12,10 @@ function Sync-Solution {
         solution is left alone (use Get-SolutionInventory to find those).
 
         Uniform membership is the assumption. If a solution is intentionally a subset, do not run
-        this against the whole repo; preview with -WhatIf first and add specific projects by hand.
+        this against the whole repository; preview with -WhatIf first and add specific projects by hand.
 
     .PARAMETER RepoRoot
-        Root to scan. Accepts pipeline input. Defaults to the enclosing git repo root. Nested git
+        Root to scan. Accepts pipeline input. Defaults to the enclosing git repository root. Nested git
         worktrees are skipped.
 
     .OUTPUTS

@@ -31,7 +31,7 @@ function Move-MSBuildImport {
         New file path (or a folder, in which case the file keeps its name).
 
     .PARAMETER RepoRoot
-        Root to scan for importers. Defaults to the enclosing git repo root.
+        Root to scan for importers. Defaults to the enclosing git repository root.
 
     .PARAMETER Force
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
@@ -143,7 +143,7 @@ function Move-MSBuildImport {
                         -Reattach $fixSb -ReattachArgs @($newPath, $own.Raw, $newRaw)
                 }
             }
-            $move = { param($UseGit, $Src, $Dst, $Repo) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repo }
+            $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repository }
 
             $planResult = Invoke-MovePlan -Caption "Move import $srcName" -Items $items -Move $move `
                 -MoveArgs @($ctx.UseGit, $src, $newPath, $repoFull)

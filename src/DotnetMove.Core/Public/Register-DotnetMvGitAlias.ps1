@@ -9,11 +9,11 @@ function Register-DotnetMvGitAlias {
         `git dotnetmv <src> <dst>` works. "dotnet" is the .NET-platform umbrella: the verb
         branches by target type to the right engine - the .NET project model
         (csproj/sln/props), Unity (.meta/.asmdef), PowerShell (.ps1/.psd1), or native C++
-        (.vcxproj). Scope is your choice (repo-local or global). Undo with
+        (.vcxproj). Scope is your choice (repository-local or global). Undo with
         Unregister-DotnetMvGitAlias. Use -WhatIf to see the exact `git config` command.
 
     .PARAMETER Scope
-        'Local' (this repo, default) or 'Global' (~/.gitconfig).
+        'Local' (this repository, default) or 'Global' (~/.gitconfig).
 
     .OUTPUTS
         DotnetMove.GitAlias
@@ -21,7 +21,7 @@ function Register-DotnetMvGitAlias {
     .EXAMPLE
         # Preview the exact git config command (changes nothing)
         Register-DotnetMvGitAlias -Scope Global -WhatIf
-        # Register for this repo only (default scope is Local)
+        # Register for this repository only (default scope is Local)
         Register-DotnetMvGitAlias
         # Register globally, in ~/.gitconfig
         Register-DotnetMvGitAlias -Scope Global
@@ -59,7 +59,7 @@ function Register-DotnetMvGitAlias {
         & git config $scopeFlag alias.dotnetmv $aliasValue
         if ($LASTEXITCODE -ne 0) {
             $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
-                    [System.InvalidOperationException]::new("git config failed (exit $LASTEXITCODE). For -Scope Local you must be inside a git repo."),
+                    [System.InvalidOperationException]::new("git config failed (exit $LASTEXITCODE). For -Scope Local you must be inside a git repository."),
                     'GitConfigFailed', [System.Management.Automation.ErrorCategory]::InvalidOperation, $display))
             return
         }

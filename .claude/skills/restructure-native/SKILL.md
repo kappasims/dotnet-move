@@ -79,7 +79,7 @@ Undo-DotnetMove -WhatIf   # preview reversing the most recent move
 Undo-DotnetMove           # reverse the most recent move (call again to walk back)
 ```
 
-Journaling is on by default and self-gitignored (it never touches the repo's `.gitignore`). Opt out
+Journaling is on by default and self-gitignored (it never touches the repository's `.gitignore`). Opt out
 with `$env:DOTNETMOVE_JOURNAL = 'off'`. See the [README](https://github.com/kappasims/dotnet-move).
 
 ## The `git dotnetmv` verb (optional; ask first)

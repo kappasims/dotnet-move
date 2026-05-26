@@ -72,7 +72,7 @@ function Get-UnreconcilableReferences {
 
 function Write-UnreconcilableReferenceWarning {
     # Warn about references that a move cannot auto-fix: the moved project's own non-literal /
-    # conditional references, and any other repo project that has such references (which may point
+    # conditional references, and any other repository project that has such references (which may point
     # at the moved project through a variable/glob and so was never detected as a consumer).
     [CmdletBinding()]
     param(

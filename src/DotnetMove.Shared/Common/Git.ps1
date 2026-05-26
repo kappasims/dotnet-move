@@ -13,9 +13,9 @@ function Get-RepoRoot {
 
 function Get-NestedWorktreePath {
     # Absolute paths of git worktrees that live strictly inside $Root - linked worktrees (e.g.
-    # under .claude/worktrees/<id>/) hold duplicate copies of the repo's solutions/projects and
+    # under .claude/worktrees/<id>/) hold duplicate copies of the repository's solutions/projects and
     # would poison a recursive scan (double-counted membership, etc.). Callers exclude these.
-    # Empty when git is unavailable, $Root is not in a repo, or nothing nests under it.
+    # Empty when git is unavailable, $Root is not in a repository, or nothing nests under it.
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$Root)
     if (-not (Test-GitAvailable)) { return @() }

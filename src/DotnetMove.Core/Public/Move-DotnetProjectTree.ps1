@@ -26,7 +26,7 @@ function Move-DotnetProjectTree {
         it (keeping the name); otherwise it is the folder's new path. Errors if the result exists.
 
     .PARAMETER RepoRoot
-        Root to scan. Defaults to the enclosing git repo root.
+        Root to scan. Defaults to the enclosing git repository root.
 
     .PARAMETER NoBuild
         Skip the verifying build of the moved projects.
@@ -157,7 +157,7 @@ function Move-DotnetProjectTree {
                 $items += New-DotnetReferenceItems -Solutions $item.Solutions -Consumers $item.ExtConsumers -OwnRefs $item.ExtRefs `
                     -OldProj $item.Old -NewProj $item.New -Label (Split-Path -Leaf $item.Old)
             }
-            $move = { param($UseGit, $Src, $Dst, $Repo) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repo }
+            $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repository }
 
             # Files the reconciliation edits (for rollback): every touched solution, every external
             # consumer, and each moved project's own file. Reverse-move returns the whole tree.

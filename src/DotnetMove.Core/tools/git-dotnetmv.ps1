@@ -41,7 +41,7 @@ if ($rest.Count -lt 2) {
 }
 $src = $rest[0]; $dst = $rest[1]
 
-# `!`-aliases run at the repo top-level with GIT_PREFIX = the subdir the user invoked from;
+# `!`-aliases run at the repository top-level with GIT_PREFIX = the subdir the user invoked from;
 # resolve relative args against it so paths mean what the user typed.
 if ($env:GIT_PREFIX) {
     if (-not [System.IO.Path]::IsPathRooted($src)) { $src = Join-Path $env:GIT_PREFIX $src }
@@ -51,10 +51,10 @@ if ($env:GIT_PREFIX) {
 $params = @{ Path = $src; Destination = $dst; WhatIf = $whatIf; Confirm = $false }
 if ($force) { $params.Force = $true }
 if ($noBuild) { $params.NoBuild = $true }
-# Let Move-Dotnet derive the repo root from the target path. Do NOT use
-# `git rev-parse --show-toplevel`: git canonicalizes symlinks (on macOS the temp/repo path
+# Let Move-Dotnet derive the repository root from the target path. Do NOT use
+# `git rev-parse --show-toplevel`: git canonicalizes symlinks (on macOS the temp/repository path
 # /var/folders/... becomes /private/var/folders/...), which would not match the OS-form paths the
-# rest of the toolkit uses (Get-ChildItem, Get-RepoRoot), breaking path comparisons on a repo that
+# rest of the toolkit uses (Get-ChildItem, Get-RepoRoot), breaking path comparisons on a repository that
 # sits under a symlinked directory.
 
 Move-Dotnet @params

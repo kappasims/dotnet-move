@@ -19,7 +19,7 @@ function Move-DotnetFolder {
         New folder path.
 
     .PARAMETER RepoRoot
-        Repo root scanned for references. Defaults to the enclosing git repo root.
+        Repository root scanned for references. Defaults to the enclosing git repository root.
 
     .PARAMETER NoBuild
         Skip the verifying 'dotnet build' (forwarded to Move-DotnetProjectTree).

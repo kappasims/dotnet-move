@@ -54,7 +54,7 @@ function Test-IsWindowsHost {
 if ($Version) {
     $tag = 'v' + ($Version -replace '^v', '')
 } else {
-    $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repository/releases/latest" -Headers $headers
+    $rel = Invoke-RestMethod -Uri "https://api.github.com/repositories/$Repository/releases/latest" -Headers $headers
     $tag = "$($rel.tag_name)"
     if (-not $tag) { throw "No releases found for $Repository." }
 }
@@ -66,7 +66,7 @@ try {
     $zip = Join-Path $tmp 'src.zip'
     Invoke-WebRequest -Uri "https://github.com/$Repository/archive/refs/tags/$tag.zip" -OutFile $zip -Headers $headers
     Expand-Archive -LiteralPath $zip -DestinationPath $tmp -Force
-    $extracted = Get-ChildItem -LiteralPath $tmp -Directory | Select-Object -First 1   # <repo>-<version>/
+    $extracted = Get-ChildItem -LiteralPath $tmp -Directory | Select-Object -First 1   # <repository>-<version>/
     $srcRoot = Join-Path $extracted.FullName 'src'
     if (-not (Test-Path -LiteralPath $srcRoot)) { throw "Downloaded archive has no src/ folder: $srcRoot" }
 

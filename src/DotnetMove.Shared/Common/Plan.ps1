@@ -79,9 +79,9 @@ function Invoke-MovePlan {
     # gate - this only runs once approved.
     #
     # Rollback: any step that fails throws (Invoke-Dotnet throws on non-zero exit; Move-PathTracked
-    # throws on a failed move). To avoid leaving a half-reconciled repo, the caller passes the files
+    # throws on a failed move). To avoid leaving a half-reconciled repository, the caller passes the files
     # the reconciliation edits (-BackupPath) and a move-reversing scriptblock (-Rollback). On any
-    # failure this restores those files from a snapshot and reverses the move, returning the repo to
+    # failure this restores those files from a snapshot and reverses the move, returning the repository to
     # its pre-move state. This is the safety net for the -Force (no-git) path, which otherwise has
     # no git history to recover from; with git it complements (does not replace) `git restore`.
     [CmdletBinding()]
@@ -142,7 +142,7 @@ function Invoke-MovePlan {
         if ($rollbackOk) {
             throw "Move failed and was rolled back to the original state. Cause: $($cause.Exception.Message)"
         }
-        throw "Move failed AND rollback was incomplete - the repo may be in a partial state, check git status. Cause: $($cause.Exception.Message)"
+        throw "Move failed AND rollback was incomplete - the repository may be in a partial state, check git status. Cause: $($cause.Exception.Message)"
     }
     if ($snapDir) { Remove-Item -LiteralPath $snapDir -Recurse -Force -ErrorAction SilentlyContinue }
 

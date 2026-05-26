@@ -16,7 +16,7 @@ function Undo-DotnetMove {
         conflict with moves made after it, so prefer undoing in reverse order.
 
     .PARAMETER RepoRoot
-        Repo whose journal to use. Defaults to the enclosing git repo root.
+        Repository whose journal to use. Defaults to the enclosing git repository root.
 
     .PARAMETER Id
         Undo the entry with this journal id instead of the most recent.

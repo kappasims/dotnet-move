@@ -18,7 +18,7 @@ function Move-DotnetFile {
         New path (file or folder) - passed through to the specialist.
 
     .PARAMETER RepoRoot
-        Repo root the specialist scans for references. Defaults to the enclosing git repo root.
+        Repository root the specialist scans for references. Defaults to the enclosing git repository root.
 
     .PARAMETER NoBuild
         Skip the verifying 'dotnet build' (forwarded to the project/import specialist).

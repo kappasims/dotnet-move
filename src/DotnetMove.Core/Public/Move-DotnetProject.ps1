@@ -13,7 +13,7 @@ function Move-DotnetProject {
 
         Diagnostics follow invocation: -Verbose narrates the plan, -Debug emits the full
         solution-membership matrix, and divergence (the project living in some but not all
-        of the repo's solutions) is surfaced as a Warning (or, with -Strict, a non-
+        of the repository's solutions) is surfaced as a Warning (or, with -Strict, a non-
         terminating error honoring -ErrorAction).
 
     .PARAMETER Project
@@ -27,7 +27,7 @@ function Move-DotnetProject {
         project file and its sibling contents move as one. Errors if the resulting folder exists.
 
     .PARAMETER RepoRoot
-        Root to scan for solutions/consumers. Defaults to the enclosing git repo root.
+        Root to scan for solutions/consumers. Defaults to the enclosing git repository root.
 
     .PARAMETER Strict
         Escalate solution-divergence warnings to non-terminating errors.
@@ -118,7 +118,7 @@ function Move-DotnetProject {
             return
         }
 
-        Write-Verbose "Scanning repo root: $repoFull"
+        Write-Verbose "Scanning repository root: $repoFull"
         $allSolutions = @(Find-Solutions -Root $repoFull)
         $allProjects = @(Find-ProjectFiles -Root $repoFull)
 
@@ -134,7 +134,7 @@ function Move-DotnetProject {
         Write-Verbose "  consumer projects        : $($consumers.Count)"
         Write-Verbose "  its own references       : $($ownRefs.Count)"
 
-        # Debug: full membership matrix for the whole repo.
+        # Debug: full membership matrix for the whole repository.
         if ($DebugPreference -ne 'SilentlyContinue') {
             foreach ($m in (Get-SolutionMembership -Solutions $allSolutions)) {
                 Write-Debug "Solution $($m.Solution) lists $($m.Projects.Count) project(s):"
@@ -142,14 +142,14 @@ function Move-DotnetProject {
             }
         }
 
-        # Divergence: the project is in some solutions but not others in the same repo.
+        # Divergence: the project is in some solutions but not others in the same repository.
         $refSlnPaths = @(); foreach ($s in $solutions) { $refSlnPaths += $s.FullName }
         $notReferencing = @($allSolutions | Where-Object { $refSlnPaths -notcontains $_.FullName })
         if ($solutions.Count -gt 0 -and $notReferencing.Count -gt 0) {
             $inNames = ($slnNames -join ', ')
             $outNameList = @(); foreach ($s in $notReferencing) { $outNameList += $s.Name }
             $outNames = ($outNameList -join ', ')
-            $msg = "Solution divergence: '$projFile' is referenced by [$inNames] but not by [$outNames] in the same repo. Only the referencing solution(s) will be updated."
+            $msg = "Solution divergence: '$projFile' is referenced by [$inNames] but not by [$outNames] in the same repository. Only the referencing solution(s) will be updated."
             if ($Strict) {
                 $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
                         [System.InvalidOperationException]::new($msg),
@@ -172,7 +172,7 @@ function Move-DotnetProject {
 
             $items = New-DotnetReferenceItems -Solutions $solutions -Consumers $consumers -OwnRefs $ownRefs `
                 -OldProj $projFull -NewProj $newProj
-            $move = { param($UseGit, $Src, $Dst, $Repo) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repo }
+            $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repository }
 
             # Files the reconciliation edits (for rollback): each solution, each consumer project,
             # and the moved project's own file. Reverse-move returns the folder to its old place.

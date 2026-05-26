@@ -12,7 +12,7 @@ function Find-PathReference {
         not a hardcoded filename list) and reports lines that reference the given path, so you
         (or an agent) can fix them deliberately. It never edits anything.
 
-        Two confidence tiers: High when the item's repo-relative path appears (e.g.
+        Two confidence tiers: High when the item's repository-relative path appears (e.g.
         'lib/Tarragon.csproj' or 'lib\Tarragon.csproj'), Low when only the bare leaf name appears (e.g.
         'Tarragon.csproj'), which is likely but not certain.
 
@@ -22,10 +22,10 @@ function Find-PathReference {
         The item being/that was moved. Accepts pipeline input.
 
     .PARAMETER RepoRoot
-        Root to scan. Defaults to the enclosing git repo root.
+        Root to scan. Defaults to the enclosing git repository root.
 
     .PARAMETER AdditionalGlob
-        Extra repo-relative globs to include in the candidate set (e.g. 'deploy/*.sh').
+        Extra repository-relative globs to include in the candidate set (e.g. 'deploy/*.sh').
 
     .OUTPUTS
         DotnetMove.PathReference - one per matching line.
@@ -35,7 +35,7 @@ function Find-PathReference {
         Find-PathReference -Path ./lib/Tarragon.csproj
         # Scan the old path after a move to find what still points at it
         Find-PathReference -Path ./libs/Tarragon/Tarragon.csproj
-        # Widen the candidate set with extra repo-relative globs
+        # Widen the candidate set with extra repository-relative globs
         Find-PathReference -Path ./lib/Tarragon.csproj -AdditionalGlob 'deploy/*.sh','*.psake.ps1'
     #>
     [CmdletBinding()]

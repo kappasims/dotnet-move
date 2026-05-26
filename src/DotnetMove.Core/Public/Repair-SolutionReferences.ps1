@@ -1,7 +1,7 @@
 function Repair-SolutionReferences {
     <#
     .SYNOPSIS
-        Scan a repo for broken solution membership and dangling ProjectReferences and repair them
+        Scan a repository for broken solution membership and dangling ProjectReferences and repair them
         by re-pointing each entry at the project's new location.
 
     .DESCRIPTION
@@ -10,7 +10,7 @@ function Repair-SolutionReferences {
         reconciling). Read-only by default: it returns one object per problem, each tagged with a
         Resolution of Relocatable, Missing, or Ambiguous.
 
-        With -Fix it repairs every Relocatable entry: it searches the repo for a project file of the
+        With -Fix it repairs every Relocatable entry: it searches the repository for a project file of the
         same name and re-points the entry at it through the dotnet CLI (remove the stale path, add
         the found one). When one project of that name exists it is used directly; when several do,
         the one that keeps the most of the original path's trailing folders is chosen, since a moved
@@ -21,14 +21,14 @@ function Repair-SolutionReferences {
         CLI. -Prune never touches Relocatable or Ambiguous entries. -Fix and -Prune can be combined.
 
     .PARAMETER RepoRoot
-        Root to scan. Defaults to the enclosing git repo root of the current directory.
+        Root to scan. Defaults to the enclosing git repository root of the current directory.
 
     .PARAMETER Fix
         Re-point each dangling entry at the moved project when its new location is unambiguous.
         Honors -WhatIf.
 
     .PARAMETER Prune
-        Remove entries whose project cannot be found anywhere in the repo. Honors -WhatIf.
+        Remove entries whose project cannot be found anywhere in the repository. Honors -WhatIf.
 
     .OUTPUTS
         DotnetMove.RepairResult - one per dangling entry.

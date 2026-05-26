@@ -26,7 +26,7 @@ function Move-UnityAsset {
         into it (keeping the name); otherwise it is the new path. Errors if it exists.
 
     .PARAMETER RepoRoot
-        Root to scan for asmdef referencers. Defaults to the enclosing git repo root.
+        Root to scan for asmdef referencers. Defaults to the enclosing git repository root.
 
     .PARAMETER Force
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
