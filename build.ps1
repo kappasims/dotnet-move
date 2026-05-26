@@ -224,7 +224,7 @@ function Invoke-DocsTask {
 
     $sb = [System.Text.StringBuilder]::new()
     $emittedBy = @{}   # type name -> @(command names) that declare it via [OutputType]
-    $nsLabel = @{ 'DotnetMove.Core' = '.NET and PowerShell'; 'DotnetMove.Unity' = 'Unity'; 'DotnetMove.Native' = 'native C++ (Windows)' }
+    $nsLabel = @{ 'DotnetMove.Core' = '.NET and PowerShell'; 'DotnetMove.Unity' = 'Unity'; 'DotnetMove.Native' = 'Native C++ (Windows)' }
 
     # Table of contents, grouped by namespace: each command links to its detail entry, with a
     # one-sentence blurb from the synopsis.

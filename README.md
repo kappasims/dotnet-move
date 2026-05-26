@@ -287,7 +287,7 @@ tests/                   Pester tests + fixtures
 | <small>[Unregister-DotnetMvGitAlias](#unregister-dotnetmvgitalias)</small> | <small>Remove the `git dotnetmv` alias registered by Register-DotnetMvGitAlias.</small> |
 | <small>[Update-DotnetMove](#update-dotnetmove)</small> | <small>Update an installed DotnetMove to the latest GitHub release, in place.</small> |
 
-**native C++ (Windows)**
+**Native C++ (Windows)**
 
 | <small>Command</small> | <small>What it does</small> |
 |:---|:---|
