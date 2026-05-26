@@ -153,6 +153,10 @@ function Invoke-DocsTask {
     $typeDefs = Import-PowerShellDataFile ([System.IO.Path]::Combine($root, 'docs', 'output-types.psd1'))
     $typeAlt = ($typeDefs.Keys | ForEach-Object { [regex]::Escape($_) }) -join '|'
 
+    # Dispatch diagrams (cmdlet name -> ASCII routing map). Rendered as a monospaced block in the
+    # Output section for cmdlets that route by extension/type, in place of a prose description.
+    $dispatchDiagrams = Import-PowerShellDataFile ([System.IO.Path]::Combine($root, 'docs', 'dispatch-diagrams.psd1'))
+
     # GitHub heading anchor for a type entry: lowercase, drop all but [a-z0-9 -], spaces to dashes
     # (so 'DotnetMove.PathReference' -> 'dotnetmovepathreference').
     function Get-TypeAnchor { param([string]$Name) (($Name.ToLower() -replace '[^a-z0-9 -]', '') -replace ' ', '-') }
@@ -188,10 +192,6 @@ function Invoke-DocsTask {
         $t
     }
 
-    # Wrap a table cell/header in <sub> so the reference tables render one font size down (GitHub
-    # strips inline style=, but honors <sub>); markdown inside (links, code spans) still renders.
-    function Format-Sub { param([string]$Text) "<sub>$Text</sub>" }
-
     # Common parameters Get-Help lists without descriptions; supply our own so the table is complete.
     $commonDesc = @{
         WhatIf  = 'Preview the operation and report what would change, without modifying anything.'
@@ -208,14 +208,14 @@ function Invoke-DocsTask {
         $label = if ($nsLabel.ContainsKey($m)) { $nsLabel[$m] } else { $m }
         [void]$sb.AppendLine("**$label**")
         [void]$sb.AppendLine()
-        [void]$sb.AppendLine('| ' + (Format-Sub 'Command') + ' | ' + (Format-Sub 'What it does') + ' |')
+        [void]$sb.AppendLine('| Command | What it does |')
         [void]$sb.AppendLine('|:---|:---|')
         foreach ($c in (Get-Command -Module $m -CommandType Function | Sort-Object Name)) {
             $h = Get-Help $c.Name -Full | Where-Object { $_.Name -eq $c.Name } | Select-Object -First 1
             $blurb = ("$($h.Synopsis)" -replace '\s+', ' ').Trim()
             if ($blurb -match '^(.*?[.])(\s|$)') { $blurb = $matches[1] }
-            $link = Format-Sub ('[' + $c.Name + '](#' + $c.Name.ToLower() + ')')
-            $blurbCell = Format-Sub ((ConvertTo-MdText $blurb).Replace('|', '\|'))
+            $link = '[' + $c.Name + '](#' + $c.Name.ToLower() + ')'
+            $blurbCell = (ConvertTo-MdText $blurb).Replace('|', '\|')
             [void]$sb.AppendLine('| ' + $link + ' | ' + $blurbCell + ' |')
         }
         [void]$sb.AppendLine()
@@ -246,20 +246,13 @@ function Invoke-DocsTask {
             if ($params.Count) {
                 [void]$sb.AppendLine('**Parameters**')
                 [void]$sb.AppendLine()
-                $hdr = @('Name', 'Type', 'Required', 'Pipeline', 'Description') | ForEach-Object { Format-Sub $_ }
-                [void]$sb.AppendLine('| ' + ($hdr -join ' | ') + ' |')
+                [void]$sb.AppendLine('| Name | Type | Required | Pipeline | Description |')
                 [void]$sb.AppendLine('|:---|:---|:---|:---|:---|')
                 foreach ($p in $params) {
                     $pdText = (Format-HelpText $p.description) -replace '\r?\n', ' '
                     if (-not $pdText -and $commonDesc.ContainsKey($p.name)) { $pdText = $commonDesc[$p.name] }
                     $pd = (ConvertTo-MdText $pdText).Replace('|', '\|')
-                    $cells = @(
-                        (Format-Sub ('`' + $p.name + '`')),
-                        (Format-Sub "$($p.type.name)"),
-                        (Format-Sub "$($p.required)"),
-                        (Format-Sub "$($p.pipelineInput)"),
-                        (Format-Sub $pd)
-                    )
+                    $cells = @(('-' + $p.name), "$($p.type.name)", "$($p.required)", "$($p.pipelineInput)", $pd)
                     [void]$sb.AppendLine('| ' + ($cells -join ' | ') + ' |')
                 }
                 [void]$sb.AppendLine()
@@ -276,7 +269,12 @@ function Invoke-DocsTask {
             if ($registered.Count -or $outRaw) {
                 [void]$sb.AppendLine('**Output**')
                 [void]$sb.AppendLine()
-                if ($registered.Count -eq 1) {
+                if ($dispatchDiagrams.ContainsKey($c.Name)) {
+                    # Routes by extension/type: show the mapping as a diagram, not a sentence.
+                    [void]$sb.AppendLine('```text')
+                    [void]$sb.AppendLine($dispatchDiagrams[$c.Name].TrimEnd())
+                    [void]$sb.AppendLine('```')
+                } elseif ($registered.Count -eq 1) {
                     $t = $registered[0]; $def = $typeDefs[$t]
                     $lead = if ($def.Array) {
                         "Returns zero or more $(Format-TypeLink $t), collected as an array" + $(if ($def.EmptyIsNull) { ' (`$null` when none)' } else { '' }) + '.'

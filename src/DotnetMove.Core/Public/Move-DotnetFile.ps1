@@ -5,9 +5,8 @@ function Move-DotnetFile {
         right specialist. The front door for file moves in the .NET family.
 
     .DESCRIPTION
-        Dispatches by extension: .csproj/.fsproj/.vbproj to Move-DotnetProject, .sln/.slnx to
-        Move-Solution, and .props/.targets to Move-MSBuildImport.
-        Native (.vcxproj), PowerShell (.ps1/.psd1) and Unity assets are deliberately not
+        Dispatches a managed .NET file to the right specialist by extension (see Output for the
+        routing). Native (.vcxproj), PowerShell (.ps1/.psd1) and Unity assets are deliberately not
         handled here - use Move-NativeProject / Move-PowerShellScript / Move-PowerShellModule /
         Move-UnityAsset. -WhatIf/-Confirm/-Verbose propagate to the specialist; -Force and
         -RepoRoot/-NoBuild are forwarded where the specialist accepts them.

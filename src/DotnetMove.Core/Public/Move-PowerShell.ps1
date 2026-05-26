@@ -5,11 +5,11 @@ function Move-PowerShell {
         specialist. The front door for PowerShell moves.
 
     .DESCRIPTION
-        Dispatches by target type:
-          - a .ps1 -> Move-PowerShellScript (fixes dot-source/call references, AST-based)
-          - a .psd1 or module folder -> Move-PowerShellModule (reconciles the manifest)
-        -WhatIf/-Confirm/-Verbose propagate to the specialist; -Force is forwarded, and
-        -RepoRoot is forwarded to the script specialist (the module specialist has no RepoRoot).
+        Dispatches a PowerShell item to the right specialist by type (see Output for the routing):
+        the script specialist fixes dot-source/call references (AST-based), the module specialist
+        reconciles the manifest. -WhatIf/-Confirm/-Verbose propagate to the specialist; -Force is
+        forwarded, and -RepoRoot is forwarded to the script specialist (the module specialist has
+        no RepoRoot).
 
     .PARAMETER Path
         The PowerShell item to move: a .ps1 script, a .psd1 manifest, or a module folder.
