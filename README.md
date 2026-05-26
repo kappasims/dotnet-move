@@ -337,6 +337,29 @@ Per-push CI (`.github/workflows/ci.yml`) runs the suite on windows-latest (Power
 Windows PowerShell 5.1, plus lint. Linux and macOS are on-demand (`platforms.yml`, via
 `tools/Invoke-PlatformCI.ps1`); run them before a release.
 
+## Releasing
+
+Releases ship from `master` only, gated through a merge. To cut one:
+
+1. Land the work on `develop` and get it green: the full Pester suite on all three platforms
+   (`ci.yml` for Windows and Windows PowerShell 5.1; `platforms.yml` for Linux and macOS, via
+   `tools/Invoke-PlatformCI.ps1`) and PSScriptAnalyzer clean.
+2. Fast-forward `master` to `develop` and push. `master` serves the default-branch README and the
+   installer, so it must be current; the merge is the gate.
+3. From `master`, run `./build.ps1 -Task Release -Version X.Y.Z -Publish`. It stamps the version
+   into every manifest, re-runs PSScriptAnalyzer and the suite as a release gate, then commits
+   `release: vX.Y.Z`, tags, pushes, and creates the GitHub release.
+4. Sync `develop` back to `master` so the branches do not drift.
+
+The requirements, restated:
+
+- **From `master`, always** - never tag `develop`.
+- **All three platforms green** (Windows, Linux, macOS) **plus static analysis**, before the tag.
+- **Version equals the tag** - `ModuleVersion` in every manifest matches `vX.Y.Z`.
+
+The PowerShell Gallery is a separate step: `./build.ps1 -Task Publish -ApiKey <key>` assembles and
+publishes the single bundled package (a dry run without `-ApiKey`).
+
 ## Modules
 
 Split by platform so the cross-platform core never ships native, Windows-only code. It ships as
