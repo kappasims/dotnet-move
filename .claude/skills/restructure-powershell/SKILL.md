@@ -69,3 +69,12 @@ one-time alias that `Register-DotnetMvGitAlias` writes to the user's git config.
 it or want to use it, prompt the user first and let them register it; do not edit their git
 config for them. Never auto-install anything (git, the dotnet SDK, or these modules): if a
 prerequisite is missing, tell the user the install command and let them run it.
+
+## Staying current
+
+DotnetMove installs from a clone and does not auto-update; cutting a release changes nothing on an
+installed machine until you pull. Check with `Test-DotnetMoveUpdate` (it compares the installed
+module to the latest GitHub release). To update: `git pull` in the clone, then
+`./build.ps1 -Task Install` (and re-sync `.claude/skills` if they were copied out of the clone).
+For automatic reminders, consider a Claude Code SessionStart hook that runs
+`Test-DotnetMoveUpdate`; ask the user before adding it, since it edits their settings.json.
