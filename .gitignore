@@ -10,3 +10,6 @@ obj/
 
 # Claude Code runtime lock (per-session; not for version control)
 .claude/scheduled_tasks.lock
+
+# Generated UX transcript (machine-specific temp paths; regenerate with Show-CommandUx.ps1)
+tools/ux-flow.md
