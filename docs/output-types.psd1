@@ -57,8 +57,8 @@
         Array   = $true
         EmptyIsNull = $false
         Fields  = @(
-            @{ Name = 'Solution'; Type = 'string'; Note = "repo-relative, or '(none)' for an unreferenced project" }
-            @{ Name = 'Kind';     Type = 'string'; Note = 'Project | SolutionFolder | SolutionItem | UnreferencedProject' }
+            @{ Name = 'Solution'; Type = 'string';                       Note = "repo-relative, or '(none)' for an unreferenced project" }
+            @{ Name = 'Kind';     Type = 'DotnetMove.SolutionItemKind'; Note = 'enum: Project | SolutionFolder | SolutionItem | UnreferencedProject' }
             @{ Name = 'Type';     Type = 'string'; Note = 'project extension without the dot, else empty' }
             @{ Name = 'Name';     Type = 'string'; Note = '' }
             @{ Name = 'Path';     Type = 'string'; Note = 'as stored in the solution, or repo-relative' }

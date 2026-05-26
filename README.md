@@ -68,30 +68,30 @@ that owns the format. The commands, most general first (full per-parameter docs 
 
 Level 1, one command for anything:
 
-| Command | Moves |
-|---|---|
-| `Move-Dotnet` | any supported file or folder; detects the type and routes |
+| <small>Command</small> | <small>Moves</small> |
+|:---|:---|
+| <small>`Move-Dotnet`</small> | <small>any supported file or folder; detects the type and routes</small> |
 
 Level 2, the everyday movers: hand them a file or a folder and they route to the right specialist.
 
-| Command | Moves |
-|---|---|
-| `Move-DotnetFile` | a .NET file: `.csproj`/`.fsproj`/`.vbproj`, `.sln`/`.slnx`, `.props`/`.targets` |
-| `Move-DotnetFolder` | a folder of .NET projects |
-| `Move-PowerShell` | a `.ps1`, a `.psd1`, or a module folder |
-| `Move-UnityAsset` | a Unity asset or folder (with its `.meta`) |
-| `Move-NativeProject` | a native C++ `.vcxproj` (Windows) |
+| <small>Command</small> | <small>Moves</small> |
+|:---|:---|
+| <small>`Move-DotnetFile`</small> | <small>a .NET file: `.csproj`/`.fsproj`/`.vbproj`, `.sln`/`.slnx`, `.props`/`.targets`</small> |
+| <small>`Move-DotnetFolder`</small> | <small>a folder of .NET projects</small> |
+| <small>`Move-PowerShell`</small> | <small>a `.ps1`, a `.psd1`, or a module folder</small> |
+| <small>`Move-UnityAsset`</small> | <small>a Unity asset or folder (with its `.meta`)</small> |
+| <small>`Move-NativeProject`</small> | <small>a native C++ `.vcxproj` (Windows)</small> |
 
 Level 3, specialists, when you want one specific reconciliation:
 
-| Command | Moves | Reconciles via |
-|---|---|---|
-| `Move-DotnetProject` | one .NET project | `dotnet sln add/remove`, `dotnet add/remove reference` |
-| `Move-DotnetProjectTree` | many projects under a folder | same, for every cross-boundary reference |
-| `Move-Solution` | a solution (`.sln`/`.slnx`) | rebases the stored project paths |
-| `Move-MSBuildImport` | a shared `.props`/`.targets` | fixes `<Import>` paths in consumers |
-| `Move-PowerShellScript` | a `.ps1` | rewrites dot-source/call references from the AST |
-| `Move-PowerShellModule` | a module folder | `Update-ModuleManifest` (`RootModule`/`NestedModules`/`FileList`) |
+| <small>Command</small> | <small>Moves</small> | <small>Reconciles via</small> |
+|:---|:---|:---|
+| <small>`Move-DotnetProject`</small> | <small>one .NET project</small> | <small>`dotnet sln add/remove`, `dotnet add/remove reference`</small> |
+| <small>`Move-DotnetProjectTree`</small> | <small>many projects under a folder</small> | <small>same, for every cross-boundary reference</small> |
+| <small>`Move-Solution`</small> | <small>a solution (`.sln`/`.slnx`)</small> | <small>rebases the stored project paths</small> |
+| <small>`Move-MSBuildImport`</small> | <small>a shared `.props`/`.targets`</small> | <small>fixes `<Import>` paths in consumers</small> |
+| <small>`Move-PowerShellScript`</small> | <small>a `.ps1`</small> | <small>rewrites dot-source/call references from the AST</small> |
+| <small>`Move-PowerShellModule`</small> | <small>a module folder</small> | <small>`Update-ModuleManifest` (`RootModule`/`NestedModules`/`FileList`)</small> |
 
 `Move-UnityAsset` moves the asset together with its `.meta`, so the GUIDs scenes and prefabs
 reference are preserved (nothing to rewrite). `Directory.Build.props/.targets` and
@@ -115,15 +115,15 @@ Every move supports `-WhatIf`/`-Confirm`; `-Force` enables the no-git fallback.
 
 DotnetMove can be used purely to inspect a repo. These commands are read-only and change nothing.
 
-| Command | Reports |
-|---|---|
-| `Test-SolutionConsistency` | projects with divergent solution membership across solutions |
-| `Get-SolutionInventory` | full solution contents beyond `dotnet sln list` (non-CLI types like `.pssproj`, folders, items) + projects in no solution |
-| `Find-PathReference` | path references in build/CI/hook scripts that no move reconciles |
-| `Test-UnityMetaIntegrity` | missing or orphan Unity `.meta` |
-| `Resolve-MoveEngine` | which engine a given path classifies to |
-| `Get-DotnetMoveCapability` | whether git and dotnet are present, plus the platform |
-| `Test-DotnetMoveUpdate` | whether a newer DotnetMove release is available on GitHub |
+| <small>Command</small> | <small>Reports</small> |
+|:---|:---|
+| <small>`Test-SolutionConsistency`</small> | <small>projects with divergent solution membership across solutions</small> |
+| <small>`Get-SolutionInventory`</small> | <small>full solution contents beyond `dotnet sln list` (non-CLI types like `.pssproj`, folders, items) + projects in no solution</small> |
+| <small>`Find-PathReference`</small> | <small>path references in build/CI/hook scripts that no move reconciles</small> |
+| <small>`Test-UnityMetaIntegrity`</small> | <small>missing or orphan Unity `.meta`</small> |
+| <small>`Resolve-MoveEngine`</small> | <small>which engine a given path classifies to</small> |
+| <small>`Get-DotnetMoveCapability`</small> | <small>whether git and dotnet are present, plus the platform</small> |
+| <small>`Test-DotnetMoveUpdate`</small> | <small>whether a newer DotnetMove release is available on GitHub</small> |
 
 ### Repairing
 
@@ -132,11 +132,11 @@ move done outside DotnetMove, without moving anything itself. `Repair-SolutionRe
 entries pointing at a project that no longer exists at the recorded path and reports each as
 relocatable, missing, or ambiguous (read-only by default).
 
-| Flag | Does |
-|---|---|
-| (none) | report the dangling entries and whether each can be repaired |
-| `-Fix` | re-point each relocatable entry at the project's new location |
-| `-Prune` | remove entries whose project is gone for good |
+| <small>Flag</small> | <small>Does</small> |
+|:---|:---|
+| <small>(none)</small> | <small>report the dangling entries and whether each can be repaired</small> |
+| <small>`-Fix`</small> | <small>re-point each relocatable entry at the project's new location</small> |
+| <small>`-Prune`</small> | <small>remove entries whose project is gone for good</small> |
 
 To resolve the membership divergence that `Test-SolutionConsistency` reports, `Sync-Solution` adds
 each project to the solutions missing it (via `dotnet sln add`), making membership uniform. It only
@@ -191,12 +191,12 @@ Flags: `--whatif` (preview), `--force` (plain `Move-Item` fallback when git is u
 Four Claude Code skills (`.claude/skills/`), one per engine, trigger on natural language and run
 the commands above:
 
-| Skill | Triggers on |
-|---|---|
-| `restructure-dotnet` | moving a `.csproj/.fsproj/.vbproj`, reorganizing a solution |
-| `restructure-powershell` | moving a `.ps1` script or a PowerShell module |
-| `restructure-unity` | moving a Unity asset, folder, or `.asmdef` |
-| `restructure-native` | moving a native C++ `.vcxproj` (Windows) |
+| <small>Skill</small> | <small>Triggers on</small> |
+|:---|:---|
+| <small>`restructure-dotnet`</small> | <small>moving a `.csproj/.fsproj/.vbproj`, reorganizing a solution</small> |
+| <small>`restructure-powershell`</small> | <small>moving a `.ps1` script or a PowerShell module</small> |
+| <small>`restructure-unity`</small> | <small>moving a Unity asset, folder, or `.asmdef`</small> |
+| <small>`restructure-native`</small> | <small>moving a native C++ `.vcxproj` (Windows)</small> |
 
 ## For developers
 
@@ -422,11 +422,11 @@ One per item.
 
 ```text
 DotnetMove.SolutionItem
-  Solution  string  repo-relative, or '(none)' for an unreferenced project
-  Kind      string  Project | SolutionFolder | SolutionItem | UnreferencedProject
-  Type      string  project extension without the dot, else empty
+  Solution  string                       repo-relative, or '(none)' for an unreferenced project
+  Kind      DotnetMove.SolutionItemKind  enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
+  Type      string                       project extension without the dot, else empty
   Name      string
-  Path      string  as stored in the solution, or repo-relative
+  Path      string                       as stored in the solution, or repo-relative
 ```
 
 **Examples**
@@ -1768,11 +1768,11 @@ One entry in the full contents of a solution (or a project on disk that no solut
 
 ```text
 DotnetMove.SolutionItem
-  Solution  string  repo-relative, or '(none)' for an unreferenced project
-  Kind      string  Project | SolutionFolder | SolutionItem | UnreferencedProject
-  Type      string  project extension without the dot, else empty
+  Solution  string                       repo-relative, or '(none)' for an unreferenced project
+  Kind      DotnetMove.SolutionItemKind  enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
+  Type      string                       project extension without the dot, else empty
   Name      string
-  Path      string  as stored in the solution, or repo-relative
+  Path      string                       as stored in the solution, or repo-relative
 ```
 
 ### DotnetMove.SolutionMoveResult

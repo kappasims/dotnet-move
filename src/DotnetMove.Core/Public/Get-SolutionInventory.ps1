@@ -54,17 +54,17 @@ function Get-SolutionInventory {
                 $seen.Add($p.Abs)
                 [pscustomobject]@{
                     Solution = $rel
-                    Kind     = 'Project'
+                    Kind     = [DotnetMove.SolutionItemKind]::Project
                     Type     = $p.Ext.TrimStart('.')
                     Name     = Split-Path -Leaf $p.Abs
                     Path     = $p.Stored
                 }
             }
             foreach ($f in $content.Folders) {
-                [pscustomobject]@{ Solution = $rel; Kind = 'SolutionFolder'; Type = ''; Name = $f; Path = '' }
+                [pscustomobject]@{ Solution = $rel; Kind = [DotnetMove.SolutionItemKind]::SolutionFolder; Type = ''; Name = $f; Path = '' }
             }
             foreach ($i in $content.Items) {
-                [pscustomobject]@{ Solution = $rel; Kind = 'SolutionItem'; Type = ''; Name = (Split-Path -Leaf $i); Path = $i }
+                [pscustomobject]@{ Solution = $rel; Kind = [DotnetMove.SolutionItemKind]::SolutionItem; Type = ''; Name = (Split-Path -Leaf $i); Path = $i }
             }
         }
 
@@ -74,7 +74,7 @@ function Get-SolutionInventory {
             if (-not (Test-PathInList -Path $abs -List $seen)) {
                 [pscustomobject]@{
                     Solution = '(none)'
-                    Kind     = 'UnreferencedProject'
+                    Kind     = [DotnetMove.SolutionItemKind]::UnreferencedProject
                     Type     = $disk.Extension.TrimStart('.')
                     Name     = $disk.Name
                     Path     = _rel $abs
