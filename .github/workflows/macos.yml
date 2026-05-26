@@ -19,7 +19,11 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      # macOS runners ship PowerShell 7 (pwsh); build.ps1 installs Pester.
+      # macOS runners ship PowerShell 7 (pwsh); build.ps1 no longer auto-installs Pester.
+      - name: Install Pester
+        shell: pwsh
+        run: Install-Module Pester -MinimumVersion 5.0 -Scope CurrentUser -Force -SkipPublisherCheck
+
       - name: Run tests
         shell: pwsh
         run: ./build.ps1 -Task Test

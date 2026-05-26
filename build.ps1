@@ -53,8 +53,8 @@ function script:Test-IsWindowsBuild {
 
 function Invoke-TestTask {
     if (-not (Get-Module -ListAvailable Pester | Where-Object Version -ge ([version]'5.0'))) {
-        Write-Host 'Installing Pester 5...' -ForegroundColor Cyan
-        Install-Module Pester -MinimumVersion 5.0 -Scope CurrentUser -Force -SkipPublisherCheck
+        # Do not auto-install (matches the toolkit's "never auto-install" stance); instruct instead.
+        throw "Pester 5+ is required to run the tests. Install it: Install-Module Pester -MinimumVersion 5.0 -Scope CurrentUser -SkipPublisherCheck"
     }
     Import-Module Pester -MinimumVersion 5.0 -Force
 
