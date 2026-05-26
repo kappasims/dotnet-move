@@ -1106,8 +1106,8 @@ reversible git-config line - it never edits PATH or installs anything.
 Register-DotnetMvGitAlias [[-Scope] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-Adds `alias.dotnetmv = !pwsh `-NoProfile` `-File` &lt;forwarder&gt;` to git config so
-`git dotnetmv &lt;src&gt; &lt;dst&gt;` works. "dotnet" is the .NET-platform umbrella: the verb
+Adds `alias.dotnetmv = !pwsh -NoProfile -File <forwarder>` to git config so
+`git dotnetmv <src> <dst>` works. "dotnet" is the .NET-platform umbrella: the verb
 branches by target type to the right engine - the .NET project model
 (csproj/sln/props), Unity (.meta/.asmdef), PowerShell (.ps1/.psd1), or native C++
 (.vcxproj). Scope is your choice (repo-local or global). Undo with
@@ -1499,7 +1499,7 @@ Checks GitHub for a newer release (via Test-DotnetMoveUpdate) and, if the instal
 is behind, runs the release's install.ps1 to overwrite the modules on your module path. No
 git, no clone. Does nothing when already current unless `-Force`. Honors `-WhatIf`/`-Confirm`.
 
-After it runs, reload the module in the current session with `Import-Module DotnetMove `-Force``.
+After it runs, reload the module in the current session with `Import-Module DotnetMove -Force`.
 Needs network access to GitHub. When the module ships on the PowerShell Gallery this is
 superseded by `Update-Module DotnetMove`.
 

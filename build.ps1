@@ -139,19 +139,32 @@ function Invoke-DocsTask {
 
     function Format-HelpText { param($Field) (($Field | ForEach-Object { $_.Text }) -join "`n").Trim() }
     # Escape characters that markdown would otherwise eat in prose: '<...>' renders as an HTML
-    # tag, and '$...$' as math. Applied to help prose only, never to code blocks.
+    # tag, and '$...$' as math. Applied to help prose only, never to fenced code blocks.
     function ConvertTo-MdText {
         param([string]$Text)
-        # Wrap $(...) / $var tokens in backticks so no renderer treats them as math (\$ escaping
-        # is honored inconsistently), and escape < > so they are not read as HTML tags. Code
-        # blocks are emitted separately and never passed through here.
-        $Text = [regex]::Replace($Text, '\$\([^)]*\)|\$\w+', { param($mm) '`' + $mm.Value + '`' })
-        # Backtick bare parameter references (-Name) in prose. The lookbehind skips a hyphen
-        # already inside a word (cmdlets like Move-Item, Update-ModuleManifest) and anything
-        # already in a code span; requiring an uppercase first letter skips hyphenated words
-        # (non-terminating, cross-boundary, dot-source).
-        $Text = [regex]::Replace($Text, '(?<![\w`-])(-[A-Z][A-Za-z]+)\b', '`$1`')
-        $Text.Replace('<', '&lt;').Replace('>', '&gt;')
+        # Transform prose only; leave existing `backtick code spans` verbatim. Inside a span, < >
+        # already render literally and tokens must not be re-backticked (nesting backticks would
+        # break the span and the entities would show raw).
+        $prose = {
+            param([string]$s)
+            # Wrap $(...) / $var tokens in backticks so no renderer treats them as math (\$ escaping
+            # is honored inconsistently).
+            $s = [regex]::Replace($s, '\$\([^)]*\)|\$\w+', { param($mm) '`' + $mm.Value + '`' })
+            # Backtick bare parameter references (-Name). Uppercase-first skips hyphenated words
+            # (non-terminating, cross-boundary); the lookbehind skips cmdlet names (Move-Item).
+            $s = [regex]::Replace($s, '(?<![\w`-])(-[A-Z][A-Za-z]+)\b', '`$1`')
+            # Escape < > so they are not read as HTML tags.
+            $s.Replace('<', '&lt;').Replace('>', '&gt;')
+        }
+        $sb = [System.Text.StringBuilder]::new()
+        $pos = 0
+        foreach ($m in [regex]::Matches($Text, '`[^`]*`')) {
+            if ($m.Index -gt $pos) { [void]$sb.Append((& $prose $Text.Substring($pos, $m.Index - $pos))) }
+            [void]$sb.Append($m.Value)   # code span, verbatim
+            $pos = $m.Index + $m.Length
+        }
+        if ($pos -lt $Text.Length) { [void]$sb.Append((& $prose $Text.Substring($pos))) }
+        $sb.ToString()
     }
 
     # Output-type registry (typedefs). Each cmdlet declares the type(s) it emits via
