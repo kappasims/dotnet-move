@@ -6,6 +6,11 @@ name: Platforms (manual)
 on:
   workflow_dispatch:
 
+# Read-only: this workflow only checks out and runs tests, never writes back to the repository.
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   test:
     name: Test (${{ matrix.os }})

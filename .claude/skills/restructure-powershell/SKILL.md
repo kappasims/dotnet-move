@@ -75,7 +75,7 @@ Treat the result as "fixed what could be proven," not "guaranteed complete."
 
 ## Undoing a move
 
-Every move is journaled to `.dotnetmove/journal.jsonl` at the repository root, so you can reverse it later -
+Every move is journaled inside the git directory (`.git/dotnetmove/journal.jsonl`), so you can reverse it later -
 even in a new session - with `Undo-DotnetMove`. It replays the inverse (the same move with source
 and destination swapped), re-reconciling references from the current state.
 
@@ -85,8 +85,8 @@ Undo-DotnetMove -WhatIf   # preview reversing the most recent move
 Undo-DotnetMove           # reverse the most recent move (call again to walk back)
 ```
 
-Journaling is on by default and self-gitignored (it never touches the repository's `.gitignore`). Opt out
-with `$env:DOTNETMOVE_JOURNAL = 'off'`. See the [README](https://github.com/kappasims/dotnet-move).
+Journaling is on by default and stays out of the working tree (it lives inside `.git/`, so git never tracks it).
+Opt out per repository with `Set-DotnetMoveJournal -Enabled $false` (or `-Global` for all repositories). See the [README](https://github.com/kappasims/dotnet-move).
 
 ## The `git dotnetmv` verb (optional; ask first)
 
