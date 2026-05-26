@@ -1,6 +1,7 @@
 #requires -Modules Pester
 
 BeforeAll {
+    . (Join-Path $PSScriptRoot TestHelpers.ps1)
     Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'DotnetMove.Core', 'DotnetMove.Core.psd1')) -Force
 
     function New-TempDir {
@@ -42,8 +43,8 @@ BeforeAll {
         Push-Location $root
         try {
             & git init -q
-            & dotnet new classlib -n Lib -o (Join-Path $root 'Lib') | Out-Null
-            & dotnet new console -n App -o (Join-Path $root 'App') | Out-Null
+            New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
+            New-StubConsole -Name App -Directory (Join-Path $root 'App') | Out-Null
             & dotnet new sln -n Both --format sln | Out-Null
             & dotnet sln Both.sln add (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) (Join-Path $root (Join-Path 'App' 'App.csproj')) | Out-Null
             & dotnet new sln -n Partial --format slnx | Out-Null

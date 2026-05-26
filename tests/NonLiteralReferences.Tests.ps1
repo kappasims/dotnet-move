@@ -1,6 +1,7 @@
 #requires -Modules Pester
 
 BeforeAll {
+    . (Join-Path $PSScriptRoot TestHelpers.ps1)
     Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'DotnetMove.Core', 'DotnetMove.Core.psd1')) -Force
 
     function New-TempDir {
@@ -51,7 +52,7 @@ Describe 'Move-DotnetProject with a non-literal reference' {
         Push-Location $root
         try {
             & git init -q
-            & dotnet new classlib -n Lib -o (Join-Path $root (Join-Path 'src' 'Lib')) | Out-Null
+            New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'src' 'Lib')) | Out-Null
             & dotnet new sln -n Demo --format slnx | Out-Null
             & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) | Out-Null
             Add-ProjectReference -ProjectFile (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) -Include '$(SharedDir)\Shared.csproj'
@@ -73,7 +74,7 @@ Describe 'Repair-SolutionReferences and non-literal references' {
         Push-Location $root
         try {
             & git init -q
-            & dotnet new classlib -n Lib -o (Join-Path $root 'Lib') | Out-Null
+            New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
             Add-ProjectReference -ProjectFile (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) -Include '$(PluginDir)\Plugin.csproj'
             $probs = Repair-SolutionReferences -RepoRoot $root
             # The only csproj has just a non-literal reference, so there is nothing dangling.

@@ -1,6 +1,7 @@
 #requires -Modules Pester
 
 BeforeAll {
+    . (Join-Path $PSScriptRoot TestHelpers.ps1)
     Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'DotnetMove.Core', 'DotnetMove.Core.psd1')) -Force
 
     function New-RepairFixtureBase {
@@ -10,8 +11,8 @@ BeforeAll {
         Push-Location $root
         try {
             & git init -q
-            & dotnet new classlib -n Lib -o (Join-Path $root 'Lib') | Out-Null
-            & dotnet new console -n App -o (Join-Path $root 'App') | Out-Null
+            New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
+            New-StubConsole -Name App -Directory (Join-Path $root 'App') | Out-Null
             & dotnet add (Join-Path $root (Join-Path 'App' 'App.csproj')) reference (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) | Out-Null
             & dotnet new sln -n Demo --format slnx | Out-Null
             & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) (Join-Path $root (Join-Path 'App' 'App.csproj')) | Out-Null
@@ -45,10 +46,10 @@ BeforeAll {
         Push-Location $root
         try {
             & git init -q
-            & dotnet new classlib -n Widgets -o $srcWidgets | Out-Null
-            & dotnet new console -n App -o (Join-Path $root 'App') | Out-Null
+            New-StubClassLib -Name Widgets -Directory $srcWidgets | Out-Null
+            New-StubConsole -Name App -Directory (Join-Path $root 'App') | Out-Null
             & dotnet add (Join-Path $root (Join-Path 'App' 'App.csproj')) reference (Join-Path $srcWidgets 'Widgets.csproj') | Out-Null
-            & dotnet new classlib -n Widgets -o (Join-Path $root $DecoyDir) | Out-Null   # decoy, same leaf
+            New-StubClassLib -Name Widgets -Directory (Join-Path $root $DecoyDir) | Out-Null   # decoy, same leaf
             & dotnet new sln -n Demo --format slnx | Out-Null
             & dotnet sln Demo.slnx add (Join-Path $srcWidgets 'Widgets.csproj') (Join-Path $root (Join-Path 'App' 'App.csproj')) | Out-Null
         } finally { Pop-Location }

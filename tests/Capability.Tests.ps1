@@ -1,6 +1,7 @@
 #requires -Modules Pester
 
 BeforeAll {
+    . (Join-Path $PSScriptRoot TestHelpers.ps1)
     Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'DotnetMove.Core' ('DotnetMove.Core.psd1'))))) -Force
 
     function New-SoloFixture {
@@ -8,7 +9,7 @@ BeforeAll {
         New-Item -ItemType Directory -Path $root | Out-Null
         Push-Location $root
         try {
-            & dotnet new classlib -n Lib -o (Join-Path $root 'Lib') | Out-Null
+            New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
             & dotnet new sln -n Demo --format slnx | Out-Null
             & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'Lib' ('Lib.csproj'))) | Out-Null
         } finally { Pop-Location }

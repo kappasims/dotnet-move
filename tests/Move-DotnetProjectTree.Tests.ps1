@@ -1,6 +1,7 @@
 #requires -Modules Pester
 
 BeforeAll {
+    . (Join-Path $PSScriptRoot TestHelpers.ps1)
     Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'DotnetMove.Core' ('DotnetMove.Core.psd1'))))) -Force
 
     function New-TreeFixture {
@@ -10,9 +11,9 @@ BeforeAll {
         Push-Location $root
         try {
             & git init -q
-            & dotnet new classlib -n Lib  -o (Join-Path $root (Join-Path 'group' ('Lib')))  | Out-Null
-            & dotnet new classlib -n Lib2 -o (Join-Path $root (Join-Path 'group' ('Lib2'))) | Out-Null
-            & dotnet new console  -n App  -o (Join-Path $root 'App')          | Out-Null
+            New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'group' ('Lib')))  | Out-Null
+            New-StubClassLib -Name Lib2 -Directory (Join-Path $root (Join-Path 'group' ('Lib2'))) | Out-Null
+            New-StubConsole -Name App -Directory (Join-Path $root 'App')          | Out-Null
             & dotnet add (Join-Path $root (Join-Path 'group' (Join-Path 'Lib2' ('Lib2.csproj')))) reference (Join-Path $root (Join-Path 'group' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
             & dotnet add (Join-Path $root (Join-Path 'App' ('App.csproj')))           reference (Join-Path $root (Join-Path 'group' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
             & dotnet new sln -n Demo --format slnx | Out-Null
@@ -65,7 +66,7 @@ Describe 'Move-DotnetProjectTree' {
             & git init -q
             Set-Content (Join-Path $root 'Directory.Build.props') '<Project></Project>'
             Set-Content (Join-Path $root (Join-Path 'area' ('Directory.Build.targets'))) '<Project></Project>'   # applies to area/* only
-            & dotnet new classlib -n Proj -o (Join-Path $root (Join-Path 'area' ('Proj'))) | Out-Null
+            New-StubClassLib -Name Proj -Directory (Join-Path $root (Join-Path 'area' ('Proj'))) | Out-Null
             & git add -A; & git commit -qm fixture | Out-Null
             # Moving area/Proj out of area/ drops the area Directory.Build.targets from its chain.
             Move-DotnetProjectTree -Path (Join-Path $root (Join-Path 'area' ('Proj'))) -Destination (Join-Path $root 'movedProj') `
@@ -83,7 +84,7 @@ Describe 'Move-DotnetProjectTree' {
             & git init -q
             # CPM file applies to area/* only; moving area/Proj out of area drops it.
             Set-Content (Join-Path $root (Join-Path 'area' ('Directory.Packages.props'))) '<Project><PropertyGroup><ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally></PropertyGroup></Project>'
-            & dotnet new classlib -n Proj -o (Join-Path $root (Join-Path 'area' ('Proj'))) | Out-Null
+            New-StubClassLib -Name Proj -Directory (Join-Path $root (Join-Path 'area' ('Proj'))) | Out-Null
             & git add -A; & git commit -qm fixture | Out-Null
             Move-DotnetProjectTree -Path (Join-Path $root (Join-Path 'area' ('Proj'))) -Destination (Join-Path $root 'movedProj') `
                 -RepoRoot $root -NoBuild -Confirm:$false -WarningVariable w -WarningAction SilentlyContinue | Out-Null

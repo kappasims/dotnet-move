@@ -1,0 +1,36 @@
+# Shared test fixtures. `dotnet new classlib/console` dominates suite time (template engine +
+# restore, ~1-2s each), so these write the equivalent minimal SDK projects as text instantly.
+# They build and behave identically for `dotnet sln add` / `dotnet add reference` / `dotnet build`.
+# Mirrors `dotnet new <tmpl> -n <Name> -o <Directory>`: creates <Directory>/<Name>.csproj and
+# returns that path.
+
+function New-StubClassLib {
+    param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$Directory)
+    New-Item -ItemType Directory -Path $Directory -Force | Out-Null
+    $csproj = Join-Path $Directory "$Name.csproj"
+    Set-Content -LiteralPath $csproj -Encoding UTF8 -Value @'
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+</Project>
+'@
+    Set-Content -LiteralPath (Join-Path $Directory 'Class1.cs') -Encoding UTF8 -Value "namespace $Name { public class Class1 { } }"
+    return $csproj
+}
+
+function New-StubConsole {
+    param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$Directory)
+    New-Item -ItemType Directory -Path $Directory -Force | Out-Null
+    $csproj = Join-Path $Directory "$Name.csproj"
+    Set-Content -LiteralPath $csproj -Encoding UTF8 -Value @'
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+</Project>
+'@
+    Set-Content -LiteralPath (Join-Path $Directory 'Program.cs') -Encoding UTF8 -Value 'System.Console.WriteLine("ok");'
+    return $csproj
+}

@@ -1,6 +1,7 @@
 #requires -Modules Pester
 
 BeforeAll {
+    . (Join-Path $PSScriptRoot TestHelpers.ps1)
     Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'DotnetMove.Core' ('DotnetMove.Core.psd1'))))) -Force
 
     function New-SlnFixture {
@@ -10,7 +11,7 @@ BeforeAll {
         Push-Location $root
         try {
             & git init -q
-            & dotnet new classlib -n Lib -o (Join-Path $root (Join-Path 'src' ('Lib'))) | Out-Null
+            New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'src' ('Lib'))) | Out-Null
             & dotnet new sln -n Demo --format $Format | Out-Null
             $sln = (Get-ChildItem -LiteralPath $root -File | Where-Object { $_.Extension -in '.sln', '.slnx' }).FullName
             & dotnet sln $sln add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
