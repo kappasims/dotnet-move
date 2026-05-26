@@ -7,8 +7,7 @@ BeforeAll {
     function New-RepoWithNestedWorktree {
         # A repo with a .sln and a .slnx (both listing Lib), plus a linked git worktree nested
         # under .claude/worktrees/wt holding duplicate copies of all of it.
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_wt_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
-        New-Item -ItemType Directory -Path $root | Out-Null
+        $root = New-TempRoot -Prefix 'dotnetmove_wt'
         Push-Location $root
         try {
             & git init -q

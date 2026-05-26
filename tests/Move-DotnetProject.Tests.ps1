@@ -7,8 +7,7 @@ BeforeAll {
     function New-Fixture {
         # Build a throwaway 2-project solution: App -> Lib, in a fresh temp git repo.
         param([ValidateSet('sln', 'slnx')][string]$Format = 'slnx')
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
-        New-Item -ItemType Directory -Path $root | Out-Null
+        $root = New-TempRoot -Prefix 'dotnetmove'
         Push-Location $root
         try {
             & git init -q

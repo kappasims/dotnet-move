@@ -6,8 +6,7 @@ BeforeAll {
 
     function New-SlnFixture {
         param([ValidateSet('sln', 'slnx')][string]$Format = 'slnx')
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_sln_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
-        New-Item -ItemType Directory -Path $root | Out-Null
+        $root = New-TempRoot -Prefix 'dotnetmove_sln'
         Push-Location $root
         try {
             & git init -q

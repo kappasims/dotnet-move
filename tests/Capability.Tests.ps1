@@ -5,8 +5,7 @@ BeforeAll {
     Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'DotnetMove.Core' ('DotnetMove.Core.psd1'))))) -Force
 
     function New-SoloFixture {
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_cap_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
-        New-Item -ItemType Directory -Path $root | Out-Null
+        $root = New-TempRoot -Prefix 'dotnetmove_cap'
         Push-Location $root
         try {
             New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null

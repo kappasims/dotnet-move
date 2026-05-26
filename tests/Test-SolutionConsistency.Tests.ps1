@@ -6,8 +6,7 @@ BeforeAll {
 
     function New-DivergentRepo {
         # Two solutions: Both.sln lists Lib+App; Partial.slnx lists App only -> Lib diverges.
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_div_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
-        New-Item -ItemType Directory -Path $root | Out-Null
+        $root = New-TempRoot -Prefix 'dotnetmove_div'
         Push-Location $root
         try {
             & git init -q

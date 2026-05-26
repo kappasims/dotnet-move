@@ -6,8 +6,7 @@ BeforeAll {
 
     function New-RepairFixtureBase {
         # App -> Lib in a solution. Returns the repo root with Lib still in place.
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_rep_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
-        New-Item -ItemType Directory -Path $root | Out-Null
+        $root = New-TempRoot -Prefix 'dotnetmove_rep'
         Push-Location $root
         try {
             & git init -q
@@ -40,8 +39,7 @@ BeforeAll {
         # App -> Widgets (at src/Widgets), in a solution. A second, unrelated project also named
         # Widgets.csproj lives at $DecoyDir, so the leaf name 'Widgets.csproj' is not unique.
         param([Parameter(Mandatory)][string]$DecoyDir)
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_amb_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
-        New-Item -ItemType Directory -Path $root | Out-Null
+        $root = New-TempRoot -Prefix 'dotnetmove_amb'
         $srcWidgets = Join-Path $root (Join-Path 'src' 'Widgets')
         Push-Location $root
         try {

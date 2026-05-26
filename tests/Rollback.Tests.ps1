@@ -5,8 +5,7 @@ BeforeAll {
     Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'DotnetMove.Core', 'DotnetMove.Core.psd1')) -Force
 
     function New-AppLibFixture {
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_rb_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
-        New-Item -ItemType Directory -Path $root | Out-Null
+        $root = New-TempRoot -Prefix 'dotnetmove_rb'
         Push-Location $root
         try {
             & git init -q

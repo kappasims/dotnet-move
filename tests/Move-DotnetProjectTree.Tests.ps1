@@ -6,8 +6,7 @@ BeforeAll {
 
     function New-TreeFixture {
         # group/{Lib, Lib2->Lib (internal)}, plus App outside group -> Lib (external). One solution.
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_tree_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
-        New-Item -ItemType Directory -Path $root | Out-Null
+        $root = New-TempRoot -Prefix 'dotnetmove_tree'
         Push-Location $root
         try {
             & git init -q

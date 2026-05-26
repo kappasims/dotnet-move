@@ -5,8 +5,7 @@ BeforeAll {
     Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'DotnetMove.Core' ('DotnetMove.Core.psd1'))))) -Force
 
     function New-RepoFixture {
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_git_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
-        New-Item -ItemType Directory -Path $root | Out-Null
+        $root = New-TempRoot -Prefix 'dotnetmove_git'
         Push-Location $root
         try {
             & git init -q
