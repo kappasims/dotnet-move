@@ -31,8 +31,7 @@ function Move-DotnetProjectTree {
         Skip the verifying build of the moved projects.
 
     .PARAMETER Force
-        Proceed with a plain file move when git is unavailable instead of aborting. A plain
-        move does not preserve git history.
+        Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
     .OUTPUTS
         A single DotnetMove.TreeMoveResult object: Engine, Source, Destination (strings),

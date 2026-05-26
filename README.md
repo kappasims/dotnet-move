@@ -30,8 +30,8 @@ like "move this project" (see [Skills](#skills)).
 - PowerShell 7+ (Windows, Linux, macOS), or Windows PowerShell 5.1.
 - The .NET SDK (`dotnet`) on PATH for .NET project moves; .NET 10 for `.slnx` solutions. Moving
   PowerShell or Unity files does not need it.
-- git is optional; with it, moves use `git mv` and keep history, and without it `-Force` does a
-  plain move.
+- git is optional; with it, moves use `git mv` and keep history, and without it `-Force` falls back
+  to a plain `Move-Item` (the same PowerShell cmdlet on every platform; no history kept).
 
 Run `Get-DotnetMoveCapability` to see which of these (git, dotnet) the current machine has, plus
 the platform and whether `.slnx` is supported.
@@ -144,8 +144,8 @@ A `Move-DotnetProject` run, step by step (paths recomputed after the move, never
 4. Re-add membership and references so the CLI computes fresh paths.
 5. Run `dotnet build` and report.
 
-Every move supports `-WhatIf` and `-Confirm`. `-Force` falls back to a plain move when git is
-unavailable (no history preserved).
+Every move supports `-WhatIf` and `-Confirm`. `-Force` falls back to a plain `Move-Item` (one
+PowerShell cmdlet, same on every platform) when git is unavailable (no history preserved).
 
 ### Inspecting
 
@@ -223,8 +223,8 @@ git dotnetmv Assets/Plugins/Tarragon Assets/Lib/Tarragon      # routes to the Un
 git dotnetmv Aleppo/Aleppo.vcxproj native/Aleppo          # routes to the native engine (Windows)
 ```
 
-Flags: `--whatif` (preview), `--force` (plain move when git is unavailable), `--nobuild` (skip the
-.NET build step). Unity and native engines are loaded on demand.
+Flags: `--whatif` (preview), `--force` (plain `Move-Item` fallback when git is unavailable),
+`--nobuild` (skip the .NET build step). Unity and native engines are loaded on demand.
 
 ### Skills
 
@@ -398,8 +398,7 @@ Get-DotnetMoveCapability [<CommonParameters>]
 
 PowerShell has no manifest mechanism to declare external-CLI prerequisites, so this is a
 runtime probe via Get-Command; dotnet is required for .NET project moves (the delegation
-target), and git is optional (without it, moves fall back to a plain move with no history
-preserved).
+target), and git is optional (without it, moves fall back to a plain move (PowerShell `Move-Item`) with no history preserved).
 
 **Output**
 
@@ -496,7 +495,7 @@ target's engine accepts them.
 | `Destination` | String | true | false | New path - passed through to the engine. |
 | `RepoRoot` | String | false | false | Repo root the engine scans for references. Defaults to the enclosing git repo root. Not used by the Unity engine. |
 | `NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build'. Only the .NET engine builds; ignored by the others. |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. A plain move does not preserve git history. Forwarded to the engine. |
+| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. Forwarded to the engine. |
 | `WhatIf` | SwitchParameter | false | false |  |
 | `Confirm` | SwitchParameter | false | false |  |
 
@@ -539,7 +538,7 @@ Move-UnityAsset. -WhatIf/-Confirm/-Verbose propagate to the specialist; -Force a
 | `Destination` | String | true | false | New path (file or folder) - passed through to the specialist. |
 | `RepoRoot` | String | false | false | Repo root the specialist scans for references. Defaults to the enclosing git repo root. |
 | `NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build' (forwarded to the project/import specialist). |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. A plain move does not preserve git history. |
+| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `WhatIf` | SwitchParameter | false | false |  |
 | `Confirm` | SwitchParameter | false | false |  |
 
@@ -583,7 +582,7 @@ propagate; -Force/-RepoRoot/-NoBuild are forwarded.
 | `Destination` | String | true | false | New folder path. |
 | `RepoRoot` | String | false | false | Repo root scanned for references. Defaults to the enclosing git repo root. |
 | `NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build' (forwarded to Move-DotnetProjectTree). |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. A plain move does not preserve git history. |
+| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `WhatIf` | SwitchParameter | false | false |  |
 | `Confirm` | SwitchParameter | false | false |  |
 
@@ -632,7 +631,7 @@ terminating error honoring -ErrorAction).
 | `RepoRoot` | String | false | false | Root to scan for solutions/consumers. Defaults to the enclosing git repo root. |
 | `Strict` | SwitchParameter | false | false | Escalate solution-divergence warnings to non-terminating errors. |
 | `NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build' at the end. |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. A plain move does not preserve git history. |
+| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `WhatIf` | SwitchParameter | false | false |  |
 | `Confirm` | SwitchParameter | false | false |  |
 
@@ -688,7 +687,7 @@ confirmed plain-move fallback via -Force / ShouldContinue); supports -WhatIf.
 | `Destination` | String | true | false | The new folder path. |
 | `RepoRoot` | String | false | false | Root to scan. Defaults to the enclosing git repo root. |
 | `NoBuild` | SwitchParameter | false | false | Skip the verifying build of the moved projects. |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. A plain move does not preserve git history. |
+| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `WhatIf` | SwitchParameter | false | false |  |
 | `Confirm` | SwitchParameter | false | false |  |
 
@@ -743,7 +742,7 @@ fallback via -Force). Supports -WhatIf.
 | `Path` | String | true | true (ByValue, ByPropertyName) | The .props/.targets file to move. Accepts pipeline input. |
 | `Destination` | String | true | false | New file path (or a folder, in which case the file keeps its name). |
 | `RepoRoot` | String | false | false | Root to scan for importers. Defaults to the enclosing git repo root. |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. A plain move does not preserve git history. |
+| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `WhatIf` | SwitchParameter | false | false |  |
 | `Confirm` | SwitchParameter | false | false |  |
 
@@ -786,7 +785,7 @@ Dispatches by target type:
 | `Path` | String | true | true (ByValue, ByPropertyName) | The PowerShell item to move: a .ps1 script, a .psd1 manifest, or a module folder. Accepts pipeline input. |
 | `Destination` | String | true | false | New path - passed through to the specialist. |
 | `RepoRoot` | String | false | false | Repo root scanned for referencing scripts. Defaults to the enclosing git repo root. Forwarded to the script specialist only (the module specialist has no RepoRoot). |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. A plain move does not preserve git history. |
+| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `WhatIf` | SwitchParameter | false | false |  |
 | `Confirm` | SwitchParameter | false | false |  |
 
@@ -827,7 +826,7 @@ and any path computed at runtime, cannot be reconciled automatically.
 |---|---|---|---|---|
 | `ModulePath` | String | true | true (ByValue, ByPropertyName) | Path to the module folder, or directly to its .psd1 manifest. |
 | `Destination` | String | true | false | New module folder. |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. A plain move does not preserve git history. |
+| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `WhatIf` | SwitchParameter | false | false |  |
 | `Confirm` | SwitchParameter | false | false |  |
 
@@ -877,7 +876,7 @@ supported; dotnet not required.
 | `Path` | String | true | true (ByValue, ByPropertyName) | The .ps1 to move. Accepts pipeline input. |
 | `Destination` | String | true | false | New file path (or a folder, in which case the script keeps its name). |
 | `RepoRoot` | String | false | false | Root to scan for referencing scripts. Defaults to the enclosing git repo root. |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. A plain move does not preserve git history. |
+| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `WhatIf` | SwitchParameter | false | false |  |
 | `Confirm` | SwitchParameter | false | false |  |
 
@@ -923,7 +922,7 @@ supported. dotnet is not required.
 |---|---|---|---|---|
 | `Path` | String | true | true (ByValue, ByPropertyName) | The .sln/.slnx file to move. Accepts pipeline input. |
 | `Destination` | String | true | false | New file path (or a folder, in which case the solution keeps its name). |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. A plain move does not preserve git history. |
+| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `WhatIf` | SwitchParameter | false | false |  |
 | `Confirm` | SwitchParameter | false | false |  |
 
@@ -1317,7 +1316,7 @@ MSBuild paths yet - surfacing them beats silently mis-editing them.
 | `Project` | String | true | true (ByValue, ByPropertyName) | Path to the .vcxproj. Accepts pipeline input. |
 | `Destination` | String | true | false | New folder for the project. |
 | `RepoRoot` | String | false | false | Root to scan for solutions. Defaults to the enclosing git repo root. |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. A plain move does not preserve git history. |
+| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `WhatIf` | SwitchParameter | false | false |  |
 | `Confirm` | SwitchParameter | false | false |  |
 
@@ -1367,7 +1366,7 @@ Android, etc.) are plain fields untouched by a move, so mobile layouts are prese
 | `AssetPath` | String | true | true (ByValue, ByPropertyName) | Asset file or folder to move (under Assets/ or a package). Accepts pipeline input. |
 | `Destination` | String | true | false | New path for the asset/folder. |
 | `RepoRoot` | String | false | false | Root to scan for asmdef referencers. Defaults to the enclosing git repo root. |
-| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. A plain move does not preserve git history. |
+| `Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `WhatIf` | SwitchParameter | false | false |  |
 | `Confirm` | SwitchParameter | false | false |  |
 

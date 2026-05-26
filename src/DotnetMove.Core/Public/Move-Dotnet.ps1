@@ -34,8 +34,7 @@ function Move-Dotnet {
         Skip the verifying 'dotnet build'. Only the .NET engine builds; ignored by the others.
 
     .PARAMETER Force
-        Proceed with a plain file move when git is unavailable instead of aborting. A plain
-        move does not preserve git history. Forwarded to the engine.
+        Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. Forwarded to the engine.
 
     .OUTPUTS
         A single move-result object from the engine it routes to (its concrete type and properties

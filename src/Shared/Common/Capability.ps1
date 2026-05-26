@@ -25,7 +25,7 @@ function Write-CapabilityGuidance {
     param([Parameter(Mandatory)][ValidateSet('git', 'dotnet')][string]$Tool)
     $lines = switch ($Tool) {
         'git' {
-            @('git was not found on PATH. DotnetMove can fall back to a plain move, but file',
+            @('git was not found on PATH. DotnetMove can fall back to a plain move (PowerShell `Move-Item`), but file',
               'history will not be preserved. To install git:',
               '  Windows : winget install Git.Git    (or: choco install git / scoop install git)',
               '  macOS   : brew install git',
@@ -53,7 +53,7 @@ function Resolve-GitUsage {
     if (Test-GitAvailable) { return 'Git' }
     Write-CapabilityGuidance -Tool git
     if ($Force -or $Cmdlet.ShouldContinue(
-            'Proceed with a plain move (file history will not be preserved)?',
+            'Proceed with a plain move via Move-Item (file history will not be preserved)?',
             'git not found on PATH')) {
         return 'Fallback'
     }

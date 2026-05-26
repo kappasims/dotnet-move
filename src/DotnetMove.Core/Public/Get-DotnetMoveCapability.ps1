@@ -7,8 +7,7 @@ function Get-DotnetMoveCapability {
     .DESCRIPTION
         PowerShell has no manifest mechanism to declare external-CLI prerequisites, so this is a
         runtime probe via Get-Command; dotnet is required for .NET project moves (the delegation
-        target), and git is optional (without it, moves fall back to a plain move with no history
-        preserved).
+        target), and git is optional (without it, moves fall back to a plain move (PowerShell `Move-Item`) with no history preserved).
 
     .OUTPUTS
         A single DotnetMove.Capability object: Platform (string), PSEdition (string),

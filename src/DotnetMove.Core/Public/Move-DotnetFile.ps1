@@ -25,8 +25,7 @@ function Move-DotnetFile {
         Skip the verifying 'dotnet build' (forwarded to the project/import specialist).
 
     .PARAMETER Force
-        Proceed with a plain file move when git is unavailable instead of aborting. A plain
-        move does not preserve git history.
+        Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
     .OUTPUTS
         A single result object from the .NET specialist it routes to: a DotnetMove.MoveResult,

@@ -23,8 +23,7 @@ function Move-PowerShell {
         Forwarded to the script specialist only (the module specialist has no RepoRoot).
 
     .PARAMETER Force
-        Proceed with a plain file move when git is unavailable instead of aborting. A plain
-        move does not preserve git history.
+        Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
     .OUTPUTS
         A single result object: a DotnetMove.ScriptMoveResult (.ps1) or DotnetMove.ModuleMoveResult
