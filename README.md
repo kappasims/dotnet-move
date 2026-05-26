@@ -319,8 +319,8 @@ The guarantee behind every move:
 ./build.ps1 -Task Install            # copy all modules into the per-user PowerShell module path
 ./build.ps1 -Task Install -InstallPath D:\Modules
 ./build.ps1 -Task Docs               # regenerate the README Command reference section from the cmdlets' help
-./build.ps1 -Task Release -Version 1.2.0           # stamp ModuleVersion in every manifest; gate on analyze + tests
-./build.ps1 -Task Release -Version 1.2.0 -Publish  # also commit, tag vX.Y.Z, push, and create the GitHub release
+./build.ps1 -Task Release -Version 1.2.0           # prepare on develop: stamp manifests, gate on analyze + tests, commit + push
+./build.ps1 -Task Release -Version 1.2.0 -Publish  # finalize (after CI green): fast-forward master, tag vX.Y.Z, GitHub release
 ./build.ps1 -Task Publish                          # stage + validate the single bundled package (dry run)
 ./build.ps1 -Task Publish -ApiKey <key>            # publish that one DotnetMove package to the PowerShell Gallery
 ```
@@ -339,22 +339,25 @@ Windows PowerShell 5.1, plus lint. Linux and macOS are on-demand (`platforms.yml
 
 ## Releasing
 
-Releases ship from `master` only, gated through a merge. To cut one:
+Releases ship from `master`, which is branch-protected: the CI checks are required and enforced
+even for admins, so `master` only ever receives a commit that already passed CI. The release is
+therefore prepared on `develop` and `master` is fast-forwarded to it. Run both from `develop`:
 
-1. Land the work on `develop` and get it green: the full Pester suite on all three platforms
-   (`ci.yml` for Windows and Windows PowerShell 5.1; `platforms.yml` for Linux and macOS, via
-   `tools/Invoke-PlatformCI.ps1`) and PSScriptAnalyzer clean.
-2. Fast-forward `master` to `develop` and push. `master` serves the default-branch README and the
-   installer, so it must be current; the merge is the gate.
-3. From `master`, run `./build.ps1 -Task Release -Version X.Y.Z -Publish`. It stamps the version
-   into every manifest, re-runs PSScriptAnalyzer and the suite as a release gate, then commits
-   `release: vX.Y.Z`, tags, pushes, and creates the GitHub release.
-4. Sync `develop` back to `master` so the branches do not drift.
+1. **Prepare:** `./build.ps1 -Task Release -Version X.Y.Z`. From a clean `develop`, it stamps the
+   version into every manifest, gates on PSScriptAnalyzer (required + clean) and the full suite,
+   then commits `release: vX.Y.Z` and pushes `develop` so CI runs on that exact commit.
+2. **Wait for green on all platforms:** `ci.yml` (Windows, Windows PowerShell 5.1, PSScriptAnalyzer)
+   runs on the push; run `platforms.yml` for Linux and macOS (`tools/Invoke-PlatformCI.ps1`).
+3. **Finalize:** `./build.ps1 -Task Release -Version X.Y.Z -Publish`. It fast-forwards `master` to
+   that commit (the protected push is accepted only because the checks passed on it), tags, pushes,
+   creates the GitHub release, and returns you to `develop`.
 
 The requirements, restated:
 
-- **From `master`, always** - never tag `develop`.
+- **From `master`, always** - never tag `develop`. The tooling enforces it: `master` is protected
+  and rejects any commit whose CI checks are not green, admins included.
 - **All three platforms green** (Windows, Linux, macOS) **plus static analysis**, before the tag.
+  GitHub enforces the `ci.yml` checks; the Linux/macOS `platforms.yml` run is the manual step in 2.
 - **Version equals the tag** - `ModuleVersion` in every manifest matches `vX.Y.Z`.
 
 The PowerShell Gallery is a separate step: `./build.ps1 -Task Publish -ApiKey <key>` assembles and

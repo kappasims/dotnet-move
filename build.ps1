@@ -12,10 +12,12 @@
                           a PowerShell module path so `Import-Module DotnetMove` works by name.
       Docs              - regenerate the "Command reference" section of README.md from the
                           cmdlets' comment-based help.
-      Release -Version  - stamp a semver into every module manifest (ModuleVersion), then gate on
-                          static analysis (PSScriptAnalyzer, required + clean) and the tests; with
-                          -Publish also commit, tag vX.Y.Z, push, and create the GitHub release -
-                          keeping the installed ModuleVersion equal to the tag.
+      Release -Version  - run from develop. Without -Publish (prepare): stamp the semver into every
+                          manifest, gate on static analysis (required + clean) and the tests, then
+                          commit `release: vX.Y.Z` and push develop so CI runs on it. With -Publish
+                          (finalize, after CI is green on all platforms): fast-forward master to that
+                          commit, tag, push, and create the GitHub release. master is protected, so it
+                          only ever receives a CI-passed commit; ModuleVersion stays equal to the tag.
       Publish           - assemble the single bundled DotnetMove package, validate and smoke-import
                           it, then Publish-Module to the PowerShell Gallery (dry run without -ApiKey).
 
@@ -25,8 +27,8 @@
     ./build.ps1 -Task Install         # into the per-user module path
     ./build.ps1 -Task Install -InstallPath D:\Modules
     ./build.ps1 -Task Docs            # regenerate the README Command reference section
-    ./build.ps1 -Task Release -Version 1.1.0           # stamp manifests, run tests (no publish)
-    ./build.ps1 -Task Release -Version 1.1.0 -Publish  # also commit, tag, push, gh release
+    ./build.ps1 -Task Release -Version 1.2.0           # prepare on develop: stamp, gate, commit + push
+    ./build.ps1 -Task Release -Version 1.2.0 -Publish  # finalize (after CI green): fast-forward master, tag, release
 #>
 [CmdletBinding()]
 param(
@@ -452,51 +454,71 @@ function Invoke-DocsTask {
 }
 
 function Invoke-ReleaseTask {
-    # The single source of truth for a release: stamp $Version into every manifest so the
-    # installed module's ModuleVersion always equals the git tag, then (with -Publish) tag and
-    # release it. GitHub releases / tags are the "available version"; ModuleVersion is the
-    # "installed version"; this task is what keeps the two in lockstep.
-    if (-not $Version) { throw "Release needs -Version, e.g. ./build.ps1 -Task Release -Version 1.1.0" }
+    # Releases are cut from master, which is branch-protected: the CI checks are required and enforced
+    # for admins, so master may only ever receive a commit that already passed CI. This task therefore
+    # PREPARES the release on develop (stamp + commit + push, so CI runs on that exact commit), and
+    # -Publish then FINALIZES by fast-forwarding master to that green commit and tagging it. Two phases,
+    # both run from develop:
+    #   ./build.ps1 -Task Release -Version X.Y.Z            # prepare: stamp, gate, commit + push develop
+    #   (wait for CI green on all platforms)
+    #   ./build.ps1 -Task Release -Version X.Y.Z -Publish   # finalize: fast-forward master, tag, release
+    # ModuleVersion in every manifest is kept equal to the tag, so installed version == released tag.
+    if (-not $Version) { throw "Release needs -Version, e.g. ./build.ps1 -Task Release -Version 1.2.0" }
     if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw "Version must be semver (x.y.z): '$Version'" }
+    $tag = "v$Version"
 
-    $manifests = foreach ($m in ($modules + $umbrella)) { Join-Path $root (Join-Path 'src' (Join-Path $m "$m.psd1")) }
-    foreach ($mf in $manifests) {
-        $text = [System.IO.File]::ReadAllText($mf)
-        $new = [regex]::Replace($text, "(?m)^(\s*ModuleVersion\s*=\s*')[^']*(')", "`${1}$Version`$2")
-        if ($new -cne $text) {
-            [System.IO.File]::WriteAllText($mf, $new)
-            Write-Host "Stamped $Version into $(Split-Path -Leaf $mf)" -ForegroundColor Green
-        } else {
-            Write-Warning "No ModuleVersion change in $(Split-Path -Leaf $mf) (already $Version?)"
-        }
-    }
-
-    # Static analysis is a hard release gate: it must be installed AND clean (unlike the everyday
-    # Analyze task, a release will not silently skip when PSScriptAnalyzer is absent).
-    Write-Host 'Static analysis (release prerequisite)...' -ForegroundColor Cyan
-    if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) {
-        throw 'Release requires PSScriptAnalyzer. Install it: Install-Module PSScriptAnalyzer -Scope CurrentUser'
-    }
-    Invoke-AnalyzeTask   # throws on any finding
-
-    Write-Host 'Running the test suite before release...' -ForegroundColor Cyan
-    Invoke-TestTask
+    $branch = "$(& git -C $root rev-parse --abbrev-ref HEAD)".Trim()
+    if ($branch -ne 'develop') { throw "Run Release from develop (currently on '$branch'); master is fast-forwarded from develop." }
 
     if (-not $Publish) {
-        Write-Host "Manifests stamped to $Version. Review, then re-run with -Publish to tag + release." -ForegroundColor Yellow
+        # PREPARE on develop: stamp, gate locally, commit the bump, push so CI runs on that commit.
+        if (& git -C $root status --porcelain) { throw 'Working tree is not clean; commit or stash first so the release commit is only the version bump.' }
+
+        $manifests = foreach ($m in ($modules + $umbrella)) { Join-Path $root (Join-Path 'src' (Join-Path $m "$m.psd1")) }
+        $changed = $false
+        foreach ($mf in $manifests) {
+            $text = [System.IO.File]::ReadAllText($mf)
+            $new = [regex]::Replace($text, "(?m)^(\s*ModuleVersion\s*=\s*')[^']*(')", "`${1}$Version`$2")
+            if ($new -cne $text) { [System.IO.File]::WriteAllText($mf, $new); $changed = $true; Write-Host "Stamped $Version into $(Split-Path -Leaf $mf)" -ForegroundColor Green }
+        }
+        if (-not $changed) { throw "No manifest changed - already at $Version?" }
+
+        # Static analysis is a hard gate here (must be installed AND clean), then the full suite.
+        Write-Host 'Static analysis (release prerequisite)...' -ForegroundColor Cyan
+        if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) { throw 'Release requires PSScriptAnalyzer. Install: Install-Module PSScriptAnalyzer -Scope CurrentUser' }
+        Invoke-AnalyzeTask
+        Write-Host 'Running the test suite before release...' -ForegroundColor Cyan
+        Invoke-TestTask
+
+        & git -C $root add (($modules + $umbrella) | ForEach-Object { "src/$_/$_.psd1" })
+        & git -C $root commit -m "release: $tag"
+        if ($LASTEXITCODE -ne 0) { throw 'git commit failed' }
+        & git -C $root push origin develop
+        if ($LASTEXITCODE -ne 0) { throw 'git push develop failed' }
+        Write-Host "Prepared $tag on develop and pushed. Now wait for CI to pass on all platforms:" -ForegroundColor Yellow
+        Write-Host '  - ci.yml (Windows, Windows PowerShell 5.1, PSScriptAnalyzer) runs on the push' -ForegroundColor Yellow
+        Write-Host '  - run platforms.yml for Linux + macOS (tools/Invoke-PlatformCI.ps1)' -ForegroundColor Yellow
+        Write-Host "Then finalize:  ./build.ps1 -Task Release -Version $Version -Publish" -ForegroundColor Yellow
         return
     }
 
-    $tag = "v$Version"
-    & git -C $root add (($modules + $umbrella) | ForEach-Object { "src/$_/$_.psd1" })
-    & git -C $root commit -m "release: $tag"
-    if ($LASTEXITCODE -ne 0) { throw 'git commit failed' }
+    # FINALIZE: develop HEAD must be the prepared release commit; fast-forward master to it. The
+    # protected push to master is accepted only because the required CI checks passed on this commit.
+    $headSubject = "$(& git -C $root log -1 --format=%s)".Trim()
+    if ($headSubject -ne "release: $tag") { throw "develop HEAD is '$headSubject', not 'release: $tag'. Run the prepare phase first (without -Publish)." }
+
+    & git -C $root fetch -q origin
+    & git -C $root checkout master
+    if ($LASTEXITCODE -ne 0) { throw 'git checkout master failed' }
+    & git -C $root merge --ff-only develop
+    if ($LASTEXITCODE -ne 0) { & git -C $root checkout develop; throw 'master could not fast-forward to develop (diverged?). Resolve, then re-run -Publish.' }
+    & git -C $root push origin master
+    if ($LASTEXITCODE -ne 0) { & git -C $root checkout develop; throw "Pushing master was rejected - the required CI checks are likely not green yet on $tag. Wait for CI, then re-run -Publish." }
     & git -C $root tag -a $tag -m "DotnetMove $Version"
-    if ($LASTEXITCODE -ne 0) { throw "git tag $tag failed" }
-    & git -C $root push
     & git -C $root push origin $tag
     & gh release create $tag --title "DotnetMove $Version" --generate-notes
-    Write-Host "Released $tag." -ForegroundColor Green
+    & git -C $root checkout develop
+    Write-Host "Released $tag from master; back on develop." -ForegroundColor Green
 }
 
 function Invoke-PublishTask {
