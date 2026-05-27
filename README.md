@@ -98,7 +98,7 @@ Otherwise `Test-NetscootUpdate` checks GitHub for a newer release and `Update-Ne
 re-running the installer) applies it in place. The Claude Code skills are separate files: Refresh
 them with `git pull` in a clone, or re-sync `.claude/skills` if installed globally.
 
-**Opt-in auto-check (enterprise):** `Test-NetscootUpdate -EnableAutoUpdate` is the gated entry
+**Opt-in auto-check:** `Test-NetscootUpdate -EnableAutoUpdate` is the gated entry
 point for a SessionStart hook or other automation. It runs only when `$env:NETSCOOT_AUTOUPDATE` is
 truthy (`1`/`true`/`on`), so it stays a silent no-op until a user opts in, and it never updates
 (read-only). IT can disable it fleet-wide, and block `Update-Netscoot` from self-updating, by
@@ -187,7 +187,7 @@ the reversals first.
 
 The journal is **on by default** and stays out of the working tree: It lives in the per-user data
 directory above, so git never tracks it, `git status` never shows it, and your own `.gitignore` is
-left untouched. It survives `git clean` and repository deletion, and enterprise backup (Time Machine,
+left untouched. It survives `git clean` and repository deletion, and normal backup (Time Machine,
 roaming profiles, JAMF/Intune) covers it. Set `$env:NETSCOOT_JOURNAL_HOME` to relocate the store
 (for example to a roaming or managed path).
 

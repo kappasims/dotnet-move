@@ -10,7 +10,7 @@
 #   Windows: %LOCALAPPDATA%                         (e.g. C:\Users\<u>\AppData\Local\netscoot\)
 #   macOS:   ~/Library/Application Support          (Apple's LocalAppData equivalent)
 #   Linux:   $XDG_DATA_HOME or ~/.local/share       (the XDG persistent-data location)
-# Enterprise backup (Time Machine, roaming profiles, JAMF/Intune) covers these by default.
+# Normal backup (Time Machine, roaming profiles, JAMF/Intune) covers these by default.
 # $env:NETSCOOT_JOURNAL_HOME overrides the base dir (relocate the store, or isolate it in tests).
 #
 # Enabled resolution, first match wins:
@@ -61,7 +61,7 @@ function Get-MoveJournalAppDataRoot {
     [CmdletBinding()]
     [OutputType([string])]
     param()
-    # Explicit override (enterprise relocation / tests): use it verbatim as the base.
+    # Explicit override (relocation / tests): use it verbatim as the base.
     if ($env:NETSCOOT_JOURNAL_HOME) { return $env:NETSCOOT_JOURNAL_HOME }
     $isMac = (Test-Path Variable:\IsMacOS) -and (Get-Variable -Name IsMacOS -ValueOnly)
     if ($isMac) { return (Join-Path $HOME 'Library/Application Support') }
