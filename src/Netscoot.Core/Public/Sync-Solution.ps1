@@ -6,7 +6,7 @@ function Sync-Solution {
 
     .DESCRIPTION
         The companion to Test-SolutionConsistency, which only reports divergence. This makes
-        membership uniform: for every project present in at least one solution but absent from
+        membership uniform: For every project present in at least one solution but absent from
         others, it adds the project to the solutions missing it, delegating to `dotnet sln add`
         (never hand-editing the .sln/.slnx). It only adds; it never removes, so a project in no
         solution is left alone (use Get-SolutionInventory to find those).

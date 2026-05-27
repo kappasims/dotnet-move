@@ -6,7 +6,7 @@ function Move-DotnetFolder {
         single project or many).
 
     .DESCRIPTION
-        A folder move always goes through Move-DotnetProjectTree: it treats every managed
+        A folder move always goes through Move-DotnetProjectTree: It treats every managed
         project under the folder as one co-moving set and reconciles only the references that
         cross the folder boundary (internal references ride along unchanged). If the folder
         contains no managed projects, that specialist reports it. -WhatIf/-Confirm/-Verbose

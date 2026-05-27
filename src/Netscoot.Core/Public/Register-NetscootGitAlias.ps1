@@ -6,7 +6,7 @@ function Register-NetscootGitAlias {
 
     .DESCRIPTION
         Adds `alias.netscoot = !pwsh -NoProfile -File <forwarder>` to git config so
-        `git netscoot <src> <dst>` works. "dotnet" is the .NET-platform umbrella: the verb
+        `git netscoot <src> <dst>` works. "dotnet" is the .NET-platform umbrella: The verb
         branches by target type to the right engine - the .NET project model
         (csproj/sln/props), Unity (.meta/.asmdef), PowerShell (.ps1/.psd1), or native C++
         (.vcxproj). Scope is your choice (repository-local or global). Undo with

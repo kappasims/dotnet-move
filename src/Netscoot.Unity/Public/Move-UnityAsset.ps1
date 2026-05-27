@@ -22,7 +22,7 @@ function Move-UnityAsset {
         Asset file or folder to move (under Assets/ or a package). Accepts pipeline input.
 
     .PARAMETER Destination
-        Where to move the asset/folder, following `git mv` rules: an existing directory means move
+        Where to move the asset/folder, following `git mv` rules: An existing directory means move
         into it (keeping the name); otherwise it is the new path. Errors if it exists.
 
     .PARAMETER RepoRoot

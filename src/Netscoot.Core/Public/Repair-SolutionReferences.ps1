@@ -7,10 +7,10 @@ function Repair-SolutionReferences {
     .DESCRIPTION
         Finds solution entries and <ProjectReference>s that point at a project file which no longer
         exists at the recorded path (usually because a project was moved or renamed without
-        reconciling). Read-only by default: it returns one object per problem, each tagged with a
+        reconciling). Read-only by default: It returns one object per problem, each tagged with a
         Resolution of Relocatable, Missing, or Ambiguous.
 
-        With -Fix it repairs every Relocatable entry: it searches the repository for a project file of the
+        With -Fix it repairs every Relocatable entry: It searches the repository for a project file of the
         same name and re-points the entry at it through the dotnet CLI (remove the stale path, add
         the found one). When one project of that name exists it is used directly; when several do,
         the one that keeps the most of the original path's trailing folders is chosen, since a moved

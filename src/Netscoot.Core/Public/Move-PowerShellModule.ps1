@@ -9,14 +9,14 @@ function Move-PowerShellModule {
         NestedModules and FileList in the .psd1 via Update-ModuleManifest so relative
         references stay valid. Validates the result with Test-ModuleManifest.
 
-        Limits (warned, not fixed): dot-sourced relative paths inside .psm1/.ps1 files,
+        Limits (warned, not fixed): Dot-sourced relative paths inside .psm1/.ps1 files,
         and any path computed at runtime, cannot be reconciled automatically.
 
     .PARAMETER ModulePath
         Path to the module folder, or directly to its .psd1 manifest.
 
     .PARAMETER Destination
-        Where to move the module folder, following `git mv` rules: an existing directory means move
+        Where to move the module folder, following `git mv` rules: An existing directory means move
         into it (keeping the name); otherwise it is the module's new folder path. Errors if it exists.
 
     .PARAMETER Force

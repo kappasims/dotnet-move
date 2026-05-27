@@ -8,7 +8,7 @@ function Test-SolutionConsistency {
         When a repository carries more than one solution (e.g. a classic .sln alongside a .slnx),
         they can drift out of sync so the same project is listed in one but not the other.
         This emits one object per divergent project and surfaces it through the standard streams
-        so behavior follows invocation: by default it writes a Warning per divergent project;
+        so behavior follows invocation: By default it writes a Warning per divergent project;
         -Strict escalates each to a non-terminating error (honoring -ErrorAction); -Debug adds the
         full membership matrix of every solution and its projects.
 

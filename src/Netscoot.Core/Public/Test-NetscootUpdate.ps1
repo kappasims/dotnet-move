@@ -2,11 +2,11 @@ function Test-NetscootUpdate {
     <#
     .SYNOPSIS
         Check GitHub for a newer netscoot release and report whether the installed version is
-        behind. On-demand and read-only: it never updates anything itself.
+        behind. On-demand and read-only: It never updates anything itself.
 
     .DESCRIPTION
         netscoot does not update automatically, however it is installed (PowerShell Gallery,
-        installer, or a clone). This is the pull-based check: it GETs the latest GitHub release
+        installer, or a clone). This is the pull-based check: It GETs the latest GitHub release
         and compares its tag (the "available" version) against the installed module's ModuleVersion
         (the "installed" version). It prints what to do when behind, but performs no update - an
         agent or user runs it when they want to know.
@@ -14,7 +14,7 @@ function Test-NetscootUpdate {
         Needs network access to api.github.com. Honors -ErrorAction if the request fails (offline,
         rate-limited, or no releases yet).
 
-        -EnableAutoUpdate makes this the automation/SessionStart entry point: it runs the check ONLY
+        -EnableAutoUpdate makes this the automation/SessionStart entry point: It runs the check ONLY
         when $env:NETSCOOT_AUTOUPDATE is set to a truthy value (1/true/on/yes/enabled), and is a
         silent no-op otherwise. So a hook can call it unconditionally; nothing happens until a user
         opts in, and IT can disable it fleet-wide by clearing or setting the variable to false via

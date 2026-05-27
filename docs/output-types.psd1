@@ -242,7 +242,7 @@
     }
 
     'Netscoot.MetaIntegrity' = @{
-        Summary = 'One Unity .meta integrity problem: an asset missing a .meta, or an orphan .meta.'
+        Summary = 'One Unity .meta integrity problem: An asset missing a .meta, or an orphan .meta.'
         Array   = $true
         EmptyIsNull = $true
         Fields  = @(

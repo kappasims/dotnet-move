@@ -1,14 +1,14 @@
 function Test-UnityMetaIntegrity {
     <#
     .SYNOPSIS
-        Report Unity .meta integrity problems under a root: assets missing a .meta, and
+        Report Unity .meta integrity problems under a root: Assets missing a .meta, and
         orphan .meta files whose asset is gone. These are the Unity analog of dangling
         references - both lead to broken/regenerated GUIDs.
 
     .DESCRIPTION
         Walks the tree and pairs every asset (file or folder) with its '<name>.meta'.
         Emits one object per problem and surfaces it through the standard streams so behavior
-        follows invocation: by default it writes a Warning per problem; -Strict escalates each to
+        follows invocation: By default it writes a Warning per problem; -Strict escalates each to
         a non-terminating error (honoring -ErrorAction). Objects are always emitted so results are
         capturable/filterable.
 

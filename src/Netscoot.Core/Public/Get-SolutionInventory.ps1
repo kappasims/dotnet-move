@@ -12,7 +12,7 @@ function Get-SolutionInventory {
         solution folders, and loose solution items. It then compares against the projects on disk
         and flags any that are in no solution at all.
 
-        Read-only: one record per item, so you can group, filter, or format it however you like.
+        Read-only: One record per item, so you can group, filter, or format it however you like.
 
     .PARAMETER RepoRoot
         Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path
