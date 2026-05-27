@@ -2,13 +2,12 @@
 
 [![PowerShell Gallery](https://img.shields.io/powershellgallery/v/Netscoot?logo=powershell&label=PowerShell%20Gallery)](https://www.powershellgallery.com/packages/Netscoot) [![Downloads](https://img.shields.io/powershellgallery/dt/Netscoot?label=downloads)](https://www.powershellgallery.com/packages/Netscoot)
 
-netscoot moves a project, module, or asset without breaking what depends on it. As part of the move
-it reconciles whatever would otherwise break: A .NET project's solution membership, references, and
-GUID wiring; a PowerShell module's manifest; a Unity asset's `.meta` GUIDs; and a native C++
-project's solution membership, reporting the link settings it cannot safely rewrite. It rolls back to
-the original state if anything fails. Visual Studio does this for a .NET project when you drag it in
-its GUI; netscoot does it from the command line, everywhere Visual Studio is not, including VS Code,
-Rider, CI, Linux, macOS, and AI coding agents.
+netscoot moves a project, module, or asset without breaking what depends on it, and rolls back if
+anything fails. It reconciles what the move would otherwise break: a .NET project's solution
+membership, references, and GUIDs; a PowerShell module's manifest; a Unity asset's `.meta` GUIDs; a
+native C++ project's solution membership (reporting the link settings it cannot safely rewrite).
+Visual Studio does this for a .NET project when you drag it in the GUI; netscoot does it from the
+command line, everywhere Visual Studio is not: VS Code, Rider, CI, Linux, macOS, and AI agents.
 
 ```powershell
 # moves the project and reconciles the .sln, references, and GUIDs (rolls back on failure)
@@ -18,11 +17,8 @@ Invoke-Netscoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarrago
 git netscoot src/Tarragon/Tarragon.csproj libs/Tarragon --whatif
 ```
 
-Each format is reconciled by the tool that owns it where one exists (the dotnet CLI, git mv,
-Update-ModuleManifest), and by a targeted in-place rewrite where none does (a solution's stored
-paths, MSBuild `<Import>`s, a script's dot-source/call references). Beyond managed .NET this reaches
-PowerShell modules and scripts, Unity `.meta` GUIDs, and native C++ `.vcxproj` projects, reporting
-the link settings it cannot safely rewrite rather than guessing at them.
+Each format is reconciled by the tool that owns it (the dotnet CLI, git mv, Update-ModuleManifest),
+or by a targeted in-place rewrite where no such tool exists. See [The Contract](#the-contract).
 
 For AI agents, the repository ships Claude Code skills that run these commands, triggering on phrases
 like "move this project" (see [Skills](#skills)).
@@ -375,29 +371,23 @@ the commands above:
 
 ## The Contract
 
-Every move upholds these guarantees:
+What every move does, and won't do:
 
-1. **No hand-written solution or project files.** Every path/GUID change is delegated to
-   first-party tooling:
-   - `dotnet sln add/remove` and `dotnet add/remove reference` for solution membership and references
-   - `git mv` for the move itself (a plain `Move-Item` only under `-Force`, when git is absent)
-   - `Update-ModuleManifest` for PowerShell module manifests
-2. **No direct file writes, except as provided in this clause.** As the sole exception to §1, formats
-   that no first-party tool reconciles are rewritten in place through the BOM-preserving `Set-Raw*`
-   helpers, limited to:
-   - a solution's stored project paths
-   - MSBuild `<Import>` paths
-   - a script's dot-source/call references
-3. **No speculative parsing.** Files are read through first-party readers, and parsed directly only
-   where no such reader surfaces what is needed.
-4. **No unverified compliance.** These guarantees are enforced, not merely promised:
-   `tests/FirstPartyDrift.Tests.ps1` fails the build if a new file writes file content or a new cmdlet
-   calls the raw writers.
-5. **Detection is bounded and report-only.** `Find-PathReference` flags hardcoded paths in a known
-   set of build/CI/hook/automation files and never edits them. It does not analyze application
-   source for runtime or computed path use (`Path.Combine`, config, environment variables, P/Invoke):
-   resolving those statically is undecidable, so the tool reports what it can match by hand and never
-   claims to find every reference.
+- **Solution and project files are never hand-edited.** Membership, references, and GUIDs change
+  only through the tool that owns the format: `dotnet sln` and `dotnet add/remove reference`, `git mv`
+  for the move itself (a plain `Move-Item` only under `-Force`, when git is absent), and
+  `Update-ModuleManifest` for module manifests.
+- **The only direct rewrites are formats no tool reconciles:** a solution's stored project paths,
+  MSBuild `<Import>` paths, and a script's dot-source/call references. These are edited in place
+  (keeping the byte-order mark), because nothing else can.
+- **Files are read through their own tools,** and parsed directly only where those tools don't
+  surface what is needed.
+- **Detection is report-only.** `Find-PathReference` flags hardcoded paths in build/CI/hook/
+  automation files; it never edits them, and it does not scan application source for computed path
+  use (`Path.Combine`, config, environment variables, P/Invoke). Resolving that statically is
+  impossible, so it never claims to catch everything.
+- **These hold automatically:** `tests/FirstPartyDrift.Tests.ps1` fails the build if a new file
+  writes content or calls the raw writers.
 
 ## Building
 
