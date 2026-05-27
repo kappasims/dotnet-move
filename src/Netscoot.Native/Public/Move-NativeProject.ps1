@@ -22,7 +22,7 @@ function Move-NativeProject {
 
     .PARAMETER Destination
         Where to move the project folder, following `git mv` rules: An existing directory means
-        move into it (keeping the name); otherwise it is the new folder path. Errors if it exists.
+        move into it (keeping the name); otherwise it is the new folder path.
 
     .PARAMETER RepositoryRoot
         Root to scan for solutions. Defaults to the enclosing git repository root.

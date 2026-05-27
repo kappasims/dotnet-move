@@ -23,7 +23,7 @@ function Move-DotnetProjectTree {
 
     .PARAMETER Destination
         Where to move the folder, following `git mv` rules: An existing directory means move into
-        it (keeping the name); otherwise it is the folder's new path. Errors if the result exists.
+        it (keeping the name); otherwise it is the folder's new path.
 
     .PARAMETER RepositoryRoot
         Root to scan. Defaults to the enclosing git repository root.

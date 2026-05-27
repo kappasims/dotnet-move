@@ -51,7 +51,7 @@ Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo
 
 `-Destination` follows `git mv` rules: an existing directory means move into it keeping the
 folder's name (`./native` puts it at `./native/Aleppo`); otherwise it is the new folder path (a
-rename). It errors if the resulting folder already exists.
+rename).
 
 It will: update `.sln`/`.slnx` membership via `dotnet sln`, move the folder (`git mv` when
 tracked) including the paired `.vcxproj.filters`, and then **report every relative /
@@ -80,7 +80,9 @@ Undo-Netscoot -WhatIf   # preview reversing the most recent move
 Undo-Netscoot           # reverse the most recent move (call again to walk back)
 ```
 
-Journaling is on by default and stays out of the working tree (it lives inside `.git/`, so git never tracks it).
+Journaling is on by default and lives in the per-user data directory above, outside the working
+tree, so git never tracks it. A move interrupted by a crash is recoverable with
+`Repair-NetscootJournal`.
 Opt out per repository with `Set-NetscootJournal -Enabled $false` (or `-Global` for all repositories). See the [README](https://github.com/kappasims/netscoot).
 
 ## The `git netscoot` verb (optional; ask first)
@@ -95,9 +97,8 @@ prerequisite is missing, tell the user the install command and let them run it.
 
 netscoot does not auto-update; cutting a release changes nothing on an installed machine until
 you update. Check with `Test-NetscootUpdate` (it compares the installed module to the latest
-GitHub release). Update in place with `Update-Netscoot` (no git), or re-run the installer:
-`irm https://raw.githubusercontent.com/kappasims/netscoot/master/install.ps1 | iex`. From a dev
-clone instead, `git pull` then `./build.ps1 -Task Install`. For automatic reminders, consider a
+GitHub release). Update in place with `Update-Netscoot` (no git); from a dev clone instead,
+`git pull` then `./build.ps1 -Task Install`. For automatic reminders, consider a
 Claude Code SessionStart hook that runs `Test-NetscootUpdate -Auto` (gated: it checks only when
 the update policy is Enabled, and never updates); ask the user before adding it,
 since it edits their settings.json.
