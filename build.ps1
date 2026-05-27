@@ -312,7 +312,7 @@ function Invoke-DocsTask {
     $emittedBy = @{}   # type name -> @(command names) that declare it via [OutputType]
 
     # Two subsections under the hand-written "# Reference": the commands, then the output types.
-    [void]$sb.AppendLine('## Command reference')
+    [void]$sb.AppendLine('### Command reference')
     [void]$sb.AppendLine()
 
     # One-sentence "what it does" blurb per command, from its synopsis (first sentence). Built once
@@ -345,7 +345,7 @@ function Invoke-DocsTask {
     # bold name and a blurb paragraph, then a command table; Manage splits into italic-headed
     # sub-tables (Reconcile, Undo & journal, ...). Driven by docs/command-categories.psd1.
     foreach ($cat in $commandCategories.Categories) {
-        [void]$sb.AppendLine("### $($cat.Name)")
+        [void]$sb.AppendLine("#### $($cat.Name)")
         [void]$sb.AppendLine()
         if ($cat.Blurb) { [void]$sb.AppendLine((ConvertTo-MdText $cat.Blurb)); [void]$sb.AppendLine() }
         if ($cat.Commands) {
@@ -353,7 +353,7 @@ function Invoke-DocsTask {
         }
         if ($cat.Subcategories) {
             foreach ($sub in $cat.Subcategories) {
-                [void]$sb.AppendLine("#### $($sub.Name)")
+                [void]$sb.AppendLine("##### $($sub.Name)")
                 [void]$sb.AppendLine()
                 Add-IndexTable -Commands $sub.Commands
             }
@@ -369,12 +369,12 @@ function Invoke-DocsTask {
             # Horizontal rule before each command so the entries read as distinct blocks.
             [void]$sb.AppendLine('---')
             [void]$sb.AppendLine()
-            [void]$sb.AppendLine("### $($c.Name)")
+            [void]$sb.AppendLine("#### $($c.Name)")
             [void]$sb.AppendLine()
             $syn = "$($h.Synopsis)".Trim()
             if ($syn) { [void]$sb.AppendLine((ConvertTo-MdText $syn)); [void]$sb.AppendLine() }
 
-            [void]$sb.AppendLine('#### Syntax')
+            [void]$sb.AppendLine('##### Syntax')
             [void]$sb.AppendLine()
             [void]$sb.AppendLine('```powershell')
             [void]$sb.AppendLine((Get-Command $c.Name -Syntax).Trim())
@@ -386,7 +386,7 @@ function Invoke-DocsTask {
 
             $params = @($h.parameters.parameter | Where-Object { $_.name })
             if ($params.Count) {
-                [void]$sb.AppendLine('#### Parameters')
+                [void]$sb.AppendLine('##### Parameters')
                 [void]$sb.AppendLine()
                 $hdr = @('Name', 'Type', 'Required', 'Pipeline', 'Description') | ForEach-Object { Format-Small $_ }
                 [void]$sb.AppendLine('| ' + ($hdr -join ' | ') + ' |')
@@ -413,7 +413,7 @@ function Invoke-DocsTask {
             foreach ($t in $registered) { $emittedBy[$t] = @($emittedBy[$t]) + $c.Name | Where-Object { $_ } }
 
             if ($registered.Count -or $outRaw) {
-                [void]$sb.AppendLine('#### Output')
+                [void]$sb.AppendLine('##### Output')
                 [void]$sb.AppendLine()
                 if ($dispatchDiagrams.ContainsKey($c.Name)) {
                     # Routes by extension/type: show the mapping as a diagram, not a sentence.
@@ -457,7 +457,7 @@ function Invoke-DocsTask {
 
             $examples = @($h.examples.example | Where-Object { $_ -and -not [string]::IsNullOrWhiteSpace("$($_.code)") })
             if ($examples.Count) {
-                [void]$sb.AppendLine('#### Examples')
+                [void]$sb.AppendLine('##### Examples')
                 [void]$sb.AppendLine()
                 foreach ($e in $examples) {
                     [void]$sb.AppendLine('```powershell')
@@ -488,7 +488,7 @@ function Invoke-DocsTask {
             if ($typeDefs.ContainsKey($ft)) { $nestedIn[$ft] = @($nestedIn[$ft]) + $name | Where-Object { $_ } }
         }
     }
-    [void]$sb.AppendLine('## Output types')
+    [void]$sb.AppendLine('### Output types')
     [void]$sb.AppendLine()
     [void]$sb.AppendLine('Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several (and some types are also used as a field on another); whether a given command returns one or a collection is stated in that command''s Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `Netscoot.*` field is itself one of these types.')
     [void]$sb.AppendLine()
@@ -502,7 +502,7 @@ function Invoke-DocsTask {
     [void]$sb.AppendLine()
     foreach ($name in $sortedTypes) {
         $def = $typeDefs[$name]
-        [void]$sb.AppendLine("### $name")
+        [void]$sb.AppendLine("#### $name")
         [void]$sb.AppendLine()
         # Cross-references as a compact bracketed list (no label), one font size down. The link
         # text - a command name or a Netscoot.* type - is self-describing.
