@@ -1,6 +1,6 @@
 # Summary
 
-[![PowerShell Gallery](https://img.shields.io/powershellgallery/v/Netscoot?logo=powershell&label=PowerShell%20Gallery)](https://www.powershellgallery.com/packages/Netscoot) [![Downloads](https://img.shields.io/powershellgallery/dt/Netscoot?label=downloads)](https://www.powershellgallery.com/packages/Netscoot)
+[![PowerShell Gallery](https://img.shields.io/powershellgallery/v/Netscoot?logo=powershell&label=PowerShell%20Gallery)](https://www.powershellgallery.com/packages/Netscoot) [![Downloads](https://img.shields.io/powershellgallery/dt/Netscoot?label=downloads)](https://www.powershellgallery.com/packages/Netscoot) [![CI](https://github.com/kappasims/netscoot/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/kappasims/netscoot/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/kappasims/netscoot)](https://github.com/kappasims/netscoot/blob/master/LICENSE)
 
 netscoot moves a project, module, or asset (.NET, PowerShell, Unity, or native C++) without breaking
 what depends on it, and rolls back if anything fails. It reconciles what the move would otherwise break: a .NET project's solution
