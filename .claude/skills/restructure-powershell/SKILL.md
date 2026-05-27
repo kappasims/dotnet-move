@@ -48,7 +48,7 @@ You can also call the specialists directly: `Move-PowerShellScript` and `Move-Po
 
 `-Destination` follows `git mv` rules: an existing directory means move into it keeping the
 item's name (`-Destination ./shared` puts the script at `./shared/helpers.ps1`); otherwise it is
-the new path, a rename (`-Destination ./shared/helpers.ps1`). It errors if the target exists.
+the new path, a rename (`-Destination ./shared/helpers.ps1`).
 
 ## Heuristic limit: reported, not silently guessed
 
@@ -86,7 +86,9 @@ Undo-Netscoot -WhatIf   # preview reversing the most recent move
 Undo-Netscoot           # reverse the most recent move (call again to walk back)
 ```
 
-Journaling is on by default and stays out of the working tree (it lives inside `.git/`, so git never tracks it).
+Journaling is on by default and lives in the per-user data directory above, outside the working
+tree, so git never tracks it. A move interrupted by a crash is recoverable with
+`Repair-NetscootJournal`.
 Opt out per repository with `Set-NetscootJournal -Enabled $false` (or `-Global` for all repositories). See the [README](https://github.com/kappasims/netscoot).
 
 ## The `git netscoot` verb (optional; ask first)
@@ -101,9 +103,8 @@ prerequisite is missing, tell the user the install command and let them run it.
 
 netscoot does not auto-update; cutting a release changes nothing on an installed machine until
 you update. Check with `Test-NetscootUpdate` (it compares the installed module to the latest
-GitHub release). Update in place with `Update-Netscoot` (no git), or re-run the installer:
-`irm https://raw.githubusercontent.com/kappasims/netscoot/master/install.ps1 | iex`. From a dev
-clone instead, `git pull` then `./build.ps1 -Task Install`. For automatic reminders, consider a
+GitHub release). Update in place with `Update-Netscoot` (no git); from a dev clone instead,
+`git pull` then `./build.ps1 -Task Install`. For automatic reminders, consider a
 Claude Code SessionStart hook that runs `Test-NetscootUpdate -Auto` (gated: it checks only when
 the update policy is Enabled, and never updates); ask the user before adding it,
 since it edits their settings.json.

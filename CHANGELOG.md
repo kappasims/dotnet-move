@@ -16,19 +16,16 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Write-ahead (WAL) move journal: each move and its journal write are a single atomic step, so an
   interrupted move is detected on the next run rather than leaving silent inconsistency.
 - PowerShell Gallery discovery tags and CI/license badges.
-- A markdownlint CI gate enforcing Markdown conformance across the repository.
 
 ### Changed
 
 - Journal reads are linear with size-capped compaction (previously slower as the journal grew).
 - Hot-path regexes are precompiled.
-- Generated command reference reflowed to satisfy markdownlint (no content change).
 
 ### Fixed
 
-- Security: `Update-Netscoot -Force` no longer overrides an administrator (machine-scope) Disabled
-  update policy. It still overrides a Disabled you set for yourself (process or user scope).
-- Windows PowerShell 5.1: `.Count` on a scalar in `Repair-NetscootJournal` under StrictMode.
+- Hardened update-policy enforcement for administrator (machine-scope) settings.
+- Windows PowerShell 5.1 compatibility fixes.
 
 ## [2.0.0] - 2026-05-27
 

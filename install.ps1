@@ -8,10 +8,8 @@
     module path (edition-aware), so `Import-Module Netscoot` works by name. Running it again
     overwrites the installed copy with the chosen version - install and update are the same gesture.
 
-    Designed to run straight from the web:
-        irm https://raw.githubusercontent.com/kappasims/netscoot/master/install.ps1 | iex
-
-    Not on the PowerShell Gallery yet; when it is, `Install-Module`/`Update-Module` replaces this.
+    For most installs, `Install-Module Netscoot` (or `Update-Module Netscoot`) from the PowerShell
+    Gallery is simpler; this script installs from a GitHub release without the Gallery or git.
 
 .PARAMETER Version
     Semver to install (e.g. 1.1.0). Defaults to the latest GitHub release.
