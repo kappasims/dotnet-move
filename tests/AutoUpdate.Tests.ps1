@@ -11,25 +11,38 @@ AfterAll {
     else { $env:NETSCOOT_AUTOUPDATE = $script:PrevAutoUpdate }
 }
 
-Describe 'Auto-update gating' {
+Describe 'Update policy' {
     # These assert the gates short-circuit BEFORE any network call (so they are safe and fast offline).
+    # -Scope Process keeps Set-NetscootUpdatePolicy from persisting to the user/machine environment.
 
-    It 'Test-NetscootUpdate -EnableAutoUpdate is a no-op when NETSCOOT_AUTOUPDATE is unset' {
+    It 'Get-NetscootUpdatePolicy maps the env value to a State' {
         Remove-Item Env:\NETSCOOT_AUTOUPDATE -ErrorAction SilentlyContinue
-        $r = Test-NetscootUpdate -EnableAutoUpdate
-        $r | Should -BeNullOrEmpty
+        (Get-NetscootUpdatePolicy).State | Should -Be 'Manual'
+        $env:NETSCOOT_AUTOUPDATE = 'true';  (Get-NetscootUpdatePolicy).State | Should -Be 'Enabled'
+        $env:NETSCOOT_AUTOUPDATE = 'false'; (Get-NetscootUpdatePolicy).State | Should -Be 'Disabled'
     }
 
-    It 'Test-NetscootUpdate -EnableAutoUpdate is a no-op when NETSCOOT_AUTOUPDATE is off' {
+    It 'Set-NetscootUpdatePolicy -Scope Process sets the session policy and returns it' {
+        (Set-NetscootUpdatePolicy -State Enabled -Scope Process -Confirm:$false).State | Should -Be 'Enabled'
+        (Get-NetscootUpdatePolicy).State | Should -Be 'Enabled'
+        (Set-NetscootUpdatePolicy -State Manual -Scope Process -Confirm:$false).State | Should -Be 'Manual'
+        $env:NETSCOOT_AUTOUPDATE | Should -BeNullOrEmpty
+    }
+
+    It 'Test-NetscootUpdate -Auto is a no-op when the policy is Manual (default)' {
+        Remove-Item Env:\NETSCOOT_AUTOUPDATE -ErrorAction SilentlyContinue
+        Test-NetscootUpdate -Auto | Should -BeNullOrEmpty
+    }
+
+    It 'Test-NetscootUpdate -Auto is a no-op when the policy is Disabled' {
         $env:NETSCOOT_AUTOUPDATE = 'false'
-        $r = Test-NetscootUpdate -EnableAutoUpdate
-        $r | Should -BeNullOrEmpty
+        Test-NetscootUpdate -Auto | Should -BeNullOrEmpty
     }
 
-    It 'Update-Netscoot refuses (no network) when NETSCOOT_AUTOUPDATE is off' {
+    It 'Update-Netscoot refuses (no network) when the policy is Disabled' {
         $env:NETSCOOT_AUTOUPDATE = 'off'
         $r = Update-Netscoot -WarningVariable warn -WarningAction SilentlyContinue
         $r | Should -BeNullOrEmpty
-        ($warn -join "`n") | Should -Match 'disabled by policy'
+        ($warn -join "`n") | Should -Match 'disabled by the update policy'
     }
 }

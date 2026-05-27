@@ -56,7 +56,7 @@ function Sync-Solution {
                 if ($PSCmdlet.ShouldProcess($m.Solution, "add $(_rel $proj)")) {
                     Invoke-Dotnet sln $m.Solution add $proj
                     $added++
-                    [pscustomobject]@{ Solution = (_rel $m.Solution); Added = (_rel $proj) }
+                    [pscustomobject]@{ PSTypeName = 'Netscoot.SyncResult'; Solution = (_rel $m.Solution); Added = (_rel $proj) }
                 }
             }
         }

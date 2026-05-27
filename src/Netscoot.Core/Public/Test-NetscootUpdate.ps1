@@ -14,43 +14,43 @@ function Test-NetscootUpdate {
         Needs network access to api.github.com. Honors -ErrorAction if the request fails (offline,
         rate-limited, or no releases yet).
 
-        -EnableAutoUpdate makes this the automation/SessionStart entry point: It runs the check ONLY
-        when $env:NETSCOOT_AUTOUPDATE is set to a truthy value (1/true/on/yes/enabled), and is a
-        silent no-op otherwise. So a hook can call it unconditionally; nothing happens until a user
-        opts in, and IT can disable it fleet-wide by clearing or setting the variable to false via
-        Group Policy / Intune / a profile. A plain Test-NetscootUpdate (no switch) always checks.
+        A plain Test-NetscootUpdate always checks. -Auto is the automation/SessionStart entry point:
+        It runs the check only when the update policy is Enabled (see Set-NetscootUpdatePolicy), and
+        is a silent no-op otherwise. So a hook can call it unconditionally; nothing happens until the
+        policy is opted in, and an administrator can disable it fleet-wide. Either way it never
+        updates - it only reports.
 
     .PARAMETER Repository
         owner/name of the GitHub repository to check. Defaults to the project repository.
 
-    .PARAMETER EnableAutoUpdate
-        Run as the gated auto-check (for a SessionStart hook or other automation): proceed only when
-        $env:NETSCOOT_AUTOUPDATE is truthy, otherwise do nothing. Still read-only - it never updates.
+    .PARAMETER Auto
+        Run as the automatic check (for a SessionStart hook or other automation): proceed only when
+        the update policy is Enabled, otherwise do nothing. Still read-only - it never updates.
 
     .OUTPUTS
         Netscoot.Update - none (writes a non-terminating error) when the release cannot be fetched,
-        and nothing at all when -EnableAutoUpdate is set but $env:NETSCOOT_AUTOUPDATE is not enabled.
+        and nothing at all when -Auto is set but the update policy is not Enabled.
 
     .EXAMPLE
         # Compare the installed module to the latest GitHub release
         Test-NetscootUpdate
         # Check a fork or a different repository (owner/name)
         Test-NetscootUpdate -Repository myfork/netscoot
-        # SessionStart hook: checks only if the user/fleet opted in via $env:NETSCOOT_AUTOUPDATE
-        Test-NetscootUpdate -EnableAutoUpdate
+        # SessionStart hook: checks only when the update policy is Enabled
+        Test-NetscootUpdate -Auto
     #>
     [CmdletBinding()]
     [OutputType('Netscoot.Update')]
     param(
         [ValidatePattern('^[^/]+/[^/]+$')]
         [string]$Repository = 'kappasims/netscoot',
-        [switch]$EnableAutoUpdate
+        [switch]$Auto
     )
 
-    # Gated auto-check: do nothing unless the user/fleet opted in. Default is OFF (no auto-check),
-    # so a hook calling this stays quiet until $env:NETSCOOT_AUTOUPDATE is turned on.
-    if ($EnableAutoUpdate -and (("$env:NETSCOOT_AUTOUPDATE").Trim().ToLowerInvariant() -notmatch '^(1|true|on|yes|enabled)$')) {
-        Write-Verbose 'Auto-update check skipped: $env:NETSCOOT_AUTOUPDATE is not enabled.'
+    # Automatic check: do nothing unless the update policy is Enabled. Manual is the default, so a
+    # hook calling -Auto stays quiet until someone opts in via Set-NetscootUpdatePolicy.
+    if ($Auto -and (Get-NetscootUpdatePolicy).State -ne 'Enabled') {
+        Write-Verbose 'Auto-update check skipped: the update policy is not Enabled.'
         return
     }
 

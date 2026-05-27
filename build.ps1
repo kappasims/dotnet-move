@@ -187,9 +187,10 @@ function Invoke-DocsTask {
         # break the span and the entities would show raw).
         $prose = {
             param([string]$s)
-            # Wrap $(...) / $var tokens in backticks so no renderer treats them as math (\$ escaping
-            # is honored inconsistently).
-            $s = [regex]::Replace($s, '\$\([^)]*\)|\$\w+', { param($mm) '`' + $mm.Value + '`' })
+            # Wrap $(...) / $scope:var / $var tokens in backticks so no renderer treats them as math
+            # (\$ escaping is honored inconsistently). The $scope:var alternative comes first so a
+            # whole `$env:NETSCOOT_JOURNAL` is captured, not just the `$env` prefix.
+            $s = [regex]::Replace($s, '\$\([^)]*\)|\$\w+:\w+|\$\w+', { param($mm) '`' + $mm.Value + '`' })
             # Backtick bare parameter references (-Name). Uppercase-first skips hyphenated words
             # (non-terminating, cross-boundary); the lookbehind skips cmdlet names (Move-Item).
             $s = [regex]::Replace($s, '(?<![\w`-])(-[A-Z][A-Za-z]+)\b', '`$1`')
@@ -211,7 +212,10 @@ function Invoke-DocsTask {
     # [OutputType('Netscoot.X')]; we look the name up here to render a link + a terse code-view
     # of its structure, and to build the "Output types" section. Single source of truth for shapes.
     $typeDefs = Import-PowerShellDataFile ([System.IO.Path]::Combine($root, 'docs', 'output-types.psd1'))
-    $typeAlt = ($typeDefs.Keys | ForEach-Object { [regex]::Escape($_) }) -join '|'
+    # Longest-first so a name that is a prefix of another (Netscoot.Update vs Netscoot.UpdatePolicy)
+    # does not win the alternation and strip only its prefix. Also makes the order deterministic
+    # (hashtable key enumeration is not), so the generated docs are stable across runs.
+    $typeAlt = ($typeDefs.Keys | Sort-Object { $_.Length } -Descending | ForEach-Object { [regex]::Escape($_) }) -join '|'
 
     # Dispatch diagrams (cmdlet name -> ASCII routing map). Rendered as a monospaced block in the
     # Output section for cmdlets that route by extension/type, in place of a prose description.
@@ -242,18 +246,32 @@ function Invoke-DocsTask {
     function Format-TypeLink { param([string]$Name) "[$Name](#$(Get-TypeAnchor $Name))" }
 
     # Terse, monospaced rendering of a type's structure: a header line (the type name) then one
-    # aligned line per field: name, type, optional note. The header is always the singular object;
-    # whether a command returns one or many is a per-command fact, stated in that command's Output.
+    # aligned line per field: name, type, and an optional '# note'. A field whose type is itself a
+    # registered Netscoot.* type is expanded inline, indented, so the whole shape is visible in one
+    # view. $Ancestors is the chain on the current path (not a global seen-set), so a type used in
+    # two sibling fields (e.g. Capability's Git and Dotnet, both Netscoot.ToolInfo) expands under
+    # each, while a genuine cycle stops. The header is the singular object; whether a command returns
+    # one or many is a per-command fact, stated in that command's Output.
     function Format-TypeCodeView {
-        param([string]$Name, [hashtable]$Def)
+        param([string]$Name, [hashtable]$Def, [int]$Indent = 0, [string[]]$Ancestors = @())
         $fields = @($Def.Fields)
         $nameW = ($fields | ForEach-Object { $_.Name.Length } | Measure-Object -Maximum).Maximum
         $typeW = ($fields | ForEach-Object { $_.Type.Length } | Measure-Object -Maximum).Maximum
-        $lines = @($Name)
+        $pad = ' ' * $Indent
+        $ancestorsNow = @($Ancestors) + $Name
+        $lines = @()
+        if ($Indent -eq 0) { $lines += $Name }   # top-level header; nested types are named by their field line
         foreach ($f in $fields) {
-            $line = '  ' + $f.Name.PadRight($nameW) + '  ' + $f.Type.PadRight($typeW)
-            if ($f.Note) { $line += '  ' + $f.Note }
-            $lines += $line.TrimEnd()
+            $prefix = $pad + '  ' + $f.Name.PadRight($nameW) + '  ' + $f.Type.PadRight($typeW)
+            if ($f.Note) { $lines += ($prefix + '  # ' + $f.Note) }
+            else { $lines += $prefix.TrimEnd() }
+            # Expand a nested registered type inline (strip [] and ? decorations); stop on a cycle.
+            # Indent the nested block so its name column lands under this field's type column
+            # (one step past the parent's name-column width), making the nesting read at a glance.
+            $bare = $f.Type -replace '[\[\]?]', ''
+            if ($typeDefs.ContainsKey($bare) -and ($bare -notin $ancestorsNow)) {
+                $lines += (Format-TypeCodeView -Name $bare -Def $typeDefs[$bare] -Indent ($Indent + $nameW + 2) -Ancestors $ancestorsNow)
+            }
         }
         $lines -join "`n"
     }

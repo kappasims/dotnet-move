@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Default table views for Netscoot's diagnostic / list result types and the undo-journal entries.
+  Loaded via Netscoot.Shared's FormatsToProcess, so the views are available whenever any engine is
+  imported (formatting matches by PSTypeName at render time). Each emitting cmdlet stamps the
+  matching PSTypeName on its objects. Array-valued columns are joined with ', ' so they read as text
+  rather than "System.Object[]"; verbose columns (absolute paths, candidate lists) are left out of
+  the default table and remain on the object for Format-List / Select-Object.
+-->
+<Configuration>
+  <ViewDefinitions>
+
+    <View>
+      <Name>Netscoot.JournalEntry</Name>
+      <ViewSelectedBy><TypeName>Netscoot.JournalEntry</TypeName></ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>Id</Label><Width>8</Width></TableColumnHeader>
+          <TableColumnHeader><Label>When</Label><Width>16</Width></TableColumnHeader>
+          <TableColumnHeader><Label>Command</Label><Width>22</Width></TableColumnHeader>
+          <TableColumnHeader><Label>Source</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Destination</Label></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>id</PropertyName></TableColumnItem>
+              <TableColumnItem><ScriptBlock>try { ([datetimeoffset]$_.timestamp).LocalDateTime.ToString('yyyy-MM-dd HH:mm') } catch { "$($_.timestamp)" }</ScriptBlock></TableColumnItem>
+              <TableColumnItem><PropertyName>command</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>source</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>destination</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+
+    <View>
+      <Name>Netscoot.ConsistencyResult</Name>
+      <ViewSelectedBy><TypeName>Netscoot.ConsistencyResult</TypeName></ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>Project</Label></TableColumnHeader>
+          <TableColumnHeader><Label>PresentIn</Label></TableColumnHeader>
+          <TableColumnHeader><Label>AbsentFrom</Label></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>Project</PropertyName></TableColumnItem>
+              <TableColumnItem><ScriptBlock>@($_.PresentIn) -join ', '</ScriptBlock></TableColumnItem>
+              <TableColumnItem><ScriptBlock>@($_.AbsentFrom) -join ', '</ScriptBlock></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+
+    <View>
+      <Name>Netscoot.PathReference</Name>
+      <ViewSelectedBy><TypeName>Netscoot.PathReference</TypeName></ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>File</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Line</Label><Width>5</Width><Alignment>Right</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Confidence</Label><Width>10</Width></TableColumnHeader>
+          <TableColumnHeader><Label>Text</Label></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>File</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Line</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Confidence</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Text</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+
+    <View>
+      <Name>Netscoot.RepairResult</Name>
+      <ViewSelectedBy><TypeName>Netscoot.RepairResult</TypeName></ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>Kind</Label><Width>10</Width></TableColumnHeader>
+          <TableColumnHeader><Label>Resolution</Label><Width>12</Width></TableColumnHeader>
+          <TableColumnHeader><Label>Missing</Label></TableColumnHeader>
+          <TableColumnHeader><Label>NewPath</Label></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>Kind</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Resolution</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Missing</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>NewPath</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+
+    <View>
+      <Name>Netscoot.SyncResult</Name>
+      <ViewSelectedBy><TypeName>Netscoot.SyncResult</TypeName></ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>Solution</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Added</Label></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>Solution</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Added</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+
+    <View>
+      <Name>Netscoot.SolutionItem</Name>
+      <ViewSelectedBy><TypeName>Netscoot.SolutionItem</TypeName></ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>Solution</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Kind</Label><Width>20</Width></TableColumnHeader>
+          <TableColumnHeader><Label>Type</Label><Width>8</Width></TableColumnHeader>
+          <TableColumnHeader><Label>Name</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Path</Label></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>Solution</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Kind</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Type</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Path</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+
+    <View>
+      <Name>Netscoot.MetaIntegrity</Name>
+      <ViewSelectedBy><TypeName>Netscoot.MetaIntegrity</TypeName></ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>Kind</Label><Width>12</Width></TableColumnHeader>
+          <TableColumnHeader><Label>Path</Label></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>Kind</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Path</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+
+  </ViewDefinitions>
+</Configuration>

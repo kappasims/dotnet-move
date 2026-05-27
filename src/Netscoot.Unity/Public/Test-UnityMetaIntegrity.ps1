@@ -6,7 +6,7 @@ function Test-UnityMetaIntegrity {
         references - both lead to broken/regenerated GUIDs.
 
     .DESCRIPTION
-        Walks the tree and pairs every asset (file or folder) with its '<name>.meta'.
+        Walks the tree and pairs every asset (file or folder) with its `<name>.meta`.
         Emits one object per problem and surfaces it through the standard streams so behavior
         follows invocation: By default it writes a Warning per problem; -Strict escalates each to
         a non-terminating error (honoring -ErrorAction). Objects are always emitted so results are
@@ -59,7 +59,7 @@ function Test-UnityMetaIntegrity {
                 # Orphan check: the asset this .meta describes should exist.
                 $asset = $e.FullName.Substring(0, $e.FullName.Length - '.meta'.Length)
                 if (-not (Test-Path -LiteralPath $asset)) {
-                    $rec = [pscustomobject]@{ Kind = 'OrphanMeta'; Path = $e.FullName }
+                    $rec = [pscustomobject]@{ PSTypeName = 'Netscoot.MetaIntegrity'; Kind = 'OrphanMeta'; Path = $e.FullName }
                     $msg = "Orphan .meta (no matching asset): $($e.FullName)"
                     if ($Strict) { Write-Error -Message $msg -Category InvalidData -TargetObject $rec -ErrorId 'OrphanMeta' } else { Write-Warning $msg }
                     $rec
@@ -67,7 +67,7 @@ function Test-UnityMetaIntegrity {
             } else {
                 # Missing-meta check: every asset/folder should have a sibling .meta.
                 if (-not (Test-Path -LiteralPath "$($e.FullName).meta" -PathType Leaf)) {
-                    $rec = [pscustomobject]@{ Kind = 'MissingMeta'; Path = $e.FullName }
+                    $rec = [pscustomobject]@{ PSTypeName = 'Netscoot.MetaIntegrity'; Kind = 'MissingMeta'; Path = $e.FullName }
                     $msg = "Asset has no .meta (Unity will generate a new GUID): $($e.FullName)"
                     if ($Strict) { Write-Error -Message $msg -Category InvalidData -TargetObject $rec -ErrorId 'MissingMeta' } else { Write-Warning $msg }
                     $rec

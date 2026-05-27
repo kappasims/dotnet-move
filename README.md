@@ -2,13 +2,12 @@
 
 [![PowerShell Gallery](https://img.shields.io/powershellgallery/v/Netscoot?logo=powershell&label=PowerShell%20Gallery)](https://www.powershellgallery.com/packages/Netscoot) [![Downloads](https://img.shields.io/powershellgallery/dt/Netscoot?label=downloads)](https://www.powershellgallery.com/packages/Netscoot)
 
-netscoot moves a project, module, or asset without breaking what depends on it. As part of the move
-it reconciles whatever would otherwise break: A .NET project's solution membership, references, and
-GUID wiring; a PowerShell module's manifest; a Unity asset's `.meta` GUIDs; and a native C++
-project's solution membership, reporting the link settings it cannot safely rewrite. It rolls back to
-the original state if anything fails. Visual Studio does this for a .NET project when you drag it in
-its GUI; netscoot does it from the command line, everywhere Visual Studio is not, including VS Code,
-Rider, CI, Linux, macOS, and AI coding agents.
+netscoot moves a project, module, or asset (.NET, PowerShell, Unity, or native C++) without breaking
+what depends on it, and rolls back if anything fails. It reconciles what the move would otherwise break: a .NET project's solution
+membership, references, and GUIDs; a PowerShell module's manifest; a Unity asset's `.meta` GUIDs; a
+native C++ project's solution membership (reporting the link settings it cannot safely rewrite).
+Visual Studio does this for a .NET project when you drag it in the GUI, whereas netscoot does it from
+the command line, everywhere Visual Studio is not: VS Code, Rider, CI, Linux, macOS, and AI agents.
 
 ```powershell
 # moves the project and reconciles the .sln, references, and GUIDs (rolls back on failure)
@@ -18,11 +17,8 @@ Invoke-Netscoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarrago
 git netscoot src/Tarragon/Tarragon.csproj libs/Tarragon --whatif
 ```
 
-Each format is reconciled by the tool that owns it where one exists (the dotnet CLI, git mv,
-Update-ModuleManifest), and by a targeted in-place rewrite where none does (a solution's stored
-paths, MSBuild `<Import>`s, a script's dot-source/call references). Beyond managed .NET this reaches
-PowerShell modules and scripts, Unity `.meta` GUIDs, and native C++ `.vcxproj` projects, reporting
-the link settings it cannot safely rewrite rather than guessing at them.
+Each format is reconciled by the tool that owns it (the dotnet CLI, git mv, Update-ModuleManifest),
+or by a targeted in-place rewrite where no such tool exists. See [The Contract](#the-contract).
 
 For AI agents, the repository ships Claude Code skills that run these commands, triggering on phrases
 like "move this project" (see [Skills](#skills)).
@@ -37,78 +33,10 @@ like "move this project" (see [Skills](#skills)).
 - git is optional: with it, moves use `git mv` (history kept); without it, `-Force` does a plain
   `Move-Item` (no history). `Get-NetscootCapability` reports what the machine has.
 
-## Footprint
-
-Everything netscoot creates or changes, so there are no surprises:
-
-**Installing** (the installer or `./build.ps1 -Task Install`):
-
-- Copies the module folders to your CurrentUser module path: `~/Documents/PowerShell/Modules`
-  (or `WindowsPowerShell` for 5.1) on Windows, `~/.local/share/powershell/Modules` elsewhere, or a
-  `-InstallPath` you choose (which you add to `$env:PSModulePath` yourself). That default path is
-  already on `$env:PSModulePath`; nothing else on the environment is touched.
-- Downloads the release zip to the system temp dir, extracts it, and deletes it when done. Install
-  and update are the only things that reach the network (`api.github.com` / `github.com`).
-
-**Running a move:**
-
-- Edits the target repository's solution/project files to reconcile the move. That is the operation
-  itself, done through first-party tooling (see: [The Contract](#the-contract)).
-- Writes an undo journal to a per-user data directory (`%LOCALAPPDATA%\netscoot` on Windows,
-  `~/Library/Application Support/netscoot` on macOS, `~/.local/share/netscoot` on Linux), one
-  file per repository. It stays out of the working tree, so it is never tracked or shown by
-  `git status`. On by default; see [Undoing](#undoing) to opt out or relocate it.
-- Snapshots the files it edits to the system temp dir for rollback, and removes the snapshot when
-  the move finishes (success or failure). Never written into the repository.
-
-**Only when you ask:**
-
-- `Register-NetscootGitAlias` adds one `alias.netscoot` line to your git config (repository-local, or
-  `~/.gitconfig` with `-Scope Global`); `Unregister-NetscootGitAlias` removes it.
-- `install.ps1 -NoJournal` turns the undo journal off persistently (`git config --global
-  netscoot.journal false` when git is present, else the `NETSCOOT_JOURNAL` env var).
-- `Set-NetscootJournal` writes the `netscoot.journal` git setting (repository-local, or `-Global`
-  for every repository); `Clear-NetscootJournal` deletes a repository's journal file.
-
-### Environment variables
-
-netscoot reads no environment variables by default. Each one below is an opt-in control; the
-journaling env var trumps the equivalent git setting, so it can force the choice fleet-wide.
-
-| Variable | Values | Effect |
-|:---|:---|:---|
-| <small>`NETSCOOT_JOURNAL`</small> | <small>`off`/`0`/`false`</small> | <small>Turns the undo journal off. Trumps `git config netscoot.journal`, so an admin can force it on/off fleet-wide.</small> |
-| <small>`NETSCOOT_JOURNAL_HOME`</small> | <small>a directory</small> | <small>Relocates the journal store away from the per-user data dir above (point it at a roaming or managed path).</small> |
-| <small>`NETSCOOT_AUTOUPDATE`</small> | <small>`true` / `false`</small> | <small>Gates the opt-in update check. `Test-NetscootUpdate -EnableAutoUpdate` runs only when truthy; `false` disables it fleet-wide and blocks `Update-Netscoot` (`-Force` overrides). Unset means no auto-check.</small> |
-| <small>`NETSCOOT_JOURNAL_SUPPRESS`</small> | <small>internal</small> | <small>Set by `Undo-Netscoot` around its own reverse move so the undo is not itself journaled. Not meant to be set by hand.</small> |
-
-Journaling resolves in this order, first match wins: `NETSCOOT_JOURNAL_SUPPRESS` (internal), then
-`NETSCOOT_JOURNAL`, then `git config netscoot.journal` (local over global), then on.
-
-Common scenarios:
-
-- Stop journaling in one repository: `git config netscoot.journal false` (or `Set-NetscootJournal -Enabled $false`).
-- Stop it for every repository: `git config --global netscoot.journal false`, or install with `-NoJournal`. With no git, set `NETSCOOT_JOURNAL=off` in your profile.
-- Move the journal off its default location: set `NETSCOOT_JOURNAL_HOME` to the path you want.
-- Turn on update reminders: set `NETSCOOT_AUTOUPDATE=true` and have a SessionStart hook run `Test-NetscootUpdate -EnableAutoUpdate`.
-- Block self-updates across a managed fleet: push `NETSCOOT_AUTOUPDATE=false` via Group Policy or Intune.
-
-### What it doesn't do
-
-Apart from the per-user undo journal noted above, it writes nothing under your home/AppData: It never
-edits `PATH`, never auto-installs git or the .NET SDK, and sends no telemetry.
-
-> [!NOTE]
-> **For sysadmins / managed fleets.** netscoot is built to be governed centrally:
-> - **No surprise network or state.** Never auto-installs, never edits `PATH`, sends no telemetry. The only network calls are an explicit install or update.
-> - **Auto-update is off by default.** A SessionStart/automation check only runs via `Test-NetscootUpdate -EnableAutoUpdate` *and* only when `NETSCOOT_AUTOUPDATE` is truthy. Push `NETSCOOT_AUTOUPDATE=false` (Group Policy / Intune / profile) to disable checks fleet-wide and block `Update-Netscoot` from self-updating.
-> - **Journaling is controllable centrally.** Turn it off per repository or globally with `git config [--global] netscoot.journal false`; the undo journal lives in the standard per-user data dir (LocalAppData / Application Support / `~/.local/share`), covered by normal backup, and relocatable with `NETSCOOT_JOURNAL_HOME`.
-> - **Every file edit goes through first-party tooling** (the [Contract](#the-contract)), never a hand-edit.
-
 ## Install
 
-Install the single bundled package (all engines) from the
-[PowerShell Gallery](https://www.powershellgallery.com/packages/Netscoot):
+**Recommended: install from the [PowerShell Gallery](https://www.powershellgallery.com/packages/Netscoot)**
+(the single bundled package, all engines):
 
 ```powershell
 Install-Module Netscoot -Scope CurrentUser     # PowerShellGet (Windows PowerShell 5.1+ / PowerShell 7)
@@ -137,12 +65,12 @@ irm https://raw.githubusercontent.com/kappasims/netscoot/master/install.ps1 -Out
 ./install.ps1
 ```
 
-**No-script option:** download the latest release zip from the
+No-script option: download the latest release zip from the
 [Releases page](https://github.com/kappasims/netscoot/releases), unzip it, and copy the
 `Netscoot.Shared`, `Netscoot.Core`, `Netscoot.Unity`, `Netscoot.Native`, and `netscoot`
 folders out of `src/` into any directory on your `$env:PSModulePath`.
 
-Or pipe it straight in for a **YOLO install** if you are comfortable running [the install script](https://github.com/kappasims/netscoot/blob/master/install.ps1) unread:
+Or, only if you are comfortable running [the install script](https://github.com/kappasims/netscoot/blob/master/install.ps1) unread, pipe it straight in:
 
 ```powershell
 irm https://raw.githubusercontent.com/kappasims/netscoot/master/install.ps1 | iex
@@ -170,11 +98,25 @@ Otherwise `Test-NetscootUpdate` checks GitHub for a newer release and `Update-Ne
 re-running the installer) applies it in place. The Claude Code skills are separate files: Refresh
 them with `git pull` in a clone, or re-sync `.claude/skills` if installed globally.
 
-**Opt-in auto-check (enterprise):** `Test-NetscootUpdate -EnableAutoUpdate` is the gated entry
-point for a SessionStart hook or other automation. It runs only when `$env:NETSCOOT_AUTOUPDATE` is
-truthy (`1`/`true`/`on`), so it stays a silent no-op until a user opts in, and it never updates
-(read-only). IT can disable it fleet-wide, and block `Update-Netscoot` from self-updating, by
-pushing `NETSCOOT_AUTOUPDATE=false` via Group Policy / Intune / a profile (`-Force` overrides).
+A single policy governs automatic behavior, set with `Set-NetscootUpdatePolicy` (or read with
+`Get-NetscootUpdatePolicy`):
+
+| State | Automatic check (`Test-NetscootUpdate -Auto`) | `Update-Netscoot` |
+|:---|:---|:---|
+| <small>`Enabled`</small> | <small>runs</small> | <small>allowed</small> |
+| <small>`Manual` (default)</small> | <small>no-op</small> | <small>allowed (when you run it)</small> |
+| <small>`Disabled`</small> | <small>no-op</small> | <small>refused (`-Force` overrides)</small> |
+
+```powershell
+Set-NetscootUpdatePolicy -State Enabled              # opt in: a SessionStart hook's -Auto check now runs
+Set-NetscootUpdatePolicy -State Disabled -Scope Machine   # block updates for every user (elevated)
+Get-NetscootUpdatePolicy                             # show the effective state and where it came from
+```
+
+The policy is stored in the `NETSCOOT_AUTOUPDATE` environment variable, so an administrator can set
+the same states fleet-wide through Group Policy / Intune (truthy = Enabled, falsy = Disabled). A
+manual `Update-Netscoot` you run yourself works unless the policy is Disabled; the automatic `-Auto`
+check stays silent unless the policy is Enabled.
 
 # Usage
 
@@ -235,8 +177,9 @@ Every move is recorded in a journal in a per-user data directory (`%LOCALAPPDATA
 Windows, `~/Library/Application Support/netscoot` on macOS, `~/.local/share/netscoot` on Linux),
 one file per repository, so you can reverse it later, even from a fresh session. `Undo-Netscoot` replays the recorded inverse (the same move with
 source and destination swapped), re-reconciling from the current state rather than restoring a stale
-snapshot. Pick what to reverse: `-Last` (the default, the most recent move), `-After <time>` (every
-move recorded since a time), or `-All` (everything). `-List` shows what is available.
+snapshot. Pick what to reverse: `-Last` (the default, the most recent move), `-Id <id>` (one specific
+move), `-After <time>` (every move recorded since a time), or `-All` (everything). `-List` shows what
+is available.
 
 A successful undo removes that entry from the journal, and the reversing move is not itself recorded,
 so repeated `-Last` calls walk the history backwards rather than toggling one move on and off. The
@@ -249,8 +192,25 @@ both take `-WhatIf` to preview before they change anything.
 Undo-Netscoot -List                       # what can be undone (oldest first)
 Undo-Netscoot -WhatIf                      # preview reversing the most recent move
 Undo-Netscoot                              # reverse the most recent move; call again to walk back further
+Undo-Netscoot -Id a1b2c3d4                 # reverse one specific move (its id from -List)
 Undo-Netscoot -After (Get-Date).AddHours(-1)   # reverse everything from the last hour, newest first
 Undo-Netscoot -All                         # reverse every move, newest first
+```
+
+`-List` returns the entries (tagged `Netscoot.JournalEntry`), which print as a table:
+
+```text
+Id       When             Command            Source        Destination
+--       ----             -------            ------        -----------
+a1b2c3d4 2026-05-27 14:02 Move-DotnetProject src/Tarragon  libs/Tarragon
+9f3e1c77 2026-05-27 14:05 Move-Solution      Demo.slnx     build/Demo.slnx
+```
+
+On disk each entry is one JSON line recording the reversing invocation (the mover and the swapped
+splat that `Undo-Netscoot` replays):
+
+```json
+{"id":"a1b2c3d4","timestamp":"2026-05-27T14:02:11Z","command":"Move-DotnetProject","engine":"dotnet","source":"src/Tarragon","destination":"libs/Tarragon","undo":{"command":"Move-DotnetProject","params":{"Project":"libs/Tarragon/Tarragon.csproj","Destination":"src/Tarragon"}}}
 ```
 
 `-All` and `-After` walk back several moves at once, so they prompt for a yes/no confirmation that
@@ -259,7 +219,7 @@ the reversals first.
 
 The journal is **on by default** and stays out of the working tree: It lives in the per-user data
 directory above, so git never tracks it, `git status` never shows it, and your own `.gitignore` is
-left untouched. It survives `git clean` and repository deletion, and enterprise backup (Time Machine,
+left untouched. It survives `git clean` and repository deletion, and normal backup (Time Machine,
 roaming profiles, JAMF/Intune) covers it. Set `$env:NETSCOOT_JOURNAL_HOME` to relocate the store
 (for example to a roaming or managed path).
 
@@ -296,6 +256,34 @@ netscoot can be used purely to inspect a repository. These commands are read-onl
 | <small>`Get-NetscootCapability`</small> | <small>whether git and dotnet are present, plus the platform</small> |
 | <small>`Test-NetscootUpdate`</small> | <small>whether a newer netscoot release is available on GitHub</small> |
 
+Each returns objects, so results are filterable and scriptable, and print as a table by default:
+
+```text
+PS> Test-SolutionConsistency
+Project            PresentIn         AbsentFrom
+-------            ---------         ----------
+src/Lib/Lib.csproj App.sln, Api.sln  Tools.sln
+
+PS> Get-SolutionInventory
+Solution Kind                Type   Name          Path
+-------- ----                ----   ----          ----
+App.sln  Project             csproj Lib.csproj    src/Lib/Lib.csproj
+App.sln  SolutionFolder             build
+(none)   UnreferencedProject csproj Legacy.csproj tools/Legacy/Legacy.csproj
+
+PS> Find-PathReference -Path ./src/Lib/Lib.csproj
+File                     Line Confidence Text
+----                     ---- ---------- ----
+.github/workflows/ci.yml   31 High       dotnet build src/Lib/Lib.csproj
+build.ps1                  12 Low        $proj = 'Lib.csproj'
+
+PS> Test-UnityMetaIntegrity ./Assets
+Kind        Path
+----        ----
+MissingMeta Assets/Art/logo.png
+OrphanMeta  Assets/Old/gone.cs.meta
+```
+
 ## Repairing
 
 It can also fix a repository whose solution entries or `<ProjectReference>`s were left dangling by a
@@ -312,6 +300,49 @@ relocatable, missing, or ambiguous (read-only by default).
 To resolve the membership divergence that `Test-SolutionConsistency` reports, `Sync-Solution` adds
 each project to the solutions missing it (via `dotnet sln add`), making membership uniform. It only
 adds, never removes; preview with `-WhatIf` first.
+
+# Footprint
+
+Everything netscoot writes, and where:
+
+- **Installing** copies the module folders to your CurrentUser PowerShell module path (already on
+  `$env:PSModulePath`), or an `-InstallPath` you choose. Installing and updating download the release
+  zip to the system temp dir and are the only actions that touch the network (`github.com` /
+  `api.github.com`).
+- **A move** edits the target repository's solution/project files to reconcile it, through first-party
+  tooling ([The Contract](#the-contract)). It writes a per-repository undo journal to the per-user
+  data directory (`%LOCALAPPDATA%\netscoot`, `~/Library/Application Support/netscoot`, or
+  `~/.local/share/netscoot`), kept out of the working tree so `git status` stays clean, and snapshots
+  the files it edits to the system temp dir for rollback, removed when the move finishes. On by
+  default; see [Undoing](#undoing) to opt out or relocate the journal.
+- **Only when you ask:** `Register-NetscootGitAlias` adds one `alias.netscoot` line to your git
+  config; `install.ps1 -NoJournal` or `Set-NetscootJournal` turns the journal off, and
+  `Clear-NetscootJournal` deletes a repository's journal.
+
+Nothing else under your home or AppData is touched: it never edits `PATH`, never auto-installs git or
+the .NET SDK, and sends no telemetry.
+
+## Environment variables
+
+netscoot reads no environment variables by default; each one below is an opt-in control.
+
+| Variable | Values | Effect |
+|:---|:---|:---|
+| <small>`NETSCOOT_JOURNAL`</small> | <small>`off`/`0`/`false`</small> | <small>Turns the undo journal off. Trumps `git config netscoot.journal`, so an admin can force it on/off fleet-wide.</small> |
+| <small>`NETSCOOT_JOURNAL_HOME`</small> | <small>a directory</small> | <small>Relocates the journal store away from the per-user data dir above (point it at a roaming or managed path).</small> |
+| <small>`NETSCOOT_AUTOUPDATE`</small> | <small>`true` / `false`</small> | <small>Backs the update policy (see [Updating](#updating)): truthy = Enabled, falsy = Disabled, unset = Manual. Prefer `Set-NetscootUpdatePolicy`; set this directly for Group Policy / Intune.</small> |
+| <small>`NETSCOOT_JOURNAL_SUPPRESS`</small> | <small>internal</small> | <small>Set by `Undo-Netscoot` around its own reverse move so the undo is not itself journaled. Not meant to be set by hand.</small> |
+
+The full journaling precedence and how to turn it off live under [Undoing](#undoing).
+
+> [!NOTE]
+> **For sysadmins / managed fleets.** The update policy is Manual by default, so nothing checks or
+> updates on its own; set `NETSCOOT_AUTOUPDATE` (Group Policy / Intune) to `false` to force Disabled
+> fleet-wide (blocks `Update-Netscoot`) or `true` for Enabled. See [Updating](#updating). Journaling
+> is controllable per repository or globally
+> (`git config [--global] netscoot.journal`), and the `NETSCOOT_JOURNAL` env var trumps that setting
+> so you can force the choice fleet-wide; the journal sits in the standard per-user data dir,
+> relocatable via `NETSCOOT_JOURNAL_HOME`.
 
 # Interfaces
 
@@ -375,29 +406,23 @@ the commands above:
 
 ## The Contract
 
-Every move upholds these guarantees:
+What every move does, and won't do:
 
-1. **No hand-written solution or project files.** Every path/GUID change is delegated to
-   first-party tooling:
-   - `dotnet sln add/remove` and `dotnet add/remove reference` for solution membership and references
-   - `git mv` for the move itself (a plain `Move-Item` only under `-Force`, when git is absent)
-   - `Update-ModuleManifest` for PowerShell module manifests
-2. **No direct file writes, except as provided in this clause.** As the sole exception to §1, formats
-   that no first-party tool reconciles are rewritten in place through the BOM-preserving `Set-Raw*`
-   helpers, limited to:
-   - a solution's stored project paths
-   - MSBuild `<Import>` paths
-   - a script's dot-source/call references
-3. **No speculative parsing.** Files are read through first-party readers, and parsed directly only
-   where no such reader surfaces what is needed.
-4. **No unverified compliance.** These guarantees are enforced, not merely promised:
-   `tests/FirstPartyDrift.Tests.ps1` fails the build if a new file writes file content or a new cmdlet
-   calls the raw writers.
-5. **Detection is bounded and report-only.** `Find-PathReference` flags hardcoded paths in a known
-   set of build/CI/hook/automation files and never edits them. It does not analyze application
-   source for runtime or computed path use (`Path.Combine`, config, environment variables, P/Invoke):
-   resolving those statically is undecidable, so the tool reports what it can match by hand and never
-   claims to find every reference.
+- **Solution and project files are never hand-edited.** Membership, references, and GUIDs change
+  only through the tool that owns the format: `dotnet sln` and `dotnet add/remove reference`, `git mv`
+  for the move itself (a plain `Move-Item` only under `-Force`, when git is absent), and
+  `Update-ModuleManifest` for module manifests.
+- **The only direct rewrites are formats no tool reconciles:** a solution's stored project paths,
+  MSBuild `<Import>` paths, and a script's dot-source/call references. These are edited in place
+  (keeping the byte-order mark), because nothing else can.
+- **Files are read through their own tools,** and parsed directly only where those tools don't
+  surface what is needed.
+- **Detection is report-only.** `Find-PathReference` flags hardcoded paths in build/CI/hook/
+  automation files; it never edits them, and it does not scan application source for computed path
+  use (`Path.Combine`, config, environment variables, P/Invoke). Resolving that statically is
+  impossible, so it never claims to catch everything.
+- **These hold automatically:** `tests/FirstPartyDrift.Tests.ps1` fails the build if a new file
+  writes content or calls the raw writers.
 
 ## Building
 
@@ -498,7 +523,7 @@ Relocate a project, folder, file, module, or asset and reconcile what the move w
 | <small>[Move-DotnetProjectTree](#move-dotnetprojecttree)</small> | <small>Move a folder that contains one or more managed .NET projects, reconciling solution membership and every external project reference in one operation.</small> |
 | <small>[Move-DotnetFile](#move-dotnetfile)</small> | <small>Move a single managed .NET file and reconcile references, routing by extension to the right specialist.</small> |
 | <small>[Move-DotnetFolder](#move-dotnetfolder)</small> | <small>Move a folder of managed .NET projects, reconciling references.</small> |
-| <small>[Move-MSBuildImport](#move-msbuildimport)</small> | <small>Move a shared MSBuild .props/.targets file and fix every project (or other props/targets) that imports it via &lt;Import Project="..."&gt;.</small> |
+| <small>[Move-MSBuildImport](#move-msbuildimport)</small> | <small>Move a shared MSBuild .props/.targets file and fix every project (or other props/targets) that imports it via `<Import Project="...">`.</small> |
 | <small>[Move-Solution](#move-solution)</small> | <small>Move a solution file (.sln/.slnx) and rebase the relative project paths it stores, so every project it references still resolves from the solution's new location.</small> |
 | <small>[Move-PowerShell](#move-powershell)</small> | <small>Move a PowerShell item and reconcile references, routing by type to the right specialist.</small> |
 | <small>[Move-PowerShellScript](#move-powershellscript)</small> | <small>Move a standalone .ps1 script and fix the relative paths in scripts that dot-source or call it (and the moved script's own dot-source/call paths).</small> |
@@ -521,7 +546,7 @@ Read-only audits. These change nothing.
 
 **Manage**
 
-Reconcile a repository, undo moves, control the journal, stay current, and the git verb.
+Reconcile a repository, undo moves, and control the journal.
 
 *Reconcile*
 
@@ -538,12 +563,23 @@ Reconcile a repository, undo moves, control the journal, stay current, and the g
 | <small>[Set-NetscootJournal](#set-netscootjournal)</small> | <small>Turn the move journal on or off, per repository (default) or for every repository (`-Global`).</small> |
 | <small>[Clear-NetscootJournal](#clear-netscootjournal)</small> | <small>Delete a repository's move journal, discarding its undo history.</small> |
 
+**Install & environment**
+
+Manage the installation itself and wire up the git integration.
+
 *Stay current*
 
 | <small>Command</small> | <small>What it does</small> |
 |:---|:---|
 | <small>[Test-NetscootUpdate](#test-netscootupdate)</small> | <small>Check GitHub for a newer netscoot release and report whether the installed version is behind.</small> |
 | <small>[Update-Netscoot](#update-netscoot)</small> | <small>Update an installed netscoot to the latest GitHub release, in place.</small> |
+
+*Update policy*
+
+| <small>Command</small> | <small>What it does</small> |
+|:---|:---|
+| <small>[Get-NetscootUpdatePolicy](#get-netscootupdatepolicy)</small> | <small>Report the effective auto-update policy and where it was resolved from.</small> |
+| <small>[Set-NetscootUpdatePolicy](#set-netscootupdatepolicy)</small> | <small>Set netscoot's auto-update policy to Enabled, Disabled, or Manual.</small> |
 
 *Git verb*
 
@@ -635,10 +671,10 @@ One per matching line.
 
 ```text
 Netscoot.PathReference
-  File        string  repository-relative file containing the line
-  Line        int     1-based line number
-  Confidence  string  High | Low
-  Text        string  the matching line
+  File        string  # repository-relative file containing the line
+  Line        int     # 1-based line number
+  Confidence  string  # High | Low
+  Text        string  # the matching line
 ```
 
 **Examples**
@@ -683,7 +719,13 @@ Netscoot.Capability
   PSEdition           string
   DotnetSupportsSlnx  bool
   Git                 Netscoot.ToolInfo
+                      Present  bool    # found on PATH
+                      Version  string
+                      Path     string
   Dotnet              Netscoot.ToolInfo
+                      Present  bool    # found on PATH
+                      Version  string
+                      Path     string
 ```
 
 **Examples**
@@ -693,6 +735,49 @@ Get-NetscootCapability
 ```
 
 Returns an object with Platform, PSEdition, Git, Dotnet, and DotnetSupportsSlnx.
+
+<small>[Back to Command reference](#command-reference)</small>
+
+---
+
+### Get-NetscootUpdatePolicy
+
+Report the effective auto-update policy and where it was resolved from.
+
+**Syntax**
+
+```powershell
+Get-NetscootUpdatePolicy [<CommonParameters>]
+```
+
+netscoot's update behavior is governed by one policy with three states:
+  Enabled   automatic checks run (Test-NetscootUpdate `-Auto`), and Update-Netscoot is allowed.
+  Manual    (default) no automatic check runs, but a Update-Netscoot you invoke yourself works.
+  Disabled  automatic checks do nothing, and Update-Netscoot refuses (`-Force` overrides).
+
+The policy is stored in the `NETSCOOT_AUTOUPDATE` environment variable, so it can be set with
+Set-NetscootUpdatePolicy or pushed by an administrator (Group Policy / Intune / a profile).
+This resolves the value in precedence order: the current process, then (on Windows) the user
+environment, then the machine environment. A truthy value (`1`/`true`/`on`) is Enabled, a
+falsy one (`0`/`false`/`off`) is Disabled, and absent or unrecognized is Manual.
+
+**Output**
+
+Returns a single [Netscoot.UpdatePolicy](#netscootupdatepolicy).
+
+```text
+Netscoot.UpdatePolicy
+  State   string  # Enabled | Disabled | Manual
+  Source  string  # Process | User | Machine | Default
+  Value   string  # the raw NETSCOOT_AUTOUPDATE value, or $null
+```
+
+**Examples**
+
+```powershell
+# See the current policy and where it came from
+Get-NetscootUpdatePolicy
+```
 
 <small>[Back to Command reference](#command-reference)</small>
 
@@ -731,11 +816,11 @@ One per item.
 
 ```text
 Netscoot.SolutionItem
-  Solution  string                     repository-relative, or '(none)' for an unreferenced project
-  Kind      Netscoot.SolutionItemKind  enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
-  Type      string                     project extension without the dot, else empty
+  Solution  string                     # repository-relative, or '(none)' for an unreferenced project
+  Kind      Netscoot.SolutionItemKind  # enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
+  Type      string                     # project extension without the dot, else empty
   Name      string
-  Path      string                     as stored in the solution, or repository-relative
+  Path      string                     # as stored in the solution, or repository-relative
 ```
 
 **Examples**
@@ -928,11 +1013,11 @@ Netscoot.TreeMoveResult
   Engine         string
   Source         string
   Destination    string
-  Performed      bool    false under -WhatIf
+  Performed      bool    # false under -WhatIf
   SkippedCount   int
   ProjectsMoved  int
-  ConsumerCount  int     external references repointed
-  Built          bool?   $null with -NoBuild
+  ConsumerCount  int     # external references repointed
+  Built          bool?   # $null with -NoBuild
 ```
 
 **Examples**
@@ -994,12 +1079,12 @@ Netscoot.MoveResult
   Engine         string
   Source         string
   Destination    string
-  Performed      bool      false under -WhatIf
+  Performed      bool      # false under -WhatIf
   SkippedCount   int
-  ConsumerCount  int       external references repointed
-  OwnRefCount    int       the moved project's own references rebased
-  Solutions      string[]  solution names updated
-  Built          bool?     $null with -NoBuild
+  ConsumerCount  int       # external references repointed
+  OwnRefCount    int       # the moved project's own references rebased
+  Solutions      string[]  # solution names updated
+  Built          bool?     # $null with -NoBuild
 ```
 
 **Examples**
@@ -1074,11 +1159,11 @@ Netscoot.TreeMoveResult
   Engine         string
   Source         string
   Destination    string
-  Performed      bool    false under -WhatIf
+  Performed      bool    # false under -WhatIf
   SkippedCount   int
   ProjectsMoved  int
-  ConsumerCount  int     external references repointed
-  Built          bool?   $null with -NoBuild
+  ConsumerCount  int     # external references repointed
+  Built          bool?   # $null with -NoBuild
 ```
 
 **Examples**
@@ -1104,7 +1189,7 @@ Move-DotnetProjectTree -Path ./src/Group -Destination ./libs/Group -NoBuild
 ### Move-MSBuildImport
 
 Move a shared MSBuild .props/.targets file and fix every project (or other
-props/targets) that imports it via &lt;Import Project="..."&gt;.
+props/targets) that imports it via `<Import Project="...">`.
 
 **Syntax**
 
@@ -1112,19 +1197,19 @@ props/targets) that imports it via &lt;Import Project="..."&gt;.
 Move-MSBuildImport [-Path] <string> -Destination <string> [-RepositoryRoot <string>] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-There is no dotnet CLI for &lt;Import&gt;, so this reconciles the relative Import paths
+There is no dotnet CLI for `<Import>`, so this reconciles the relative Import paths
 directly with precise, formatting- and BOM-preserving text edits (it replaces the
-exact Project="&lt;value&gt;" token captured from the XML, not a blind regex). It also
-fixes the moved file's own outgoing &lt;Import&gt; paths, which break when its location
+exact `Project="<value>"` token captured from the XML, not a blind regex). It also
+fixes the moved file's own outgoing `<Import>` paths, which break when its location
 changes. The `$(MSBuildThisFileDirectory)` token is resolved/preserved; other `$(...)`
 tokens are reported as unresolved rather than guessed.
 
 Note: Directory.Build.props/.targets (and Directory.Packages.props, etc.) are imported
-by location, not an explicit &lt;Import&gt; - moving one changes inheritance scope, which
+by location, not an explicit `<Import>` - moving one changes inheritance scope, which
 cannot be "fixed" by editing imports. For those this warns (like the inheritance check)
 and only fixes the file's own outgoing imports.
 
-Importers may include native .vcxproj files; their &lt;Import&gt; path is fixed on any OS (a
+Importers may include native .vcxproj files; their `<Import>` path is fixed on any OS (a
 best-effort, path-only update), but a .vcxproj's native link settings are never
 reconciled off Windows; that remains Move-NativeProject's Windows-only job.
 
@@ -1152,17 +1237,17 @@ Netscoot.ImportMoveResult
   Engine           string
   Source           string
   Destination      string
-  Performed        bool    false under -WhatIf
+  Performed        bool    # false under -WhatIf
   SkippedCount     int
-  ImportersFixed   int     files whose <Import> was rewritten
-  OwnImportsFixed  int     the moved file's own imports rewritten
-  AutoImported     bool    true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
+  ImportersFixed   int     # files whose <Import> was rewritten
+  OwnImportsFixed  int     # the moved file's own imports rewritten
+  AutoImported     bool    # true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
 ```
 
 **Examples**
 
 ```powershell
-path in every consumer
+# Move a shared props/targets and fix every consumer's Import path
 Move-MSBuildImport -Path ./Shared.props -Destination ./build/Shared.props -WhatIf
 
 # Move into an existing folder (lands at ./build/Shared.props)
@@ -1269,9 +1354,9 @@ Netscoot.PSModuleMoveResult
   Engine        string
   Source        string
   Destination   string
-  Performed     bool    false under -WhatIf
+  Performed     bool    # false under -WhatIf
   SkippedCount  int
-  Manifest      string  the manifest file name
+  Manifest      string  # the manifest file name
 ```
 
 **Examples**
@@ -1338,11 +1423,11 @@ Netscoot.ScriptMoveResult
   Engine            string
   Source            string
   Destination       string
-  Performed         bool    false under -WhatIf
+  Performed         bool    # false under -WhatIf
   SkippedCount      int
-  ReferencersFixed  int     scripts whose path to the moved file was rewritten
-  OwnRefsFixed      int     the moved script's own paths rewritten
-  UnresolvedRefs    int     count of possible dynamic references to verify, not a list
+  ReferencersFixed  int     # scripts whose path to the moved file was rewritten
+  OwnRefsFixed      int     # the moved script's own paths rewritten
+  UnresolvedRefs    int     # count of possible dynamic references to verify, not a list
 ```
 
 **Examples**
@@ -1377,7 +1462,7 @@ A solution stores each project as a path relative to the solution file. Moving t
 solution changes that base directory, so every entry must be recomputed. The dotnet
 CLI has no "rebase" command, so this rewrites the stored paths with precise,
 formatting- and BOM-preserving edits. It replaces the exact path token captured from the
-file (the .slnx &lt;Project Path="..."&gt; or the .sln project line), not a blind regex, and
+file (the .slnx `<Project Path="...">` or the .sln project line), not a blind regex, and
 keeps each format's separator convention (/ for .slnx, \ for .sln). Project-to-project
 references are unaffected by a solution move and are left alone.
 
@@ -1404,9 +1489,9 @@ Netscoot.SolutionMoveResult
   Engine           string
   Source           string
   Destination      string
-  Performed        bool    false under -WhatIf
+  Performed        bool    # false under -WhatIf
   SkippedCount     int
-  ProjectsRebased  int     stored paths rewritten
+  ProjectsRebased  int     # stored paths rewritten
 ```
 
 **Examples**
@@ -1461,7 +1546,7 @@ Netscoot.GitAlias
   Alias      string
   Scope      string
   Forwarder  string
-  Command    string  the git config command that was/would be run
+  Command    string  # the git config command that was/would be run
 ```
 
 **Examples**
@@ -1492,7 +1577,7 @@ by re-pointing each entry at the project's new location.
 Repair-SolutionReferences [[-RepositoryRoot] <string>] [-Fix] [-Prune] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-Finds solution entries and &lt;ProjectReference&gt;s that point at a project file which no longer
+Finds solution entries and `<ProjectReference>`s that point at a project file which no longer
 exists at the recorded path (usually because a project was moved or renamed without
 reconciling). Read-only by default: It returns one object per problem, each tagged with a
 Resolution of Relocatable, Missing, or Ambiguous.
@@ -1530,7 +1615,7 @@ Netscoot.RepairResult
   NewPath     string
   Container   string
   MissingAbs  string
-  Candidates  string[]  same-named project files found, used to resolve NewPath
+  Candidates  string[]  # same-named project files found, used to resolve NewPath
 ```
 
 **Examples**
@@ -1621,7 +1706,7 @@ with the repository's git config - no environment variable to remember. Local co
 default here) wins over global, matching the resolution order in Test-MoveJournalEnabled.
 
 With `-Global` it writes the user's global git config, switching the default for every
-repository on the machine in one place. Requires git; with no git, set `$env`:NETSCOOT_JOURNAL
+repository on the machine in one place. Requires git; with no git, set `$env:NETSCOOT_JOURNAL`
 instead.
 
 **Parameters**
@@ -1649,6 +1734,66 @@ Set-NetscootJournal -Enabled $true
 
 # Turn journaling off for every repository on the machine
 Set-NetscootJournal -Enabled $false -Global
+```
+
+<small>[Back to Command reference](#command-reference)</small>
+
+---
+
+### Set-NetscootUpdatePolicy
+
+Set netscoot's auto-update policy to Enabled, Disabled, or Manual.
+
+**Syntax**
+
+```powershell
+Set-NetscootUpdatePolicy [-State] <string> [[-Scope] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+Writes the `NETSCOOT_AUTOUPDATE` environment variable that governs update behavior (see
+Get-NetscootUpdatePolicy for the three states). The change always takes effect in the current
+session; the scope controls how far it persists:
+  `-Scope` User    (default) persists for the current user (Windows).
+  `-Scope` Machine persists for all users (Windows); needs an elevated session.
+  `-Scope` Process this session only; nothing is persisted.
+On non-Windows, User/Machine cannot be persisted programmatically, so this sets the session
+value and prints the line to add to your shell profile.
+
+An administrator can achieve the same fleet-wide by pushing `NETSCOOT_AUTOUPDATE` through
+Group Policy / Intune; this cmdlet is the per-user equivalent.
+
+**Parameters**
+
+| <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
+|:---|:---|:---|:---|:---|
+| <small>`‑State`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>Enabled, Disabled, or Manual.</small> |
+| <small>`‑Scope`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>How far to persist: User (default, Windows), Machine (Windows, elevated), or Process (this session only).</small> |
+| <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
+| <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
+
+**Output**
+
+Returns a single [Netscoot.UpdatePolicy](#netscootupdatepolicy).
+The resulting effective policy.
+
+```text
+Netscoot.UpdatePolicy
+  State   string  # Enabled | Disabled | Manual
+  Source  string  # Process | User | Machine | Default
+  Value   string  # the raw NETSCOOT_AUTOUPDATE value, or $null
+```
+
+**Examples**
+
+```powershell
+# Opt in to automatic checks (the SessionStart hook will now run)
+Set-NetscootUpdatePolicy -State Enabled
+
+# Block updates on this machine for every user (run elevated)
+Set-NetscootUpdatePolicy -State Disabled -Scope Machine
+
+# Back to the default: no auto-check, manual Update-Netscoot still works
+Set-NetscootUpdatePolicy -State Manual
 ```
 
 <small>[Back to Command reference](#command-reference)</small>
@@ -1690,8 +1835,8 @@ One per project added.
 
 ```text
 Netscoot.SyncResult
-  Solution  string  repository-relative
-  Added     string  repository-relative project path
+  Solution  string  # repository-relative
+  Added     string  # repository-relative project path
 ```
 
 **Examples**
@@ -1716,7 +1861,7 @@ behind. On-demand and read-only: It never updates anything itself.
 **Syntax**
 
 ```powershell
-Test-NetscootUpdate [[-Repository] <string>] [-EnableAutoUpdate] [<CommonParameters>]
+Test-NetscootUpdate [[-Repository] <string>] [-Auto] [<CommonParameters>]
 ```
 
 netscoot does not update automatically, however it is installed (PowerShell Gallery,
@@ -1728,28 +1873,28 @@ agent or user runs it when they want to know.
 Needs network access to api.github.com. Honors `-ErrorAction` if the request fails (offline,
 rate-limited, or no releases yet).
 
-`-EnableAutoUpdate` makes this the automation/SessionStart entry point: It runs the check ONLY
-when `$env`:NETSCOOT_AUTOUPDATE is set to a truthy value (1/true/on/yes/enabled), and is a
-silent no-op otherwise. So a hook can call it unconditionally; nothing happens until a user
-opts in, and IT can disable it fleet-wide by clearing or setting the variable to false via
-Group Policy / Intune / a profile. A plain Test-NetscootUpdate (no switch) always checks.
+A plain Test-NetscootUpdate always checks. `-Auto` is the automation/SessionStart entry point:
+It runs the check only when the update policy is Enabled (see Set-NetscootUpdatePolicy), and
+is a silent no-op otherwise. So a hook can call it unconditionally; nothing happens until the
+policy is opted in, and an administrator can disable it fleet-wide. Either way it never
+updates - it only reports.
 
 **Parameters**
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
 | <small>`‑Repository`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>owner/name of the GitHub repository to check. Defaults to the project repository.</small> |
-| <small>`‑EnableAutoUpdate`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Run as the gated auto-check (for a SessionStart hook or other automation): proceed only when `$env`:NETSCOOT_AUTOUPDATE is truthy, otherwise do nothing. Still read-only - it never updates.</small> |
+| <small>`‑Auto`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Run as the automatic check (for a SessionStart hook or other automation): proceed only when the update policy is Enabled, otherwise do nothing. Still read-only - it never updates.</small> |
 
 **Output**
 
 Returns a single [Netscoot.Update](#netscootupdate).
-None (writes a non-terminating error) when the release cannot be fetched, and nothing at all when `-EnableAutoUpdate` is set but `$env`:NETSCOOT_AUTOUPDATE is not enabled.
+None (writes a non-terminating error) when the release cannot be fetched, and nothing at all when `-Auto` is set but the update policy is not Enabled.
 
 ```text
 Netscoot.Update
-  Installed        version
-  Latest           version?  $null if the tag could not be parsed
+  Installed        version   # a [version], e.g. 2.1.0 (compares numerically)
+  Latest           version?  # a [version], $null if the tag could not be parsed
   Tag              string
   UpdateAvailable  bool
   Url              string
@@ -1764,8 +1909,8 @@ Test-NetscootUpdate
 # Check a fork or a different repository (owner/name)
 Test-NetscootUpdate -Repository myfork/netscoot
 
-# SessionStart hook: checks only if the user/fleet opted in via $env:NETSCOOT_AUTOUPDATE
-Test-NetscootUpdate -EnableAutoUpdate
+# SessionStart hook: checks only when the update policy is Enabled
+Test-NetscootUpdate -Auto
 ```
 
 <small>[Back to Command reference](#command-reference)</small>
@@ -1805,8 +1950,8 @@ One per divergent project.
 ```text
 Netscoot.ConsistencyResult
   Project     string
-  PresentIn   string[]  solution paths that list it
-  AbsentFrom  string[]  solution paths that do not
+  PresentIn   string[]  # solution paths that list it
+  AbsentFrom  string[]  # solution paths that do not
 ```
 
 **Examples**
@@ -1847,33 +1992,29 @@ Undo-Netscoot -All [-RepositoryRoot <string>] [-Force] [-WhatIf] [-Confirm] [<Co
 Undo-Netscoot -List [-RepositoryRoot <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-Each move is recorded in the journal (a per-user data directory: LocalAppData on Windows,
-~/Library/Application Support on macOS, ~/.local/share on Linux; one file per repository) with
-its inverse: The same mover run with source and destination swapped. Undo-Netscoot replays
-that inverse, re-reconciling from the CURRENT state (more robust than restoring a stale
-snapshot). The reversing move is not itself journaled, so undo walks the history back rather
-than ping-ponging.
+Every move is journaled with its inverse: the same mover, source and destination swapped.
+Undo-Netscoot replays that inverse, reconciling from the current state rather than restoring a
+stale snapshot. The reversing move is not itself journaled, so repeated calls walk back through
+history instead of toggling the last move.
 
-Choose what to reverse (mutually exclusive):
+Pick what to reverse (mutually exclusive):
   `-Last`   (default) the most recent move; call again to walk further back.
-  `-Id`     one specific move, by its journal id (see `-List`). The safest, most surgical option.
-  `-After`  every move recorded after a given time, newest first.
+  `-Id`     one specific move, by its journal id (see `-List`).
+  `-After`  every move after a given time, newest first.
   `-All`    every recorded move, newest first.
-`-List` shows the journal without changing anything.
+`-List` prints the journal and changes nothing.
 
-Reversing a single move with `-Id` is the precise choice when the journal is saving you: It
-touches only that one move. But `-Id` can target a move that is NOT the most recent, and each
-reversal re-reconciles from the CURRENT state, so reversing an older move while later moves
-still reference its old location can leave dangling references. When `-Id` reverses anything but
-the latest entry, a read-only consistency sweep runs afterward and any references it finds
-broken are reported, with the command to repair them.
+Because each reversal reconciles from the current state, undoing an older move (with `-Id`) while
+later moves still depend on its old location can leave references dangling. When that is
+possible, a read-only sweep runs afterward and reports anything broken, with the command to fix
+it.
 
-`-All` and `-After` reverse several moves, so they are high-impact: They prompt for a yes/no
-confirmation that `-Confirm`:`$false` does not silence. Pass `-Force` to bypass it (for automation),
-or `-WhatIf` to list the reversals without making changes.
+`-All` and `-After` reverse many moves at once, so they prompt for a confirmation that
+`-Confirm`:`$false` does not silence; `-Force` bypasses it, and `-WhatIf` lists the reversals without
+running them.
 
-Journaling must have been on when the moves ran (on by default; opt out with
-`$env`:NETSCOOT_JOURNAL or git config netscoot.journal false).
+Journaling must have been on when the moves ran (it is by default; opt out with
+`$env:NETSCOOT_JOURNAL` or git config netscoot.journal false).
 
 **Parameters**
 
@@ -1881,7 +2022,7 @@ Journaling must have been on when the moves ran (on by default; opt out with
 |:---|:---|:---|:---|:---|
 | <small>`‑RepositoryRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repository whose journal to use, and the boundary every reversal is confined to. Defaults to the enclosing git repository root of the current directory.</small> |
 | <small>`‑Last`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Reverse only the most recent move (the default).</small> |
-| <small>`‑Id`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>Reverse one specific move, identified by its journal id (the 8-character id shown by `-List`). Surgical: It reverses only that move. If the move is not the most recent, a read-only consistency sweep runs afterward and reports any references the out-of-order reversal broke.</small> |
+| <small>`‑Id`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>Reverse one specific move, identified by its journal id (the 8-character id from `-List`). If it is not the most recent move, a read-only sweep afterward reports any references the out-of-order reversal left dangling.</small> |
 | <small>`‑After`</small> | <small>DateTime</small> | <small>true</small> | <small>false</small> | <small>Reverse every move recorded strictly after this time, newest first. The time need not match any recorded entry.</small> |
 | <small>`‑All`</small> | <small>SwitchParameter</small> | <small>true</small> | <small>false</small> | <small>Reverse every recorded move, newest first.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>With `-All` or `-After`, bypass the confirmation prompt.</small> |
@@ -1975,15 +2116,15 @@ After it runs, reload the module in the current session with `Import-Module Nets
 Needs network access to GitHub. For Gallery installs, `Update-Module Netscoot` is the
 simpler path; this command updates installer/clone installs in place from the GitHub release.
 
-Policy kill-switch: when `$env`:NETSCOOT_AUTOUPDATE is set to a falsy value (0/false/off/no/
-disabled), for example pushed by IT via Group Policy or Intune, this refuses to update so
-machine state stays managed. `-Force` overrides the policy (and also reinstalls when current).
+Policy kill-switch: when the update policy is Disabled (see Set-NetscootUpdatePolicy, or an
+administrator's Group Policy / Intune push), this refuses to update so machine state stays
+managed. `-Force` overrides the policy (and also reinstalls when current).
 
 **Parameters**
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Reinstall the latest release even if already current, and override the `$env`:NETSCOOT_AUTOUPDATE policy block.</small> |
+| <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Reinstall the latest release even if already current, and override a Disabled update policy.</small> |
 | <small>`‑Repository`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>owner/name of the GitHub repository. Defaults to the project repository.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
@@ -1995,8 +2136,8 @@ The record from Test-NetscootUpdate, so the decision is inspectable. Nothing on 
 
 ```text
 Netscoot.Update
-  Installed        version
-  Latest           version?  $null if the tag could not be parsed
+  Installed        version   # a [version], e.g. 2.1.0 (compares numerically)
+  Latest           version?  # a [version], $null if the tag could not be parsed
   Tag              string
   UpdateAvailable  bool
   Url              string
@@ -2033,7 +2174,7 @@ Move-NativeProject [-Project] <string> -Destination <string> [-RepositoryRoot <s
 
 Native projects link through MSBuild settings the dotnet CLI does not touch:
 AdditionalIncludeDirectories / AdditionalLibraryDirectories / AdditionalDependencies,
-&lt;Import&gt; of shared .props/.targets, `$(SolutionDir)`-relative OutDir, and the paired
+`<Import>` of shared .props/.targets, `$(SolutionDir)`-relative OutDir, and the paired
 .vcxproj.filters. C++/CLI is Windows-only, so this cmdlet refuses to run elsewhere.
 
 It will: Update .sln/.slnx membership via 'dotnet sln' (which understands .vcxproj),
@@ -2063,11 +2204,11 @@ Netscoot.NativeMoveResult
   Engine                string
   Source                string
   Destination           string
-  Performed             bool      false under -WhatIf
+  Performed             bool      # false under -WhatIf
   SkippedCount          int
-  HadFilters            bool      a paired .vcxproj.filters moved too
-  Solutions             string[]  solution names updated
-  UnreconciledSettings  object[]  one per native path setting to verify by hand; each has the setting name and value
+  HadFilters            bool      # a paired .vcxproj.filters moved too
+  Solutions             string[]  # solution names updated
+  UnreconciledSettings  object[]  # one per native path setting to verify by hand; each has the setting name and value
 ```
 
 **Examples**
@@ -2098,7 +2239,7 @@ that scene/prefab/asmdef references depend on survive the move.
 Move-UnityAsset [-AssetPath] <string> -Destination <string> [-RepositoryRoot <string>] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-In Unity every asset and folder has a sibling '&lt;name&gt;.meta' carrying a stable GUID.
+In Unity every asset and folder has a sibling `<name>.meta` carrying a stable GUID.
 References (in scenes, prefabs, and asmdef "references" entries of the form
 "GUID:...") resolve by that GUID, not by path. If you move files on disk without
 their .meta, Unity regenerates fresh GUIDs and every reference to them breaks.
@@ -2132,11 +2273,11 @@ Netscoot.UnityMoveResult
   Engine        string
   Source        string
   Destination   string
-  Performed     bool      false under -WhatIf
+  Performed     bool      # false under -WhatIf
   SkippedCount  int
-  MetaMoved     bool      the paired .meta moved too
-  IsAsmdef      bool      the moved asset is an .asmdef
-  ReferencedBy  string[]  asmdefs that reference a moved .asmdef; informational, refs are by name/GUID and survive
+  MetaMoved     bool      # the paired .meta moved too
+  IsAsmdef      bool      # the moved asset is an .asmdef
+  ReferencedBy  string[]  # asmdefs that reference a moved .asmdef; informational, refs are by name/GUID and survive
 ```
 
 **Examples**
@@ -2168,7 +2309,7 @@ references - both lead to broken/regenerated GUIDs.
 Test-UnityMetaIntegrity [[-Root] <string>] [-Strict] [<CommonParameters>]
 ```
 
-Walks the tree and pairs every asset (file or folder) with its '&lt;name&gt;.meta'.
+Walks the tree and pairs every asset (file or folder) with its `<name>.meta`.
 Emits one object per problem and surfaces it through the standard streams so behavior
 follows invocation: By default it writes a Warning per problem; `-Strict` escalates each to
 a non-terminating error (honoring `-ErrorAction`). Objects are always emitted so results are
@@ -2191,7 +2332,7 @@ One per problem.
 
 ```text
 Netscoot.MetaIntegrity
-  Kind  string  MissingMeta | OrphanMeta
+  Kind  string  # MissingMeta | OrphanMeta
   Path  string
 ```
 
@@ -2229,6 +2370,7 @@ Each type below is one `pscustomobject` with the fields shown. A command may ret
 | <small>[Netscoot.TreeMoveResult](#netscoottreemoveresult)</small> | <small>Result of moving a folder of one or more .NET projects in one operation.</small> |
 | <small>[Netscoot.UnityMoveResult](#netscootunitymoveresult)</small> | <small>Result of moving a Unity asset/folder while keeping its paired .meta file(s).</small> |
 | <small>[Netscoot.Update](#netscootupdate)</small> | <small>Whether the installed Netscoot is behind the latest GitHub release.</small> |
+| <small>[Netscoot.UpdatePolicy](#netscootupdatepolicy)</small> | <small>The effective auto-update policy and where it was resolved from.</small> |
 
 ### Netscoot.Capability
 
@@ -2242,7 +2384,13 @@ Netscoot.Capability
   PSEdition           string
   DotnetSupportsSlnx  bool
   Git                 Netscoot.ToolInfo
+                      Present  bool    # found on PATH
+                      Version  string
+                      Path     string
   Dotnet              Netscoot.ToolInfo
+                      Present  bool    # found on PATH
+                      Version  string
+                      Path     string
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2256,8 +2404,8 @@ One project whose solution membership diverges across the repository.
 ```text
 Netscoot.ConsistencyResult
   Project     string
-  PresentIn   string[]  solution paths that list it
-  AbsentFrom  string[]  solution paths that do not
+  PresentIn   string[]  # solution paths that list it
+  AbsentFrom  string[]  # solution paths that do not
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2273,7 +2421,7 @@ Netscoot.GitAlias
   Alias      string
   Scope      string
   Forwarder  string
-  Command    string  the git config command that was/would be run
+  Command    string  # the git config command that was/would be run
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2289,11 +2437,11 @@ Netscoot.ImportMoveResult
   Engine           string
   Source           string
   Destination      string
-  Performed        bool    false under -WhatIf
+  Performed        bool    # false under -WhatIf
   SkippedCount     int
-  ImportersFixed   int     files whose <Import> was rewritten
-  OwnImportsFixed  int     the moved file's own imports rewritten
-  AutoImported     bool    true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
+  ImportersFixed   int     # files whose <Import> was rewritten
+  OwnImportsFixed  int     # the moved file's own imports rewritten
+  AutoImported     bool    # true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2306,7 +2454,7 @@ One Unity .meta integrity problem: An asset missing a .meta, or an orphan .meta.
 
 ```text
 Netscoot.MetaIntegrity
-  Kind  string  MissingMeta | OrphanMeta
+  Kind  string  # MissingMeta | OrphanMeta
   Path  string
 ```
 
@@ -2323,12 +2471,12 @@ Netscoot.MoveResult
   Engine         string
   Source         string
   Destination    string
-  Performed      bool      false under -WhatIf
+  Performed      bool      # false under -WhatIf
   SkippedCount   int
-  ConsumerCount  int       external references repointed
-  OwnRefCount    int       the moved project's own references rebased
-  Solutions      string[]  solution names updated
-  Built          bool?     $null with -NoBuild
+  ConsumerCount  int       # external references repointed
+  OwnRefCount    int       # the moved project's own references rebased
+  Solutions      string[]  # solution names updated
+  Built          bool?     # $null with -NoBuild
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2344,11 +2492,11 @@ Netscoot.NativeMoveResult
   Engine                string
   Source                string
   Destination           string
-  Performed             bool      false under -WhatIf
+  Performed             bool      # false under -WhatIf
   SkippedCount          int
-  HadFilters            bool      a paired .vcxproj.filters moved too
-  Solutions             string[]  solution names updated
-  UnreconciledSettings  object[]  one per native path setting to verify by hand; each has the setting name and value
+  HadFilters            bool      # a paired .vcxproj.filters moved too
+  Solutions             string[]  # solution names updated
+  UnreconciledSettings  object[]  # one per native path setting to verify by hand; each has the setting name and value
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2361,10 +2509,10 @@ One build/CI/hook/container line that hardcodes a moved path and that no first-p
 
 ```text
 Netscoot.PathReference
-  File        string  repository-relative file containing the line
-  Line        int     1-based line number
-  Confidence  string  High | Low
-  Text        string  the matching line
+  File        string  # repository-relative file containing the line
+  Line        int     # 1-based line number
+  Confidence  string  # High | Low
+  Text        string  # the matching line
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2380,9 +2528,9 @@ Netscoot.PSModuleMoveResult
   Engine        string
   Source        string
   Destination   string
-  Performed     bool    false under -WhatIf
+  Performed     bool    # false under -WhatIf
   SkippedCount  int
-  Manifest      string  the manifest file name
+  Manifest      string  # the manifest file name
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2401,7 +2549,7 @@ Netscoot.RepairResult
   NewPath     string
   Container   string
   MissingAbs  string
-  Candidates  string[]  same-named project files found, used to resolve NewPath
+  Candidates  string[]  # same-named project files found, used to resolve NewPath
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2417,11 +2565,11 @@ Netscoot.ScriptMoveResult
   Engine            string
   Source            string
   Destination       string
-  Performed         bool    false under -WhatIf
+  Performed         bool    # false under -WhatIf
   SkippedCount      int
-  ReferencersFixed  int     scripts whose path to the moved file was rewritten
-  OwnRefsFixed      int     the moved script's own paths rewritten
-  UnresolvedRefs    int     count of possible dynamic references to verify, not a list
+  ReferencersFixed  int     # scripts whose path to the moved file was rewritten
+  OwnRefsFixed      int     # the moved script's own paths rewritten
+  UnresolvedRefs    int     # count of possible dynamic references to verify, not a list
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2434,11 +2582,11 @@ One entry in the full contents of a solution (or a project on disk that no solut
 
 ```text
 Netscoot.SolutionItem
-  Solution  string                     repository-relative, or '(none)' for an unreferenced project
-  Kind      Netscoot.SolutionItemKind  enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
-  Type      string                     project extension without the dot, else empty
+  Solution  string                     # repository-relative, or '(none)' for an unreferenced project
+  Kind      Netscoot.SolutionItemKind  # enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
+  Type      string                     # project extension without the dot, else empty
   Name      string
-  Path      string                     as stored in the solution, or repository-relative
+  Path      string                     # as stored in the solution, or repository-relative
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2454,9 +2602,9 @@ Netscoot.SolutionMoveResult
   Engine           string
   Source           string
   Destination      string
-  Performed        bool    false under -WhatIf
+  Performed        bool    # false under -WhatIf
   SkippedCount     int
-  ProjectsRebased  int     stored paths rewritten
+  ProjectsRebased  int     # stored paths rewritten
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2469,8 +2617,8 @@ One project added to a solution that was missing it, to resolve membership diver
 
 ```text
 Netscoot.SyncResult
-  Solution  string  repository-relative
-  Added     string  repository-relative project path
+  Solution  string  # repository-relative
+  Added     string  # repository-relative project path
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2483,7 +2631,7 @@ Presence and version of one external tool (git or dotnet).
 
 ```text
 Netscoot.ToolInfo
-  Present  bool    found on PATH
+  Present  bool    # found on PATH
   Version  string
   Path     string
 ```
@@ -2501,11 +2649,11 @@ Netscoot.TreeMoveResult
   Engine         string
   Source         string
   Destination    string
-  Performed      bool    false under -WhatIf
+  Performed      bool    # false under -WhatIf
   SkippedCount   int
   ProjectsMoved  int
-  ConsumerCount  int     external references repointed
-  Built          bool?   $null with -NoBuild
+  ConsumerCount  int     # external references repointed
+  Built          bool?   # $null with -NoBuild
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2521,11 +2669,11 @@ Netscoot.UnityMoveResult
   Engine        string
   Source        string
   Destination   string
-  Performed     bool      false under -WhatIf
+  Performed     bool      # false under -WhatIf
   SkippedCount  int
-  MetaMoved     bool      the paired .meta moved too
-  IsAsmdef      bool      the moved asset is an .asmdef
-  ReferencedBy  string[]  asmdefs that reference a moved .asmdef; informational, refs are by name/GUID and survive
+  MetaMoved     bool      # the paired .meta moved too
+  IsAsmdef      bool      # the moved asset is an .asmdef
+  ReferencedBy  string[]  # asmdefs that reference a moved .asmdef; informational, refs are by name/GUID and survive
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2538,11 +2686,26 @@ Whether the installed Netscoot is behind the latest GitHub release.
 
 ```text
 Netscoot.Update
-  Installed        version
-  Latest           version?  $null if the tag could not be parsed
+  Installed        version   # a [version], e.g. 2.1.0 (compares numerically)
+  Latest           version?  # a [version], $null if the tag could not be parsed
   Tag              string
   UpdateAvailable  bool
   Url              string
+```
+
+<small>[Back to Output types](#output-types)</small>
+
+### Netscoot.UpdatePolicy
+
+<small>[ [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) | [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) ]</small>
+
+The effective auto-update policy and where it was resolved from.
+
+```text
+Netscoot.UpdatePolicy
+  State   string  # Enabled | Disabled | Manual
+  Source  string  # Process | User | Machine | Default
+  Value   string  # the raw NETSCOOT_AUTOUPDATE value, or $null
 ```
 
 <small>[Back to Output types](#output-types)</small>

@@ -13,13 +13,12 @@ function Update-Netscoot {
         Needs network access to GitHub. For Gallery installs, `Update-Module Netscoot` is the
         simpler path; this command updates installer/clone installs in place from the GitHub release.
 
-        Policy kill-switch: when $env:NETSCOOT_AUTOUPDATE is set to a falsy value (0/false/off/no/
-        disabled), for example pushed by IT via Group Policy or Intune, this refuses to update so
-        machine state stays managed. -Force overrides the policy (and also reinstalls when current).
+        Policy kill-switch: when the update policy is Disabled (see Set-NetscootUpdatePolicy, or an
+        administrator's Group Policy / Intune push), this refuses to update so machine state stays
+        managed. -Force overrides the policy (and also reinstalls when current).
 
     .PARAMETER Force
-        Reinstall the latest release even if already current, and override the
-        $env:NETSCOOT_AUTOUPDATE policy block.
+        Reinstall the latest release even if already current, and override a Disabled update policy.
 
     .PARAMETER Repository
         owner/name of the GitHub repository. Defaults to the project repository.
@@ -43,11 +42,11 @@ function Update-Netscoot {
         [string]$Repository = 'kappasims/netscoot'
     )
 
-    # Policy kill-switch (GPO/Intune-friendly): refuse when auto-update is explicitly disabled, so a
+    # Policy kill-switch (GPO/Intune-friendly): refuse when the update policy is Disabled, so a
     # managed fleet does not self-update outside its own pipeline. -Force overrides. Checked before
     # the network call so a disabled fleet makes no request.
-    if ((-not $Force) -and (("$env:NETSCOOT_AUTOUPDATE").Trim().ToLowerInvariant() -match '^(0|false|off|no|disabled)$')) {
-        Write-Warning 'Updates are disabled by policy ($env:NETSCOOT_AUTOUPDATE is off). Use -Force to override, or have IT clear the setting.'
+    if ((-not $Force) -and ((Get-NetscootUpdatePolicy).State -eq 'Disabled')) {
+        Write-Warning 'Updates are disabled by the update policy. Use -Force to override, or run Set-NetscootUpdatePolicy -State Manual.'
         return
     }
 

@@ -2,22 +2,22 @@ function Move-MSBuildImport {
     <#
     .SYNOPSIS
         Move a shared MSBuild .props/.targets file and fix every project (or other
-        props/targets) that imports it via <Import Project="...">.
+        props/targets) that imports it via `<Import Project="...">`.
 
     .DESCRIPTION
-        There is no dotnet CLI for <Import>, so this reconciles the relative Import paths
+        There is no dotnet CLI for `<Import>`, so this reconciles the relative Import paths
         directly with precise, formatting- and BOM-preserving text edits (it replaces the
-        exact Project="<value>" token captured from the XML, not a blind regex). It also
-        fixes the moved file's own outgoing <Import> paths, which break when its location
+        exact `Project="<value>"` token captured from the XML, not a blind regex). It also
+        fixes the moved file's own outgoing `<Import>` paths, which break when its location
         changes. The $(MSBuildThisFileDirectory) token is resolved/preserved; other $(...)
         tokens are reported as unresolved rather than guessed.
 
         Note: Directory.Build.props/.targets (and Directory.Packages.props, etc.) are imported
-        by location, not an explicit <Import> - moving one changes inheritance scope, which
+        by location, not an explicit `<Import>` - moving one changes inheritance scope, which
         cannot be "fixed" by editing imports. For those this warns (like the inheritance check)
         and only fixes the file's own outgoing imports.
 
-        Importers may include native .vcxproj files; their <Import> path is fixed on any OS (a
+        Importers may include native .vcxproj files; their `<Import>` path is fixed on any OS (a
         best-effort, path-only update), but a .vcxproj's native link settings are never
         reconciled off Windows; that remains Move-NativeProject's Windows-only job.
 
@@ -44,7 +44,7 @@ function Move-MSBuildImport {
         Netscoot.ImportMoveResult
 
     .EXAMPLE
-        # Move a shared props/targets and fix the <Import> path in every consumer
+        # Move a shared props/targets and fix every consumer's Import path
         Move-MSBuildImport -Path ./Shared.props -Destination ./build/Shared.props -WhatIf
         # Move into an existing folder (lands at ./build/Shared.props)
         Move-MSBuildImport -Path ./Shared.props -Destination ./build
