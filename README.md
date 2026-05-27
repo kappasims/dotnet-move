@@ -98,11 +98,25 @@ Otherwise `Test-NetscootUpdate` checks GitHub for a newer release and `Update-Ne
 re-running the installer) applies it in place. The Claude Code skills are separate files: Refresh
 them with `git pull` in a clone, or re-sync `.claude/skills` if installed globally.
 
-**Opt-in auto-check:** `Test-NetscootUpdate -EnableAutoUpdate` is the gated entry
-point for a SessionStart hook or other automation. It runs only when `$env:NETSCOOT_AUTOUPDATE` is
-truthy (`1`/`true`/`on`), so it stays a silent no-op until a user opts in, and it never updates
-(read-only). IT can disable it fleet-wide, and block `Update-Netscoot` from self-updating, by
-pushing `NETSCOOT_AUTOUPDATE=false` via Group Policy / Intune / a profile (`-Force` overrides).
+A single policy governs automatic behavior, set with `Set-NetscootUpdatePolicy` (or read with
+`Get-NetscootUpdatePolicy`):
+
+| State | Automatic check (`Test-NetscootUpdate -Auto`) | `Update-Netscoot` |
+|:---|:---|:---|
+| <small>`Enabled`</small> | <small>runs</small> | <small>allowed</small> |
+| <small>`Manual` (default)</small> | <small>no-op</small> | <small>allowed (when you run it)</small> |
+| <small>`Disabled`</small> | <small>no-op</small> | <small>refused (`-Force` overrides)</small> |
+
+```powershell
+Set-NetscootUpdatePolicy -State Enabled              # opt in: a SessionStart hook's -Auto check now runs
+Set-NetscootUpdatePolicy -State Disabled -Scope Machine   # block updates for every user (elevated)
+Get-NetscootUpdatePolicy                             # show the effective state and where it came from
+```
+
+The policy is stored in the `NETSCOOT_AUTOUPDATE` environment variable, so an administrator can set
+the same states fleet-wide through Group Policy / Intune (truthy = Enabled, falsy = Disabled). A
+manual `Update-Netscoot` you run yourself works unless the policy is Disabled; the automatic `-Auto`
+check stays silent unless the policy is Enabled.
 
 # Usage
 
@@ -316,16 +330,16 @@ netscoot reads no environment variables by default; each one below is an opt-in 
 |:---|:---|:---|
 | <small>`NETSCOOT_JOURNAL`</small> | <small>`off`/`0`/`false`</small> | <small>Turns the undo journal off. Trumps `git config netscoot.journal`, so an admin can force it on/off fleet-wide.</small> |
 | <small>`NETSCOOT_JOURNAL_HOME`</small> | <small>a directory</small> | <small>Relocates the journal store away from the per-user data dir above (point it at a roaming or managed path).</small> |
-| <small>`NETSCOOT_AUTOUPDATE`</small> | <small>`true` / `false`</small> | <small>Gates the opt-in update check. `Test-NetscootUpdate -EnableAutoUpdate` runs only when truthy; `false` disables it fleet-wide and blocks `Update-Netscoot` (`-Force` overrides). Unset means no auto-check.</small> |
+| <small>`NETSCOOT_AUTOUPDATE`</small> | <small>`true` / `false`</small> | <small>Backs the update policy (see [Updating](#updating)): truthy = Enabled, falsy = Disabled, unset = Manual. Prefer `Set-NetscootUpdatePolicy`; set this directly for Group Policy / Intune.</small> |
 | <small>`NETSCOOT_JOURNAL_SUPPRESS`</small> | <small>internal</small> | <small>Set by `Undo-Netscoot` around its own reverse move so the undo is not itself journaled. Not meant to be set by hand.</small> |
 
 The full journaling precedence and how to turn it off live under [Undoing](#undoing).
 
 > [!NOTE]
-> **For sysadmins / managed fleets.** Auto-update is off unless opted in
-> (`Test-NetscootUpdate -EnableAutoUpdate` with `NETSCOOT_AUTOUPDATE` truthy); push
-> `NETSCOOT_AUTOUPDATE=false` (Group Policy / Intune) to disable checks and block `Update-Netscoot`
-> across a fleet. Journaling is controllable per repository or globally
+> **For sysadmins / managed fleets.** The update policy is Manual by default, so nothing checks or
+> updates on its own; set `NETSCOOT_AUTOUPDATE` (Group Policy / Intune) to `false` to force Disabled
+> fleet-wide (blocks `Update-Netscoot`) or `true` for Enabled. See [Updating](#updating). Journaling
+> is controllable per repository or globally
 > (`git config [--global] netscoot.journal`), and the `NETSCOOT_JOURNAL` env var trumps that setting
 > so you can force the choice fleet-wide; the journal sits in the standard per-user data dir,
 > relocatable via `NETSCOOT_JOURNAL_HOME`.
@@ -560,6 +574,13 @@ Manage the installation itself and wire up the git integration. Neither is part 
 | <small>[Test-NetscootUpdate](#test-netscootupdate)</small> | <small>Check GitHub for a newer netscoot release and report whether the installed version is behind.</small> |
 | <small>[Update-Netscoot](#update-netscoot)</small> | <small>Update an installed netscoot to the latest GitHub release, in place.</small> |
 
+*Update policy*
+
+| <small>Command</small> | <small>What it does</small> |
+|:---|:---|
+| <small>[Get-NetscootUpdatePolicy](#get-netscootupdatepolicy)</small> | <small>Report the effective auto-update policy and where it was resolved from.</small> |
+| <small>[Set-NetscootUpdatePolicy](#set-netscootupdatepolicy)</small> | <small>Set netscoot's auto-update policy to Enabled, Disabled, or Manual.</small> |
+
 *Git verb*
 
 | <small>Command</small> | <small>What it does</small> |
@@ -714,6 +735,50 @@ Get-NetscootCapability
 ```
 
 Returns an object with Platform, PSEdition, Git, Dotnet, and DotnetSupportsSlnx.
+
+<small>[Back to Command reference](#command-reference)</small>
+
+---
+
+### Get-NetscootUpdatePolicy
+
+Report the effective auto-update policy and where it was resolved from.
+
+**Syntax**
+
+```powershell
+Get-NetscootUpdatePolicy [<CommonParameters>]
+```
+
+netscoot's update behavior is governed by one policy with three states:
+  Enabled   automatic checks run (Test-NetscootUpdate `-Auto`), and Update-Netscoot is allowed.
+  Manual    (default) no automatic check runs, but a Update-Netscoot you invoke yourself works.
+  Disabled  automatic checks do nothing, and Update-Netscoot refuses (`-Force` overrides).
+
+The policy is stored in the `NETSCOOT_AUTOUPDATE` environment variable, so it can be set with
+Set-NetscootUpdatePolicy or pushed by an administrator (Group Policy / Intune / a profile).
+This resolves the value in precedence order: the current process, then (on Windows) the user
+environment, then the machine environment. A truthy value (`1`/`true`/`on`) is Enabled, a
+falsy one (`0`/`false`/`off`) is Disabled, and absent or unrecognized is Manual.
+
+**Output**
+
+Returns a single [Netscoot.UpdatePolicy](#netscootupdatepolicy).
+Policy
+
+```text
+Netscoot.UpdatePolicy
+  State   string  # Enabled | Disabled | Manual
+  Source  string  # Process | User | Machine | Default
+  Value   string  # the raw NETSCOOT_AUTOUPDATE value, or $null
+```
+
+**Examples**
+
+```powershell
+# See the current policy and where it came from
+Get-NetscootUpdatePolicy
+```
 
 <small>[Back to Command reference](#command-reference)</small>
 
@@ -1676,6 +1741,66 @@ Set-NetscootJournal -Enabled $false -Global
 
 ---
 
+### Set-NetscootUpdatePolicy
+
+Set netscoot's auto-update policy to Enabled, Disabled, or Manual.
+
+**Syntax**
+
+```powershell
+Set-NetscootUpdatePolicy [-State] <string> [[-Scope] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+Writes the `NETSCOOT_AUTOUPDATE` environment variable that governs update behavior (see
+Get-NetscootUpdatePolicy for the three states). The change always takes effect in the current
+session; the scope controls how far it persists:
+  `-Scope` User    (default) persists for the current user (Windows).
+  `-Scope` Machine persists for all users (Windows); needs an elevated session.
+  `-Scope` Process this session only; nothing is persisted.
+On non-Windows, User/Machine cannot be persisted programmatically, so this sets the session
+value and prints the line to add to your shell profile.
+
+An administrator can achieve the same fleet-wide by pushing `NETSCOOT_AUTOUPDATE` through
+Group Policy / Intune; this cmdlet is the per-user equivalent.
+
+**Parameters**
+
+| <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
+|:---|:---|:---|:---|:---|
+| <small>`‑State`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>Enabled, Disabled, or Manual.</small> |
+| <small>`‑Scope`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>How far to persist: User (default, Windows), Machine (Windows, elevated), or Process (this session only).</small> |
+| <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
+| <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
+
+**Output**
+
+Returns a single [Netscoot.UpdatePolicy](#netscootupdatepolicy).
+Policy - the resulting effective policy.
+
+```text
+Netscoot.UpdatePolicy
+  State   string  # Enabled | Disabled | Manual
+  Source  string  # Process | User | Machine | Default
+  Value   string  # the raw NETSCOOT_AUTOUPDATE value, or $null
+```
+
+**Examples**
+
+```powershell
+# Opt in to automatic checks (the SessionStart hook will now run)
+Set-NetscootUpdatePolicy -State Enabled
+
+# Block updates on this machine for every user (run elevated)
+Set-NetscootUpdatePolicy -State Disabled -Scope Machine
+
+# Back to the default: no auto-check, manual Update-Netscoot still works
+Set-NetscootUpdatePolicy -State Manual
+```
+
+<small>[Back to Command reference](#command-reference)</small>
+
+---
+
 ### Sync-Solution
 
 Resolve solution-membership divergence by adding each project to the solutions that are
@@ -1737,7 +1862,7 @@ behind. On-demand and read-only: It never updates anything itself.
 **Syntax**
 
 ```powershell
-Test-NetscootUpdate [[-Repository] <string>] [-EnableAutoUpdate] [<CommonParameters>]
+Test-NetscootUpdate [[-Repository] <string>] [-Auto] [<CommonParameters>]
 ```
 
 netscoot does not update automatically, however it is installed (PowerShell Gallery,
@@ -1749,23 +1874,23 @@ agent or user runs it when they want to know.
 Needs network access to api.github.com. Honors `-ErrorAction` if the request fails (offline,
 rate-limited, or no releases yet).
 
-`-EnableAutoUpdate` makes this the automation/SessionStart entry point: It runs the check ONLY
-when `$env`:NETSCOOT_AUTOUPDATE is set to a truthy value (1/true/on/yes/enabled), and is a
-silent no-op otherwise. So a hook can call it unconditionally; nothing happens until a user
-opts in, and IT can disable it fleet-wide by clearing or setting the variable to false via
-Group Policy / Intune / a profile. A plain Test-NetscootUpdate (no switch) always checks.
+A plain Test-NetscootUpdate always checks. `-Auto` is the automation/SessionStart entry point:
+It runs the check only when the update policy is Enabled (see Set-NetscootUpdatePolicy), and
+is a silent no-op otherwise. So a hook can call it unconditionally; nothing happens until the
+policy is opted in, and an administrator can disable it fleet-wide. Either way it never
+updates - it only reports.
 
 **Parameters**
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
 | <small>`‑Repository`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>owner/name of the GitHub repository to check. Defaults to the project repository.</small> |
-| <small>`‑EnableAutoUpdate`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Run as the gated auto-check (for a SessionStart hook or other automation): proceed only when `$env`:NETSCOOT_AUTOUPDATE is truthy, otherwise do nothing. Still read-only - it never updates.</small> |
+| <small>`‑Auto`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Run as the automatic check (for a SessionStart hook or other automation): proceed only when the update policy is Enabled, otherwise do nothing. Still read-only - it never updates.</small> |
 
 **Output**
 
 Returns a single [Netscoot.Update](#netscootupdate).
-None (writes a non-terminating error) when the release cannot be fetched, and nothing at all when `-EnableAutoUpdate` is set but `$env`:NETSCOOT_AUTOUPDATE is not enabled.
+None (writes a non-terminating error) when the release cannot be fetched, and nothing at all when `-Auto` is set but the update policy is not Enabled.
 
 ```text
 Netscoot.Update
@@ -1785,8 +1910,8 @@ Test-NetscootUpdate
 # Check a fork or a different repository (owner/name)
 Test-NetscootUpdate -Repository myfork/netscoot
 
-# SessionStart hook: checks only if the user/fleet opted in via $env:NETSCOOT_AUTOUPDATE
-Test-NetscootUpdate -EnableAutoUpdate
+# SessionStart hook: checks only when the update policy is Enabled
+Test-NetscootUpdate -Auto
 ```
 
 <small>[Back to Command reference](#command-reference)</small>
@@ -1992,15 +2117,15 @@ After it runs, reload the module in the current session with `Import-Module Nets
 Needs network access to GitHub. For Gallery installs, `Update-Module Netscoot` is the
 simpler path; this command updates installer/clone installs in place from the GitHub release.
 
-Policy kill-switch: when `$env`:NETSCOOT_AUTOUPDATE is set to a falsy value (0/false/off/no/
-disabled), for example pushed by IT via Group Policy or Intune, this refuses to update so
-machine state stays managed. `-Force` overrides the policy (and also reinstalls when current).
+Policy kill-switch: when the update policy is Disabled (see Set-NetscootUpdatePolicy, or an
+administrator's Group Policy / Intune push), this refuses to update so machine state stays
+managed. `-Force` overrides the policy (and also reinstalls when current).
 
 **Parameters**
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Reinstall the latest release even if already current, and override the `$env`:NETSCOOT_AUTOUPDATE policy block.</small> |
+| <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Reinstall the latest release even if already current, and override a Disabled update policy.</small> |
 | <small>`‑Repository`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>owner/name of the GitHub repository. Defaults to the project repository.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
@@ -2246,6 +2371,7 @@ Each type below is one `pscustomobject` with the fields shown. A command may ret
 | <small>[Netscoot.TreeMoveResult](#netscoottreemoveresult)</small> | <small>Result of moving a folder of one or more .NET projects in one operation.</small> |
 | <small>[Netscoot.UnityMoveResult](#netscootunitymoveresult)</small> | <small>Result of moving a Unity asset/folder while keeping its paired .meta file(s).</small> |
 | <small>[Netscoot.Update](#netscootupdate)</small> | <small>Whether the installed Netscoot is behind the latest GitHub release.</small> |
+| <small>[Netscoot.UpdatePolicy](#netscootupdatepolicy)</small> | <small>The effective auto-update policy and where it was resolved from.</small> |
 
 ### Netscoot.Capability
 
@@ -2566,6 +2692,21 @@ Netscoot.Update
   Tag              string
   UpdateAvailable  bool
   Url              string
+```
+
+<small>[Back to Output types](#output-types)</small>
+
+### Netscoot.UpdatePolicy
+
+<small>[ [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) | [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) ]</small>
+
+The effective auto-update policy and where it was resolved from.
+
+```text
+Netscoot.UpdatePolicy
+  State   string  # Enabled | Disabled | Manual
+  Source  string  # Process | User | Machine | Default
+  Value   string  # the raw NETSCOOT_AUTOUPDATE value, or $null
 ```
 
 <small>[Back to Output types](#output-types)</small>

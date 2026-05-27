@@ -32,8 +32,9 @@
             Name  = 'Install & environment'
             Blurb = 'Manage the installation itself and wire up the git integration. Neither is part of a move.'
             Subcategories = @(
-                @{ Name = 'Stay current'; Commands = @('Test-NetscootUpdate', 'Update-Netscoot') }
-                @{ Name = 'Git verb';     Commands = @('Register-NetscootGitAlias', 'Unregister-NetscootGitAlias') }
+                @{ Name = 'Stay current';  Commands = @('Test-NetscootUpdate', 'Update-Netscoot') }
+                @{ Name = 'Update policy'; Commands = @('Get-NetscootUpdatePolicy', 'Set-NetscootUpdatePolicy') }
+                @{ Name = 'Git verb';      Commands = @('Register-NetscootGitAlias', 'Unregister-NetscootGitAlias') }
             )
         }
     )

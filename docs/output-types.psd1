@@ -241,6 +241,16 @@
         )
     }
 
+    'Netscoot.UpdatePolicy' = @{
+        Summary = 'The effective auto-update policy and where it was resolved from.'
+        Array   = $false
+        Fields  = @(
+            @{ Name = 'State';  Type = 'string'; Note = 'Enabled | Disabled | Manual' }
+            @{ Name = 'Source'; Type = 'string'; Note = 'Process | User | Machine | Default' }
+            @{ Name = 'Value';  Type = 'string'; Note = 'the raw NETSCOOT_AUTOUPDATE value, or $null' }
+        )
+    }
+
     'Netscoot.MetaIntegrity' = @{
         Summary = 'One Unity .meta integrity problem: An asset missing a .meta, or an orphan .meta.'
         Array   = $true
