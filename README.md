@@ -1816,32 +1816,28 @@ Undo-Netscoot -All [-RepositoryRoot <string>] [-Force] [-WhatIf] [-Confirm] [<Co
 Undo-Netscoot -List [-RepositoryRoot <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-Each move is recorded in the journal (a per-user data directory: LocalAppData on Windows,
-~/Library/Application Support on macOS, ~/.local/share on Linux; one file per repository) with
-its inverse: The same mover run with source and destination swapped. Undo-Netscoot replays
-that inverse, re-reconciling from the CURRENT state (more robust than restoring a stale
-snapshot). The reversing move is not itself journaled, so undo walks the history back rather
-than ping-ponging.
+Every move is journaled with its inverse: the same mover, source and destination swapped.
+Undo-Netscoot replays that inverse, reconciling from the current state rather than restoring a
+stale snapshot. The reversing move is not itself journaled, so repeated calls walk back through
+history instead of toggling the last move.
 
-Choose what to reverse (mutually exclusive):
+Pick what to reverse (mutually exclusive):
   `-Last`   (default) the most recent move; call again to walk further back.
-  `-Id`     one specific move, by its journal id (see `-List`). The safest, most surgical option.
-  `-After`  every move recorded after a given time, newest first.
+  `-Id`     one specific move, by its journal id (see `-List`).
+  `-After`  every move after a given time, newest first.
   `-All`    every recorded move, newest first.
-`-List` shows the journal without changing anything.
+`-List` prints the journal and changes nothing.
 
-Reversing a single move with `-Id` is the precise choice when the journal is saving you: It
-touches only that one move. But `-Id` can target a move that is NOT the most recent, and each
-reversal re-reconciles from the CURRENT state, so reversing an older move while later moves
-still reference its old location can leave dangling references. When `-Id` reverses anything but
-the latest entry, a read-only consistency sweep runs afterward and any references it finds
-broken are reported, with the command to repair them.
+Because each reversal reconciles from the current state, undoing an older move (with `-Id`) while
+later moves still depend on its old location can leave references dangling. When that is
+possible, a read-only sweep runs afterward and reports anything broken, with the command to fix
+it.
 
-`-All` and `-After` reverse several moves, so they are high-impact: They prompt for a yes/no
-confirmation that `-Confirm`:`$false` does not silence. Pass `-Force` to bypass it (for automation),
-or `-WhatIf` to list the reversals without making changes.
+`-All` and `-After` reverse many moves at once, so they prompt for a confirmation that
+`-Confirm`:`$false` does not silence; `-Force` bypasses it, and `-WhatIf` lists the reversals without
+running them.
 
-Journaling must have been on when the moves ran (on by default; opt out with
+Journaling must have been on when the moves ran (it is by default; opt out with
 `$env`:NETSCOOT_JOURNAL or git config netscoot.journal false).
 
 **Parameters**
@@ -1850,7 +1846,7 @@ Journaling must have been on when the moves ran (on by default; opt out with
 |:---|:---|:---|:---|:---|
 | <small>`‑RepositoryRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repository whose journal to use, and the boundary every reversal is confined to. Defaults to the enclosing git repository root of the current directory.</small> |
 | <small>`‑Last`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Reverse only the most recent move (the default).</small> |
-| <small>`‑Id`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>Reverse one specific move, identified by its journal id (the 8-character id shown by `-List`). Surgical: It reverses only that move. If the move is not the most recent, a read-only consistency sweep runs afterward and reports any references the out-of-order reversal broke.</small> |
+| <small>`‑Id`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>Reverse one specific move, identified by its journal id (the 8-character id from `-List`). If it is not the most recent move, a read-only sweep afterward reports any references the out-of-order reversal left dangling.</small> |
 | <small>`‑After`</small> | <small>DateTime</small> | <small>true</small> | <small>false</small> | <small>Reverse every move recorded strictly after this time, newest first. The time need not match any recorded entry.</small> |
 | <small>`‑All`</small> | <small>SwitchParameter</small> | <small>true</small> | <small>false</small> | <small>Reverse every recorded move, newest first.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>With `-All` or `-After`, bypass the confirmation prompt.</small> |
