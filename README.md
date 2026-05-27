@@ -2,12 +2,12 @@
 
 [![PowerShell Gallery](https://img.shields.io/powershellgallery/v/Netscoot?logo=powershell&label=PowerShell%20Gallery)](https://www.powershellgallery.com/packages/Netscoot) [![Downloads](https://img.shields.io/powershellgallery/dt/Netscoot?label=downloads)](https://www.powershellgallery.com/packages/Netscoot)
 
-netscoot moves a project, module, or asset without breaking what depends on it, and rolls back if
-anything fails. It reconciles what the move would otherwise break: a .NET project's solution
+netscoot moves a project, module, or asset (.NET, PowerShell, Unity, or native C++) without breaking
+what depends on it, and rolls back if anything fails. It reconciles what the move would otherwise break: a .NET project's solution
 membership, references, and GUIDs; a PowerShell module's manifest; a Unity asset's `.meta` GUIDs; a
 native C++ project's solution membership (reporting the link settings it cannot safely rewrite).
-Visual Studio does this for a .NET project when you drag it in the GUI; netscoot does it from the
-command line, everywhere Visual Studio is not: VS Code, Rider, CI, Linux, macOS, and AI agents.
+Visual Studio does this for a .NET project when you drag it in the GUI, whereas netscoot does it from
+the command line, everywhere Visual Studio is not: VS Code, Rider, CI, Linux, macOS, and AI agents.
 
 ```powershell
 # moves the project and reconciles the .sln, references, and GUIDs (rolls back on failure)
@@ -32,49 +32,6 @@ like "move this project" (see [Skills](#skills)).
   solutions. Moving PowerShell or Unity files does not need it.
 - git is optional: with it, moves use `git mv` (history kept); without it, `-Force` does a plain
   `Move-Item` (no history). `Get-NetscootCapability` reports what the machine has.
-
-## Footprint
-
-Everything netscoot writes, and where:
-
-- **Installing** copies the module folders to your CurrentUser PowerShell module path (already on
-  `$env:PSModulePath`), or an `-InstallPath` you choose. Installing and updating download the release
-  zip to the system temp dir and are the only actions that touch the network (`github.com` /
-  `api.github.com`).
-- **A move** edits the target repository's solution/project files to reconcile it, through first-party
-  tooling ([The Contract](#the-contract)). It writes a per-repository undo journal to the per-user
-  data directory (`%LOCALAPPDATA%\netscoot`, `~/Library/Application Support/netscoot`, or
-  `~/.local/share/netscoot`), kept out of the working tree so `git status` stays clean, and snapshots
-  the files it edits to the system temp dir for rollback, removed when the move finishes. On by
-  default; see [Undoing](#undoing) to opt out or relocate the journal.
-- **Only when you ask:** `Register-NetscootGitAlias` adds one `alias.netscoot` line to your git
-  config; `install.ps1 -NoJournal` or `Set-NetscootJournal` turns the journal off, and
-  `Clear-NetscootJournal` deletes a repository's journal.
-
-Nothing else under your home or AppData is touched: it never edits `PATH`, never auto-installs git or
-the .NET SDK, and sends no telemetry.
-
-### Environment variables
-
-netscoot reads no environment variables by default; each one below is an opt-in control.
-
-| Variable | Values | Effect |
-|:---|:---|:---|
-| <small>`NETSCOOT_JOURNAL`</small> | <small>`off`/`0`/`false`</small> | <small>Turns the undo journal off. Trumps `git config netscoot.journal`, so an admin can force it on/off fleet-wide.</small> |
-| <small>`NETSCOOT_JOURNAL_HOME`</small> | <small>a directory</small> | <small>Relocates the journal store away from the per-user data dir above (point it at a roaming or managed path).</small> |
-| <small>`NETSCOOT_AUTOUPDATE`</small> | <small>`true` / `false`</small> | <small>Gates the opt-in update check. `Test-NetscootUpdate -EnableAutoUpdate` runs only when truthy; `false` disables it fleet-wide and blocks `Update-Netscoot` (`-Force` overrides). Unset means no auto-check.</small> |
-| <small>`NETSCOOT_JOURNAL_SUPPRESS`</small> | <small>internal</small> | <small>Set by `Undo-Netscoot` around its own reverse move so the undo is not itself journaled. Not meant to be set by hand.</small> |
-
-The full journaling precedence and how to turn it off live under [Undoing](#undoing).
-
-> [!NOTE]
-> **For sysadmins / managed fleets.** Auto-update is off unless opted in
-> (`Test-NetscootUpdate -EnableAutoUpdate` with `NETSCOOT_AUTOUPDATE` truthy); push
-> `NETSCOOT_AUTOUPDATE=false` (Group Policy / Intune) to disable checks and block `Update-Netscoot`
-> across a fleet. Journaling is controllable per repository or globally
-> (`git config [--global] netscoot.journal`), and the `NETSCOOT_JOURNAL` env var trumps that setting
-> so you can force the choice fleet-wide; the journal sits in the standard per-user data dir,
-> relocatable via `NETSCOOT_JOURNAL_HOME`.
 
 ## Install
 
@@ -283,6 +240,49 @@ relocatable, missing, or ambiguous (read-only by default).
 To resolve the membership divergence that `Test-SolutionConsistency` reports, `Sync-Solution` adds
 each project to the solutions missing it (via `dotnet sln add`), making membership uniform. It only
 adds, never removes; preview with `-WhatIf` first.
+
+# Footprint
+
+Everything netscoot writes, and where:
+
+- **Installing** copies the module folders to your CurrentUser PowerShell module path (already on
+  `$env:PSModulePath`), or an `-InstallPath` you choose. Installing and updating download the release
+  zip to the system temp dir and are the only actions that touch the network (`github.com` /
+  `api.github.com`).
+- **A move** edits the target repository's solution/project files to reconcile it, through first-party
+  tooling ([The Contract](#the-contract)). It writes a per-repository undo journal to the per-user
+  data directory (`%LOCALAPPDATA%\netscoot`, `~/Library/Application Support/netscoot`, or
+  `~/.local/share/netscoot`), kept out of the working tree so `git status` stays clean, and snapshots
+  the files it edits to the system temp dir for rollback, removed when the move finishes. On by
+  default; see [Undoing](#undoing) to opt out or relocate the journal.
+- **Only when you ask:** `Register-NetscootGitAlias` adds one `alias.netscoot` line to your git
+  config; `install.ps1 -NoJournal` or `Set-NetscootJournal` turns the journal off, and
+  `Clear-NetscootJournal` deletes a repository's journal.
+
+Nothing else under your home or AppData is touched: it never edits `PATH`, never auto-installs git or
+the .NET SDK, and sends no telemetry.
+
+## Environment variables
+
+netscoot reads no environment variables by default; each one below is an opt-in control.
+
+| Variable | Values | Effect |
+|:---|:---|:---|
+| <small>`NETSCOOT_JOURNAL`</small> | <small>`off`/`0`/`false`</small> | <small>Turns the undo journal off. Trumps `git config netscoot.journal`, so an admin can force it on/off fleet-wide.</small> |
+| <small>`NETSCOOT_JOURNAL_HOME`</small> | <small>a directory</small> | <small>Relocates the journal store away from the per-user data dir above (point it at a roaming or managed path).</small> |
+| <small>`NETSCOOT_AUTOUPDATE`</small> | <small>`true` / `false`</small> | <small>Gates the opt-in update check. `Test-NetscootUpdate -EnableAutoUpdate` runs only when truthy; `false` disables it fleet-wide and blocks `Update-Netscoot` (`-Force` overrides). Unset means no auto-check.</small> |
+| <small>`NETSCOOT_JOURNAL_SUPPRESS`</small> | <small>internal</small> | <small>Set by `Undo-Netscoot` around its own reverse move so the undo is not itself journaled. Not meant to be set by hand.</small> |
+
+The full journaling precedence and how to turn it off live under [Undoing](#undoing).
+
+> [!NOTE]
+> **For sysadmins / managed fleets.** Auto-update is off unless opted in
+> (`Test-NetscootUpdate -EnableAutoUpdate` with `NETSCOOT_AUTOUPDATE` truthy); push
+> `NETSCOOT_AUTOUPDATE=false` (Group Policy / Intune) to disable checks and block `Update-Netscoot`
+> across a fleet. Journaling is controllable per repository or globally
+> (`git config [--global] netscoot.journal`), and the `NETSCOOT_JOURNAL` env var trumps that setting
+> so you can force the choice fleet-wide; the journal sits in the standard per-user data dir,
+> relocatable via `NETSCOOT_JOURNAL_HOME`.
 
 # Interfaces
 
