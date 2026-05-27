@@ -150,7 +150,13 @@ function Get-MoveJournalEntries {
     param([Parameter(Mandatory)][string]$RepositoryRoot)
     $path = Get-MoveJournalPath -RepositoryRoot $RepositoryRoot
     if (-not (Test-Path -LiteralPath $path)) { return @() }
-    @(Get-Content -LiteralPath $path | Where-Object { $_.Trim() } | ForEach-Object { $_ | ConvertFrom-Json })
+    @(Get-Content -LiteralPath $path | Where-Object { $_.Trim() } | ForEach-Object {
+            $entry = $_ | ConvertFrom-Json
+            # Tag for the default table view (Netscoot.Format.ps1xml) so Undo-Netscoot -List prints a
+            # clean table; the properties are unchanged, so callers reading .id/.undo still work.
+            $entry.PSObject.TypeNames.Insert(0, 'Netscoot.JournalEntry')
+            $entry
+        })
 }
 
 function Remove-MoveJournalEntry {

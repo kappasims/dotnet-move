@@ -53,6 +53,7 @@ function Get-SolutionInventory {
             foreach ($p in $content.Projects) {
                 $seen.Add($p.Abs)
                 [pscustomobject]@{
+                    PSTypeName = 'Netscoot.SolutionItem'
                     Solution = $rel
                     Kind     = [Netscoot.SolutionItemKind]::Project
                     Type     = $p.Ext.TrimStart('.')
@@ -61,10 +62,10 @@ function Get-SolutionInventory {
                 }
             }
             foreach ($f in $content.Folders) {
-                [pscustomobject]@{ Solution = $rel; Kind = [Netscoot.SolutionItemKind]::SolutionFolder; Type = ''; Name = $f; Path = '' }
+                [pscustomobject]@{ PSTypeName = 'Netscoot.SolutionItem'; Solution = $rel; Kind = [Netscoot.SolutionItemKind]::SolutionFolder; Type = ''; Name = $f; Path = '' }
             }
             foreach ($i in $content.Items) {
-                [pscustomobject]@{ Solution = $rel; Kind = [Netscoot.SolutionItemKind]::SolutionItem; Type = ''; Name = (Split-Path -Leaf $i); Path = $i }
+                [pscustomobject]@{ PSTypeName = 'Netscoot.SolutionItem'; Solution = $rel; Kind = [Netscoot.SolutionItemKind]::SolutionItem; Type = ''; Name = (Split-Path -Leaf $i); Path = $i }
             }
         }
 
@@ -73,6 +74,7 @@ function Get-SolutionInventory {
             $abs = Resolve-FullPath $disk.FullName
             if (-not (Test-PathInList -Path $abs -List $seen)) {
                 [pscustomobject]@{
+                    PSTypeName = 'Netscoot.SolutionItem'
                     Solution = '(none)'
                     Kind     = [Netscoot.SolutionItemKind]::UnreferencedProject
                     Type     = $disk.Extension.TrimStart('.')

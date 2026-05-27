@@ -111,6 +111,7 @@ function Repair-SolutionReferences {
                 else { $resolution = 'Ambiguous'; $newPath = $null }
             }
             $problems.Add([pscustomobject]@{
+                    PSTypeName = 'Netscoot.RepairResult'
                     Kind       = $d.Kind
                     Resolution = $resolution
                     Missing    = $d.Missing

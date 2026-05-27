@@ -242,18 +242,30 @@ function Invoke-DocsTask {
     function Format-TypeLink { param([string]$Name) "[$Name](#$(Get-TypeAnchor $Name))" }
 
     # Terse, monospaced rendering of a type's structure: a header line (the type name) then one
-    # aligned line per field: name, type, optional note. The header is always the singular object;
-    # whether a command returns one or many is a per-command fact, stated in that command's Output.
+    # aligned line per field: name, type, and an optional '# note'. A field whose type is itself a
+    # registered Netscoot.* type is expanded inline, indented, so the whole shape is visible in one
+    # view. $Ancestors is the chain on the current path (not a global seen-set), so a type used in
+    # two sibling fields (e.g. Capability's Git and Dotnet, both Netscoot.ToolInfo) expands under
+    # each, while a genuine cycle stops. The header is the singular object; whether a command returns
+    # one or many is a per-command fact, stated in that command's Output.
     function Format-TypeCodeView {
-        param([string]$Name, [hashtable]$Def)
+        param([string]$Name, [hashtable]$Def, [int]$Indent = 0, [string[]]$Ancestors = @())
         $fields = @($Def.Fields)
         $nameW = ($fields | ForEach-Object { $_.Name.Length } | Measure-Object -Maximum).Maximum
         $typeW = ($fields | ForEach-Object { $_.Type.Length } | Measure-Object -Maximum).Maximum
-        $lines = @($Name)
+        $pad = ' ' * $Indent
+        $ancestorsNow = @($Ancestors) + $Name
+        $lines = @()
+        if ($Indent -eq 0) { $lines += $Name }   # top-level header; nested types are named by their field line
         foreach ($f in $fields) {
-            $line = '  ' + $f.Name.PadRight($nameW) + '  ' + $f.Type.PadRight($typeW)
-            if ($f.Note) { $line += '  ' + $f.Note }
-            $lines += $line.TrimEnd()
+            $prefix = $pad + '  ' + $f.Name.PadRight($nameW) + '  ' + $f.Type.PadRight($typeW)
+            if ($f.Note) { $lines += ($prefix + '  # ' + $f.Note) }
+            else { $lines += $prefix.TrimEnd() }
+            # Expand a nested registered type inline (strip [] and ? decorations); stop on a cycle.
+            $bare = $f.Type -replace '[\[\]?]', ''
+            if ($typeDefs.ContainsKey($bare) -and ($bare -notin $ancestorsNow)) {
+                $lines += (Format-TypeCodeView -Name $bare -Def $typeDefs[$bare] -Indent ($Indent + 4) -Ancestors $ancestorsNow)
+            }
         }
         $lines -join "`n"
     }

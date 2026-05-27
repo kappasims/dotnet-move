@@ -74,6 +74,7 @@ function Test-SolutionConsistency {
             $divergences++
 
             $record = [pscustomobject]@{
+                PSTypeName = 'Netscoot.ConsistencyResult'
                 Project   = $proj
                 PresentIn = @($present.Solution)
                 AbsentFrom = @($absent.Solution)

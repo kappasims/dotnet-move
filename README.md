@@ -35,8 +35,8 @@ like "move this project" (see [Skills](#skills)).
 
 ## Install
 
-Install the single bundled package (all engines) from the
-[PowerShell Gallery](https://www.powershellgallery.com/packages/Netscoot):
+**Recommended: install from the [PowerShell Gallery](https://www.powershellgallery.com/packages/Netscoot)**
+(the single bundled package, all engines):
 
 ```powershell
 Install-Module Netscoot -Scope CurrentUser     # PowerShellGet (Windows PowerShell 5.1+ / PowerShell 7)
@@ -65,12 +65,12 @@ irm https://raw.githubusercontent.com/kappasims/netscoot/master/install.ps1 -Out
 ./install.ps1
 ```
 
-**No-script option:** download the latest release zip from the
+No-script option: download the latest release zip from the
 [Releases page](https://github.com/kappasims/netscoot/releases), unzip it, and copy the
 `Netscoot.Shared`, `Netscoot.Core`, `Netscoot.Unity`, `Netscoot.Native`, and `netscoot`
 folders out of `src/` into any directory on your `$env:PSModulePath`.
 
-Or pipe it straight in for a **YOLO install** if you are comfortable running [the install script](https://github.com/kappasims/netscoot/blob/master/install.ps1) unread:
+Or, only if you are comfortable running [the install script](https://github.com/kappasims/netscoot/blob/master/install.ps1) unread, pipe it straight in:
 
 ```powershell
 irm https://raw.githubusercontent.com/kappasims/netscoot/master/install.ps1 | iex
@@ -163,8 +163,9 @@ Every move is recorded in a journal in a per-user data directory (`%LOCALAPPDATA
 Windows, `~/Library/Application Support/netscoot` on macOS, `~/.local/share/netscoot` on Linux),
 one file per repository, so you can reverse it later, even from a fresh session. `Undo-Netscoot` replays the recorded inverse (the same move with
 source and destination swapped), re-reconciling from the current state rather than restoring a stale
-snapshot. Pick what to reverse: `-Last` (the default, the most recent move), `-After <time>` (every
-move recorded since a time), or `-All` (everything). `-List` shows what is available.
+snapshot. Pick what to reverse: `-Last` (the default, the most recent move), `-Id <id>` (one specific
+move), `-After <time>` (every move recorded since a time), or `-All` (everything). `-List` shows what
+is available.
 
 A successful undo removes that entry from the journal, and the reversing move is not itself recorded,
 so repeated `-Last` calls walk the history backwards rather than toggling one move on and off. The
@@ -177,8 +178,25 @@ both take `-WhatIf` to preview before they change anything.
 Undo-Netscoot -List                       # what can be undone (oldest first)
 Undo-Netscoot -WhatIf                      # preview reversing the most recent move
 Undo-Netscoot                              # reverse the most recent move; call again to walk back further
+Undo-Netscoot -Id a1b2c3d4                 # reverse one specific move (its id from -List)
 Undo-Netscoot -After (Get-Date).AddHours(-1)   # reverse everything from the last hour, newest first
 Undo-Netscoot -All                         # reverse every move, newest first
+```
+
+`-List` returns the entries (tagged `Netscoot.JournalEntry`), which print as a table:
+
+```text
+Id       When             Command            Source        Destination
+--       ----             -------            ------        -----------
+a1b2c3d4 2026-05-27 14:02 Move-DotnetProject src/Tarragon  libs/Tarragon
+9f3e1c77 2026-05-27 14:05 Move-Solution      Demo.slnx     build/Demo.slnx
+```
+
+On disk each entry is one JSON line recording the reversing invocation (the mover and the swapped
+splat that `Undo-Netscoot` replays):
+
+```json
+{"id":"a1b2c3d4","timestamp":"2026-05-27T14:02:11Z","command":"Move-DotnetProject","engine":"dotnet","source":"src/Tarragon","destination":"libs/Tarragon","undo":{"command":"Move-DotnetProject","params":{"Project":"libs/Tarragon/Tarragon.csproj","Destination":"src/Tarragon"}}}
 ```
 
 `-All` and `-After` walk back several moves at once, so they prompt for a yes/no confirmation that
@@ -223,6 +241,34 @@ netscoot can be used purely to inspect a repository. These commands are read-onl
 | <small>`Resolve-MoveEngine`</small> | <small>which engine a given path classifies to</small> |
 | <small>`Get-NetscootCapability`</small> | <small>whether git and dotnet are present, plus the platform</small> |
 | <small>`Test-NetscootUpdate`</small> | <small>whether a newer netscoot release is available on GitHub</small> |
+
+Each returns objects, so results are filterable and scriptable, and print as a table by default:
+
+```text
+PS> Test-SolutionConsistency
+Project            PresentIn         AbsentFrom
+-------            ---------         ----------
+src/Lib/Lib.csproj App.sln, Api.sln  Tools.sln
+
+PS> Get-SolutionInventory
+Solution Kind                Type   Name          Path
+-------- ----                ----   ----          ----
+App.sln  Project             csproj Lib.csproj    src/Lib/Lib.csproj
+App.sln  SolutionFolder             build
+(none)   UnreferencedProject csproj Legacy.csproj tools/Legacy/Legacy.csproj
+
+PS> Find-PathReference -Path ./src/Lib/Lib.csproj
+File                     Line Confidence Text
+----                     ---- ---------- ----
+.github/workflows/ci.yml   31 High       dotnet build src/Lib/Lib.csproj
+build.ps1                  12 Low        $proj = 'Lib.csproj'
+
+PS> Test-UnityMetaIntegrity ./Assets
+Kind        Path
+----        ----
+MissingMeta Assets/Art/logo.png
+OrphanMeta  Assets/Old/gone.cs.meta
+```
 
 ## Repairing
 
@@ -604,10 +650,10 @@ One per matching line.
 
 ```text
 Netscoot.PathReference
-  File        string  repository-relative file containing the line
-  Line        int     1-based line number
-  Confidence  string  High | Low
-  Text        string  the matching line
+  File        string  # repository-relative file containing the line
+  Line        int     # 1-based line number
+  Confidence  string  # High | Low
+  Text        string  # the matching line
 ```
 
 **Examples**
@@ -652,7 +698,13 @@ Netscoot.Capability
   PSEdition           string
   DotnetSupportsSlnx  bool
   Git                 Netscoot.ToolInfo
+      Present  bool    # found on PATH
+      Version  string
+      Path     string
   Dotnet              Netscoot.ToolInfo
+      Present  bool    # found on PATH
+      Version  string
+      Path     string
 ```
 
 **Examples**
@@ -700,11 +752,11 @@ One per item.
 
 ```text
 Netscoot.SolutionItem
-  Solution  string                     repository-relative, or '(none)' for an unreferenced project
-  Kind      Netscoot.SolutionItemKind  enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
-  Type      string                     project extension without the dot, else empty
+  Solution  string                     # repository-relative, or '(none)' for an unreferenced project
+  Kind      Netscoot.SolutionItemKind  # enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
+  Type      string                     # project extension without the dot, else empty
   Name      string
-  Path      string                     as stored in the solution, or repository-relative
+  Path      string                     # as stored in the solution, or repository-relative
 ```
 
 **Examples**
@@ -897,11 +949,11 @@ Netscoot.TreeMoveResult
   Engine         string
   Source         string
   Destination    string
-  Performed      bool    false under -WhatIf
+  Performed      bool    # false under -WhatIf
   SkippedCount   int
   ProjectsMoved  int
-  ConsumerCount  int     external references repointed
-  Built          bool?   $null with -NoBuild
+  ConsumerCount  int     # external references repointed
+  Built          bool?   # $null with -NoBuild
 ```
 
 **Examples**
@@ -963,12 +1015,12 @@ Netscoot.MoveResult
   Engine         string
   Source         string
   Destination    string
-  Performed      bool      false under -WhatIf
+  Performed      bool      # false under -WhatIf
   SkippedCount   int
-  ConsumerCount  int       external references repointed
-  OwnRefCount    int       the moved project's own references rebased
-  Solutions      string[]  solution names updated
-  Built          bool?     $null with -NoBuild
+  ConsumerCount  int       # external references repointed
+  OwnRefCount    int       # the moved project's own references rebased
+  Solutions      string[]  # solution names updated
+  Built          bool?     # $null with -NoBuild
 ```
 
 **Examples**
@@ -1043,11 +1095,11 @@ Netscoot.TreeMoveResult
   Engine         string
   Source         string
   Destination    string
-  Performed      bool    false under -WhatIf
+  Performed      bool    # false under -WhatIf
   SkippedCount   int
   ProjectsMoved  int
-  ConsumerCount  int     external references repointed
-  Built          bool?   $null with -NoBuild
+  ConsumerCount  int     # external references repointed
+  Built          bool?   # $null with -NoBuild
 ```
 
 **Examples**
@@ -1121,11 +1173,11 @@ Netscoot.ImportMoveResult
   Engine           string
   Source           string
   Destination      string
-  Performed        bool    false under -WhatIf
+  Performed        bool    # false under -WhatIf
   SkippedCount     int
-  ImportersFixed   int     files whose <Import> was rewritten
-  OwnImportsFixed  int     the moved file's own imports rewritten
-  AutoImported     bool    true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
+  ImportersFixed   int     # files whose <Import> was rewritten
+  OwnImportsFixed  int     # the moved file's own imports rewritten
+  AutoImported     bool    # true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
 ```
 
 **Examples**
@@ -1238,9 +1290,9 @@ Netscoot.PSModuleMoveResult
   Engine        string
   Source        string
   Destination   string
-  Performed     bool    false under -WhatIf
+  Performed     bool    # false under -WhatIf
   SkippedCount  int
-  Manifest      string  the manifest file name
+  Manifest      string  # the manifest file name
 ```
 
 **Examples**
@@ -1307,11 +1359,11 @@ Netscoot.ScriptMoveResult
   Engine            string
   Source            string
   Destination       string
-  Performed         bool    false under -WhatIf
+  Performed         bool    # false under -WhatIf
   SkippedCount      int
-  ReferencersFixed  int     scripts whose path to the moved file was rewritten
-  OwnRefsFixed      int     the moved script's own paths rewritten
-  UnresolvedRefs    int     count of possible dynamic references to verify, not a list
+  ReferencersFixed  int     # scripts whose path to the moved file was rewritten
+  OwnRefsFixed      int     # the moved script's own paths rewritten
+  UnresolvedRefs    int     # count of possible dynamic references to verify, not a list
 ```
 
 **Examples**
@@ -1373,9 +1425,9 @@ Netscoot.SolutionMoveResult
   Engine           string
   Source           string
   Destination      string
-  Performed        bool    false under -WhatIf
+  Performed        bool    # false under -WhatIf
   SkippedCount     int
-  ProjectsRebased  int     stored paths rewritten
+  ProjectsRebased  int     # stored paths rewritten
 ```
 
 **Examples**
@@ -1430,7 +1482,7 @@ Netscoot.GitAlias
   Alias      string
   Scope      string
   Forwarder  string
-  Command    string  the git config command that was/would be run
+  Command    string  # the git config command that was/would be run
 ```
 
 **Examples**
@@ -1499,7 +1551,7 @@ Netscoot.RepairResult
   NewPath     string
   Container   string
   MissingAbs  string
-  Candidates  string[]  same-named project files found, used to resolve NewPath
+  Candidates  string[]  # same-named project files found, used to resolve NewPath
 ```
 
 **Examples**
@@ -1659,8 +1711,8 @@ One per project added.
 
 ```text
 Netscoot.SyncResult
-  Solution  string  repository-relative
-  Added     string  repository-relative project path
+  Solution  string  # repository-relative
+  Added     string  # repository-relative project path
 ```
 
 **Examples**
@@ -1718,7 +1770,7 @@ None (writes a non-terminating error) when the release cannot be fetched, and no
 ```text
 Netscoot.Update
   Installed        version
-  Latest           version?  $null if the tag could not be parsed
+  Latest           version?  # $null if the tag could not be parsed
   Tag              string
   UpdateAvailable  bool
   Url              string
@@ -1774,8 +1826,8 @@ One per divergent project.
 ```text
 Netscoot.ConsistencyResult
   Project     string
-  PresentIn   string[]  solution paths that list it
-  AbsentFrom  string[]  solution paths that do not
+  PresentIn   string[]  # solution paths that list it
+  AbsentFrom  string[]  # solution paths that do not
 ```
 
 **Examples**
@@ -1961,7 +2013,7 @@ The record from Test-NetscootUpdate, so the decision is inspectable. Nothing on 
 ```text
 Netscoot.Update
   Installed        version
-  Latest           version?  $null if the tag could not be parsed
+  Latest           version?  # $null if the tag could not be parsed
   Tag              string
   UpdateAvailable  bool
   Url              string
@@ -2028,11 +2080,11 @@ Netscoot.NativeMoveResult
   Engine                string
   Source                string
   Destination           string
-  Performed             bool      false under -WhatIf
+  Performed             bool      # false under -WhatIf
   SkippedCount          int
-  HadFilters            bool      a paired .vcxproj.filters moved too
-  Solutions             string[]  solution names updated
-  UnreconciledSettings  object[]  one per native path setting to verify by hand; each has the setting name and value
+  HadFilters            bool      # a paired .vcxproj.filters moved too
+  Solutions             string[]  # solution names updated
+  UnreconciledSettings  object[]  # one per native path setting to verify by hand; each has the setting name and value
 ```
 
 **Examples**
@@ -2097,11 +2149,11 @@ Netscoot.UnityMoveResult
   Engine        string
   Source        string
   Destination   string
-  Performed     bool      false under -WhatIf
+  Performed     bool      # false under -WhatIf
   SkippedCount  int
-  MetaMoved     bool      the paired .meta moved too
-  IsAsmdef      bool      the moved asset is an .asmdef
-  ReferencedBy  string[]  asmdefs that reference a moved .asmdef; informational, refs are by name/GUID and survive
+  MetaMoved     bool      # the paired .meta moved too
+  IsAsmdef      bool      # the moved asset is an .asmdef
+  ReferencedBy  string[]  # asmdefs that reference a moved .asmdef; informational, refs are by name/GUID and survive
 ```
 
 **Examples**
@@ -2156,7 +2208,7 @@ One per problem.
 
 ```text
 Netscoot.MetaIntegrity
-  Kind  string  MissingMeta | OrphanMeta
+  Kind  string  # MissingMeta | OrphanMeta
   Path  string
 ```
 
@@ -2207,7 +2259,13 @@ Netscoot.Capability
   PSEdition           string
   DotnetSupportsSlnx  bool
   Git                 Netscoot.ToolInfo
+      Present  bool    # found on PATH
+      Version  string
+      Path     string
   Dotnet              Netscoot.ToolInfo
+      Present  bool    # found on PATH
+      Version  string
+      Path     string
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2221,8 +2279,8 @@ One project whose solution membership diverges across the repository.
 ```text
 Netscoot.ConsistencyResult
   Project     string
-  PresentIn   string[]  solution paths that list it
-  AbsentFrom  string[]  solution paths that do not
+  PresentIn   string[]  # solution paths that list it
+  AbsentFrom  string[]  # solution paths that do not
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2238,7 +2296,7 @@ Netscoot.GitAlias
   Alias      string
   Scope      string
   Forwarder  string
-  Command    string  the git config command that was/would be run
+  Command    string  # the git config command that was/would be run
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2254,11 +2312,11 @@ Netscoot.ImportMoveResult
   Engine           string
   Source           string
   Destination      string
-  Performed        bool    false under -WhatIf
+  Performed        bool    # false under -WhatIf
   SkippedCount     int
-  ImportersFixed   int     files whose <Import> was rewritten
-  OwnImportsFixed  int     the moved file's own imports rewritten
-  AutoImported     bool    true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
+  ImportersFixed   int     # files whose <Import> was rewritten
+  OwnImportsFixed  int     # the moved file's own imports rewritten
+  AutoImported     bool    # true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2271,7 +2329,7 @@ One Unity .meta integrity problem: An asset missing a .meta, or an orphan .meta.
 
 ```text
 Netscoot.MetaIntegrity
-  Kind  string  MissingMeta | OrphanMeta
+  Kind  string  # MissingMeta | OrphanMeta
   Path  string
 ```
 
@@ -2288,12 +2346,12 @@ Netscoot.MoveResult
   Engine         string
   Source         string
   Destination    string
-  Performed      bool      false under -WhatIf
+  Performed      bool      # false under -WhatIf
   SkippedCount   int
-  ConsumerCount  int       external references repointed
-  OwnRefCount    int       the moved project's own references rebased
-  Solutions      string[]  solution names updated
-  Built          bool?     $null with -NoBuild
+  ConsumerCount  int       # external references repointed
+  OwnRefCount    int       # the moved project's own references rebased
+  Solutions      string[]  # solution names updated
+  Built          bool?     # $null with -NoBuild
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2309,11 +2367,11 @@ Netscoot.NativeMoveResult
   Engine                string
   Source                string
   Destination           string
-  Performed             bool      false under -WhatIf
+  Performed             bool      # false under -WhatIf
   SkippedCount          int
-  HadFilters            bool      a paired .vcxproj.filters moved too
-  Solutions             string[]  solution names updated
-  UnreconciledSettings  object[]  one per native path setting to verify by hand; each has the setting name and value
+  HadFilters            bool      # a paired .vcxproj.filters moved too
+  Solutions             string[]  # solution names updated
+  UnreconciledSettings  object[]  # one per native path setting to verify by hand; each has the setting name and value
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2326,10 +2384,10 @@ One build/CI/hook/container line that hardcodes a moved path and that no first-p
 
 ```text
 Netscoot.PathReference
-  File        string  repository-relative file containing the line
-  Line        int     1-based line number
-  Confidence  string  High | Low
-  Text        string  the matching line
+  File        string  # repository-relative file containing the line
+  Line        int     # 1-based line number
+  Confidence  string  # High | Low
+  Text        string  # the matching line
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2345,9 +2403,9 @@ Netscoot.PSModuleMoveResult
   Engine        string
   Source        string
   Destination   string
-  Performed     bool    false under -WhatIf
+  Performed     bool    # false under -WhatIf
   SkippedCount  int
-  Manifest      string  the manifest file name
+  Manifest      string  # the manifest file name
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2366,7 +2424,7 @@ Netscoot.RepairResult
   NewPath     string
   Container   string
   MissingAbs  string
-  Candidates  string[]  same-named project files found, used to resolve NewPath
+  Candidates  string[]  # same-named project files found, used to resolve NewPath
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2382,11 +2440,11 @@ Netscoot.ScriptMoveResult
   Engine            string
   Source            string
   Destination       string
-  Performed         bool    false under -WhatIf
+  Performed         bool    # false under -WhatIf
   SkippedCount      int
-  ReferencersFixed  int     scripts whose path to the moved file was rewritten
-  OwnRefsFixed      int     the moved script's own paths rewritten
-  UnresolvedRefs    int     count of possible dynamic references to verify, not a list
+  ReferencersFixed  int     # scripts whose path to the moved file was rewritten
+  OwnRefsFixed      int     # the moved script's own paths rewritten
+  UnresolvedRefs    int     # count of possible dynamic references to verify, not a list
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2399,11 +2457,11 @@ One entry in the full contents of a solution (or a project on disk that no solut
 
 ```text
 Netscoot.SolutionItem
-  Solution  string                     repository-relative, or '(none)' for an unreferenced project
-  Kind      Netscoot.SolutionItemKind  enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
-  Type      string                     project extension without the dot, else empty
+  Solution  string                     # repository-relative, or '(none)' for an unreferenced project
+  Kind      Netscoot.SolutionItemKind  # enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
+  Type      string                     # project extension without the dot, else empty
   Name      string
-  Path      string                     as stored in the solution, or repository-relative
+  Path      string                     # as stored in the solution, or repository-relative
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2419,9 +2477,9 @@ Netscoot.SolutionMoveResult
   Engine           string
   Source           string
   Destination      string
-  Performed        bool    false under -WhatIf
+  Performed        bool    # false under -WhatIf
   SkippedCount     int
-  ProjectsRebased  int     stored paths rewritten
+  ProjectsRebased  int     # stored paths rewritten
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2434,8 +2492,8 @@ One project added to a solution that was missing it, to resolve membership diver
 
 ```text
 Netscoot.SyncResult
-  Solution  string  repository-relative
-  Added     string  repository-relative project path
+  Solution  string  # repository-relative
+  Added     string  # repository-relative project path
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2448,7 +2506,7 @@ Presence and version of one external tool (git or dotnet).
 
 ```text
 Netscoot.ToolInfo
-  Present  bool    found on PATH
+  Present  bool    # found on PATH
   Version  string
   Path     string
 ```
@@ -2466,11 +2524,11 @@ Netscoot.TreeMoveResult
   Engine         string
   Source         string
   Destination    string
-  Performed      bool    false under -WhatIf
+  Performed      bool    # false under -WhatIf
   SkippedCount   int
   ProjectsMoved  int
-  ConsumerCount  int     external references repointed
-  Built          bool?   $null with -NoBuild
+  ConsumerCount  int     # external references repointed
+  Built          bool?   # $null with -NoBuild
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2486,11 +2544,11 @@ Netscoot.UnityMoveResult
   Engine        string
   Source        string
   Destination   string
-  Performed     bool      false under -WhatIf
+  Performed     bool      # false under -WhatIf
   SkippedCount  int
-  MetaMoved     bool      the paired .meta moved too
-  IsAsmdef      bool      the moved asset is an .asmdef
-  ReferencedBy  string[]  asmdefs that reference a moved .asmdef; informational, refs are by name/GUID and survive
+  MetaMoved     bool      # the paired .meta moved too
+  IsAsmdef      bool      # the moved asset is an .asmdef
+  ReferencedBy  string[]  # asmdefs that reference a moved .asmdef; informational, refs are by name/GUID and survive
 ```
 
 <small>[Back to Output types](#output-types)</small>
@@ -2504,7 +2562,7 @@ Whether the installed Netscoot is behind the latest GitHub release.
 ```text
 Netscoot.Update
   Installed        version
-  Latest           version?  $null if the tag could not be parsed
+  Latest           version?  # $null if the tag could not be parsed
   Tag              string
   UpdateAvailable  bool
   Url              string

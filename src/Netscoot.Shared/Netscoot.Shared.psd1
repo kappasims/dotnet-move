@@ -6,6 +6,10 @@
     Description          = 'Shared cross-platform helpers for the Netscoot toolkit (path/git/MSBuild/solution primitives). A support module required by Netscoot.Core/.Unity/.Native; not used directly.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Core', 'Desktop')
+    # Default table views for the diagnostic/list result types and the undo-journal entries. Loaded
+    # here (Shared is imported first by every engine and the umbrella) so the views are available
+    # whenever any Netscoot type is emitted.
+    FormatsToProcess     = @('Netscoot.Format.ps1xml')
     FunctionsToExport    = @(
         'Add-MoveJournalEntry',
         'Assert-DotnetAvailable',
