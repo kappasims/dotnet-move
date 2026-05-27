@@ -115,7 +115,7 @@ The policy is stored in the `NETSCOOT_AUTOUPDATE` environment variable, so an ad
 the same states fleet-wide through Group Policy / Intune (truthy = Enabled, falsy = Disabled). A
 manual `Update-Netscoot` you run yourself works unless the policy is Disabled; the automatic `-Auto`
 check stays silent unless the policy is Enabled. `-Force` overrides a Disabled you set for yourself,
-but never one an administrator pushed machine-wide, so it cannot defeat a managed fleet's kill-switch.
+but never one an administrator pushed machine-wide.
 
 ## Usage
 
@@ -172,14 +172,12 @@ Every move supports `-WhatIf`/`-Confirm`; `-Force` enables the no-git fallback.
 
 ### Undoing
 
-Every move is recorded in a journal in a per-user data directory (`%LOCALAPPDATA%\netscoot` on
-Windows, `~/Library/Application Support/netscoot` on macOS, `~/.local/share/netscoot` on Linux),
-one file per repository, so you can reverse it later, even from a fresh session. `Undo-Netscoot`
-replays the recorded inverse (the same move with source and destination swapped), re-reconciling
-from the current state rather than restoring a stale
-snapshot. Pick what to reverse: `-Last` (the default, the most recent move), `-Id <id>` (one specific
-move), `-After <time>` (every move recorded since a time), or `-All` (everything). `-List` shows what
-is available.
+Every move is recorded in a per-user journal (one file per repository), so you can reverse it later,
+even from a fresh session. `Undo-Netscoot` replays the recorded inverse (the same move with source and
+destination swapped), re-reconciling from the current state rather than restoring a stale snapshot.
+Pick what to reverse: `-Last` (the default, the most recent move), `-Id <id>` (one specific move),
+`-After <time>` (every move recorded since a time), or `-All` (everything). `-List` shows what is
+available.
 
 A successful undo removes that entry from the journal, and the reversing move is not itself recorded,
 so repeated `-Last` calls walk the history backwards rather than toggling one move on and off. The
@@ -206,21 +204,9 @@ a1b2c3d4 2026-05-27 14:02 Move-DotnetProject src/Tarragon  libs/Tarragon
 9f3e1c77 2026-05-27 14:05 Move-Solution      Demo.slnx     build/Demo.slnx
 ```
 
-On disk each entry is one JSON line recording the reversing invocation (the mover and the swapped
-splat that `Undo-Netscoot` replays):
-
-```json
-{"id":"a1b2c3d4","timestamp":"2026-05-27T14:02:11Z","command":"Move-DotnetProject","engine":"dotnet","source":"src/Tarragon","destination":"libs/Tarragon","undo":{"command":"Move-DotnetProject","params":{"Project":"libs/Tarragon/Tarragon.csproj","Destination":"src/Tarragon"}}}
-```
-
 `-All` and `-After` walk back several moves at once, so they prompt for a yes/no confirmation that
 `-Confirm:$false` does not silence; pass `-Force` to bypass it (for automation) or `-WhatIf` to list
 the reversals first.
-
-The journal is **on by default** and stays out of the working tree: it lives in the per-user data
-directory above, so git never tracks it (and `git clean` cannot remove it) and your `.gitignore` is
-untouched. Set `$env:NETSCOOT_JOURNAL_HOME` to relocate the store (for example a roaming or managed
-path).
 
 To opt out, turn it off per repository (or for every repository) with `Set-NetscootJournal`, which
 writes the `netscoot.journal` git setting:
@@ -231,21 +217,8 @@ Set-NetscootJournal -Enabled $false -Global    # every repository on the machine
 Clear-NetscootJournal                          # also discard the existing undo history
 ```
 
-The enabled state resolves in this order, first match wins: An internal suppression flag (set by
-`Undo` around its own reverse move) → the `NETSCOOT_JOURNAL` env var (`off`/`0`/`false`) → `git
-config netscoot.journal` (local wins over global, the durable per-repository setting) → on. The env var
-trumps git config so an admin can force the choice fleet-wide; the git setting is the persistent
-per-repository default. Installing with `-NoJournal` writes the global git setting (see:
-[Install](#install)), and updates never flip it back on.
-
-Each move is written ahead of time: a `pending` record before it runs, then a `committed` record
-after, so a move interrupted by a crash is detectable (and recoverable with `Repair-NetscootJournal`).
-Writes are append-only; the journal prunes lazily, only once it outgrows its caps, dropping entries
-older than 180 days and, oldest first, anything beyond a 1 MB cap, always keeping the newest move.
-
-It is safe to delete at any time (`Clear-NetscootJournal`). Each entry is schema-versioned, so a
-newer netscoot reads an older journal, and an older netscoot ignores (never misreads) entries
-written by a newer one.
+The journal is **on by default**. For where it lives, the on-disk format, crash recovery, pruning,
+and the full opt-out precedence, see [How the journal works](#how-the-journal-works).
 
 ### Inspecting
 
@@ -270,11 +243,11 @@ Project            PresentIn         AbsentFrom
 src/Lib/Lib.csproj App.sln, Api.sln  Tools.sln
 
 PS> Get-SolutionInventory
-Solution Kind                Type   Name          Path
--------- ----                ----   ----          ----
-App.sln  Project             csproj Lib.csproj    src/Lib/Lib.csproj
-App.sln  SolutionFolder             build
-(none)   UnreferencedProject csproj Legacy.csproj tools/Legacy/Legacy.csproj
+Name          Kind                Type   Solution Path
+----          ----                ----   -------- ----
+Lib.csproj    Project             csproj App.sln  src/Lib/Lib.csproj
+build         SolutionFolder             App.sln
+Legacy.csproj UnreferencedProject csproj (none)   tools/Legacy/Legacy.csproj
 
 PS> Find-PathReference -Path ./src/Lib/Lib.csproj
 File                     Line Confidence Text
@@ -319,7 +292,8 @@ Everything netscoot writes, and where:
   data directory (`%LOCALAPPDATA%\netscoot`, `~/Library/Application Support/netscoot`, or
   `~/.local/share/netscoot`), kept out of the working tree so `git status` stays clean, and snapshots
   the files it edits to the system temp dir for rollback, removed when the move finishes. On by
-  default; see [Undoing](#undoing) to opt out or relocate the journal.
+  default; see [Undoing](#undoing) to opt out, or [How the journal works](#how-the-journal-works)
+  to relocate it.
 - **Only when you ask:** `Register-NetscootGitAlias` adds one `alias.netscoot` line to your git
   config; `install.ps1 -NoJournal` or `Set-NetscootJournal` turns the journal off, and
   `Clear-NetscootJournal` deletes a repository's journal.
@@ -338,10 +312,11 @@ netscoot reads no environment variables by default; each one below is an opt-in 
 | `NETSCOOT_AUTOUPDATE` | `true` / `false` | Backs the update policy (see [Updating](#updating)): truthy = Enabled, falsy = Disabled, unset = Manual. Prefer `Set-NetscootUpdatePolicy`; set this directly for Group Policy / Intune. |
 | `NETSCOOT_JOURNAL_SUPPRESS` | internal | Set by `Undo-Netscoot` around its own reverse move so the undo is not itself journaled. Not meant to be set by hand. |
 
-The full journaling precedence and how to turn it off live under [Undoing](#undoing).
+The full journaling precedence and how to turn it off live under
+[How the journal works](#how-the-journal-works).
 
 > [!NOTE]
-> **For sysadmins / managed fleets.** The update policy is Manual by default, so nothing checks or
+> **For sysadmins.** The update policy is Manual by default, so nothing checks or
 > updates on its own; set `NETSCOOT_AUTOUPDATE` (Group Policy / Intune) to `false` to force Disabled
 > fleet-wide or `true` for Enabled. A machine-scope Disabled blocks `Update-Netscoot` and `-Force`
 > cannot override it. See [Updating](#updating). Journaling
@@ -349,6 +324,37 @@ The full journaling precedence and how to turn it off live under [Undoing](#undo
 > (`git config [--global] netscoot.journal`), and the `NETSCOOT_JOURNAL` env var trumps that setting
 > so you can force the choice fleet-wide; the journal sits in the standard per-user data dir,
 > relocatable via `NETSCOOT_JOURNAL_HOME`.
+
+## How the journal works
+
+The journal lives in a per-user data directory (`%LOCALAPPDATA%\netscoot` on Windows,
+`~/Library/Application Support/netscoot` on macOS, `~/.local/share/netscoot` on Linux), one file per
+repository, so git never tracks it (and `git clean` cannot remove it) and your `.gitignore` is left
+untouched. Set `$env:NETSCOOT_JOURNAL_HOME` to relocate the store (for example a roaming or managed
+path).
+
+On disk each entry is one JSON line recording the reversing invocation (the mover and the swapped
+splat that `Undo-Netscoot` replays):
+
+```json
+{"id":"a1b2c3d4","timestamp":"2026-05-27T14:02:11Z","command":"Move-DotnetProject","engine":"dotnet","source":"src/Tarragon","destination":"libs/Tarragon","undo":{"command":"Move-DotnetProject","params":{"Project":"libs/Tarragon/Tarragon.csproj","Destination":"src/Tarragon"}}}
+```
+
+Each move is written ahead of time: a `pending` record before it runs, then a `committed` record
+after, so a move interrupted by a crash is detectable (and recoverable with `Repair-NetscootJournal`).
+Writes are append-only; the journal prunes lazily, only once it outgrows its caps, dropping entries
+older than 180 days and, oldest first, anything beyond a 1 MB cap, always keeping the newest move.
+
+It is safe to delete at any time (`Clear-NetscootJournal`). Each entry is schema-versioned, so a
+newer netscoot reads an older journal, and an older netscoot ignores (never misreads) entries written
+by a newer one.
+
+The enabled state resolves in this order, first match wins: an internal suppression flag (set by
+`Undo-Netscoot` around its own reverse move) → the `NETSCOOT_JOURNAL` env var (`off`/`0`/`false`) →
+`git config netscoot.journal` (local wins over global, the durable per-repository setting) → on. The
+env var trumps git config so an admin can force the choice fleet-wide; the git setting is the
+persistent per-repository default. Installing with `-NoJournal` writes the global git setting (see
+[Install](#install)), and updates never flip it back on.
 
 ## Interfaces
 
@@ -717,13 +723,14 @@ Netscoot.Capability
   PSEdition           string
   DotnetSupportsSlnx  bool
   Git                 Netscoot.ToolInfo
-                      Present  bool    # found on PATH
-                      Version  string
-                      Path     string
+                        Present  bool    # found on PATH
+                        Version  string
+                        Path     string
+
   Dotnet              Netscoot.ToolInfo
-                      Present  bool    # found on PATH
-                      Version  string
-                      Path     string
+                        Present  bool    # found on PATH
+                        Version  string
+                        Path     string
 ```
 
 ##### Examples
@@ -2115,7 +2122,7 @@ Checks GitHub for a newer release (via Test-NetscootUpdate) and, if the installe
 simpler path; this command updates installer/clone installs in place from the GitHub release. Policy kill-switch: when
 the update policy is Disabled (see Set-NetscootUpdatePolicy), this refuses to update so machine state stays managed.
 `-Force` overrides a Disabled you set for yourself (process or user scope), but NOT one an administrator pushed
-machine-wide (Group Policy / Intune), so `-Force` cannot defeat a managed fleet's kill-switch.
+machine-wide (Group Policy / Intune).
 
 ##### Parameters
 
@@ -2374,13 +2381,14 @@ Netscoot.Capability
   PSEdition           string
   DotnetSupportsSlnx  bool
   Git                 Netscoot.ToolInfo
-                      Present  bool    # found on PATH
-                      Version  string
-                      Path     string
+                        Present  bool    # found on PATH
+                        Version  string
+                        Path     string
+
   Dotnet              Netscoot.ToolInfo
-                      Present  bool    # found on PATH
-                      Version  string
-                      Path     string
+                        Present  bool    # found on PATH
+                        Version  string
+                        Path     string
 ```
 
 [Back to Output types](#output-types)
