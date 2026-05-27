@@ -486,7 +486,7 @@ Read-only audits. These change nothing.
 
 **Manage**
 
-Reconcile a repository, undo moves, control the journal, stay current, and the git verb.
+Reconcile a repository, undo moves, and control the journal.
 
 *Reconcile*
 
@@ -502,6 +502,10 @@ Reconcile a repository, undo moves, control the journal, stay current, and the g
 | <small>[Undo-Netscoot](#undo-netscoot)</small> | <small>Reverse previous netscoot moves from the per-user journal.</small> |
 | <small>[Set-NetscootJournal](#set-netscootjournal)</small> | <small>Turn the move journal on or off, per repository (default) or for every repository (`-Global`).</small> |
 | <small>[Clear-NetscootJournal](#clear-netscootjournal)</small> | <small>Delete a repository's move journal, discarding its undo history.</small> |
+
+**Install & environment**
+
+Manage the installation itself and wire up the git integration. Neither is part of a move.
 
 *Stay current*
 
@@ -1127,7 +1131,7 @@ Netscoot.ImportMoveResult
 **Examples**
 
 ```powershell
-path in every consumer
+# Move a shared props/targets and fix every consumer's Import path
 Move-MSBuildImport -Path ./Shared.props -Destination ./build/Shared.props -WhatIf
 
 # Move into an existing folder (lands at ./build/Shared.props)

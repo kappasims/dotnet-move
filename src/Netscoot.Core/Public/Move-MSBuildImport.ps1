@@ -44,7 +44,7 @@ function Move-MSBuildImport {
         Netscoot.ImportMoveResult
 
     .EXAMPLE
-        # Move a shared props/targets and fix the <Import> path in every consumer
+        # Move a shared props/targets and fix every consumer's Import path
         Move-MSBuildImport -Path ./Shared.props -Destination ./build/Shared.props -WhatIf
         # Move into an existing folder (lands at ./build/Shared.props)
         Move-MSBuildImport -Path ./Shared.props -Destination ./build

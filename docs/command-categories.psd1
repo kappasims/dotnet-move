@@ -22,12 +22,18 @@
         },
         @{
             Name  = 'Manage'
-            Blurb = 'Reconcile a repository, undo moves, control the journal, stay current, and the git verb.'
+            Blurb = 'Reconcile a repository, undo moves, and control the journal.'
             Subcategories = @(
                 @{ Name = 'Reconcile';      Commands = @('Repair-SolutionReferences', 'Sync-Solution') }
                 @{ Name = 'Undo & journal'; Commands = @('Undo-Netscoot', 'Set-NetscootJournal', 'Clear-NetscootJournal') }
-                @{ Name = 'Stay current';   Commands = @('Test-NetscootUpdate', 'Update-Netscoot') }
-                @{ Name = 'Git verb';       Commands = @('Register-NetscootGitAlias', 'Unregister-NetscootGitAlias') }
+            )
+        },
+        @{
+            Name  = 'Install & environment'
+            Blurb = 'Manage the installation itself and wire up the git integration. Neither is part of a move.'
+            Subcategories = @(
+                @{ Name = 'Stay current'; Commands = @('Test-NetscootUpdate', 'Update-Netscoot') }
+                @{ Name = 'Git verb';     Commands = @('Register-NetscootGitAlias', 'Unregister-NetscootGitAlias') }
             )
         }
     )
