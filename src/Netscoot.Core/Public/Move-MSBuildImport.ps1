@@ -2,13 +2,13 @@ function Move-MSBuildImport {
     <#
     .SYNOPSIS
         Move a shared MSBuild .props/.targets file and fix every project (or other
-        props/targets) that imports it via <Import Project="...">.
+        props/targets) that imports it via `<Import Project="...">`.
 
     .DESCRIPTION
-        There is no dotnet CLI for <Import>, so this reconciles the relative Import paths
+        There is no dotnet CLI for `<Import>`, so this reconciles the relative Import paths
         directly with precise, formatting- and BOM-preserving text edits (it replaces the
-        exact Project="<value>" token captured from the XML, not a blind regex). It also
-        fixes the moved file's own outgoing <Import> paths, which break when its location
+        exact `Project="<value>"` token captured from the XML, not a blind regex). It also
+        fixes the moved file's own outgoing `<Import>` paths, which break when its location
         changes. The $(MSBuildThisFileDirectory) token is resolved/preserved; other $(...)
         tokens are reported as unresolved rather than guessed.
 

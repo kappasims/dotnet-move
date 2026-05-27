@@ -463,7 +463,7 @@ Relocate a project, folder, file, module, or asset and reconcile what the move w
 | <small>[Move-DotnetProjectTree](#move-dotnetprojecttree)</small> | <small>Move a folder that contains one or more managed .NET projects, reconciling solution membership and every external project reference in one operation.</small> |
 | <small>[Move-DotnetFile](#move-dotnetfile)</small> | <small>Move a single managed .NET file and reconcile references, routing by extension to the right specialist.</small> |
 | <small>[Move-DotnetFolder](#move-dotnetfolder)</small> | <small>Move a folder of managed .NET projects, reconciling references.</small> |
-| <small>[Move-MSBuildImport](#move-msbuildimport)</small> | <small>Move a shared MSBuild .props/.targets file and fix every project (or other props/targets) that imports it via &lt;Import Project="..."&gt;.</small> |
+| <small>[Move-MSBuildImport](#move-msbuildimport)</small> | <small>Move a shared MSBuild .props/.targets file and fix every project (or other props/targets) that imports it via `<Import Project="...">`.</small> |
 | <small>[Move-Solution](#move-solution)</small> | <small>Move a solution file (.sln/.slnx) and rebase the relative project paths it stores, so every project it references still resolves from the solution's new location.</small> |
 | <small>[Move-PowerShell](#move-powershell)</small> | <small>Move a PowerShell item and reconcile references, routing by type to the right specialist.</small> |
 | <small>[Move-PowerShellScript](#move-powershellscript)</small> | <small>Move a standalone .ps1 script and fix the relative paths in scripts that dot-source or call it (and the moved script's own dot-source/call paths).</small> |
@@ -1073,7 +1073,7 @@ Move-DotnetProjectTree -Path ./src/Group -Destination ./libs/Group -NoBuild
 ### Move-MSBuildImport
 
 Move a shared MSBuild .props/.targets file and fix every project (or other
-props/targets) that imports it via &lt;Import Project="..."&gt;.
+props/targets) that imports it via `<Import Project="...">`.
 
 **Syntax**
 
@@ -1081,10 +1081,10 @@ props/targets) that imports it via &lt;Import Project="..."&gt;.
 Move-MSBuildImport [-Path] <string> -Destination <string> [-RepositoryRoot <string>] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-There is no dotnet CLI for &lt;Import&gt;, so this reconciles the relative Import paths
+There is no dotnet CLI for `<Import>`, so this reconciles the relative Import paths
 directly with precise, formatting- and BOM-preserving text edits (it replaces the
-exact Project="&lt;value&gt;" token captured from the XML, not a blind regex). It also
-fixes the moved file's own outgoing &lt;Import&gt; paths, which break when its location
+exact `Project="<value>"` token captured from the XML, not a blind regex). It also
+fixes the moved file's own outgoing `<Import>` paths, which break when its location
 changes. The `$(MSBuildThisFileDirectory)` token is resolved/preserved; other `$(...)`
 tokens are reported as unresolved rather than guessed.
 
