@@ -24,7 +24,7 @@ function Move-DotnetProject {
         Where to move the project folder, following `git mv` rules: if Destination is an existing
         directory the folder moves into it (keeping its name, e.g. './libs' -> './libs/Tarragon');
         otherwise Destination is the project's new folder path (a rename, './libs/Tarragon'). The
-        project file and its sibling contents move as one. Errors if the resulting folder exists.
+        project file and its sibling contents move as one.
 
     .PARAMETER RepositoryRoot
         Root to scan for solutions/consumers. Defaults to the enclosing git repository root.

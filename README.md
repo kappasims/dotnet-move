@@ -74,14 +74,6 @@ No-script option: download the latest release zip from the
 `Netscoot.Shared`, `Netscoot.Core`, `Netscoot.Unity`, `Netscoot.Native`, and `netscoot`
 folders out of `src/` into any directory on your `$env:PSModulePath`.
 
-Or, only if you are comfortable running
-[the install script](https://github.com/kappasims/netscoot/blob/master/install.ps1) unread, pipe it
-straight in:
-
-```powershell
-irm https://raw.githubusercontent.com/kappasims/netscoot/master/install.ps1 | iex
-```
-
 netscoot keeps an undo journal in a per-user data directory so you can reverse a move later (see [Undoing](#undoing)).
 It is **on by default**. To install with it off, add `-NoJournal` (sets `git config --global
 netscoot.journal false`, or the `NETSCOOT_JOURNAL` env var with no git; updates never turn it back on):
@@ -111,7 +103,7 @@ A single policy governs automatic behavior, set with `Set-NetscootUpdatePolicy` 
 | :--- | :--- | :--- |
 | `Enabled` | runs | allowed |
 | `Manual` (default) | no-op | allowed (when you run it) |
-| `Disabled` | no-op | refused (`-Force` overrides) |
+| `Disabled` | no-op | refused (`-Force` overrides a Disabled you set yourself, not an admin one) |
 
 ```powershell
 Set-NetscootUpdatePolicy -State Enabled              # opt in: a SessionStart hook's -Auto check now runs
@@ -122,7 +114,8 @@ Get-NetscootUpdatePolicy                             # show the effective state 
 The policy is stored in the `NETSCOOT_AUTOUPDATE` environment variable, so an administrator can set
 the same states fleet-wide through Group Policy / Intune (truthy = Enabled, falsy = Disabled). A
 manual `Update-Netscoot` you run yourself works unless the policy is Disabled; the automatic `-Auto`
-check stays silent unless the policy is Enabled.
+check stays silent unless the policy is Enabled. `-Force` overrides a Disabled you set for yourself,
+but never one an administrator pushed machine-wide, so it cannot defeat a managed fleet's kill-switch.
 
 ## Usage
 
@@ -193,7 +186,7 @@ so repeated `-Last` calls walk the history backwards rather than toggling one mo
 bulk modes reverse newest-first, so each step re-reconciles after the moves that followed it are gone.
 
 Undo applies to the move commands. `Sync-Solution` and `Repair-SolutionReferences` are not journaled;
-both take `-WhatIf` to preview before they change anything.
+preview either with `-WhatIf` first if you want to (as with any command here, it is optional).
 
 ```powershell
 Undo-Netscoot -List                       # what can be undone (oldest first)
@@ -224,11 +217,10 @@ splat that `Undo-Netscoot` replays):
 `-Confirm:$false` does not silence; pass `-Force` to bypass it (for automation) or `-WhatIf` to list
 the reversals first.
 
-The journal is **on by default** and stays out of the working tree: It lives in the per-user data
-directory above, so git never tracks it, `git status` never shows it, and your own `.gitignore` is
-left untouched. It survives `git clean` and repository deletion, and normal backup (Time Machine,
-roaming profiles, JAMF/Intune) covers it. Set `$env:NETSCOOT_JOURNAL_HOME` to relocate the store
-(for example to a roaming or managed path).
+The journal is **on by default** and stays out of the working tree: it lives in the per-user data
+directory above, so git never tracks it (and `git clean` cannot remove it) and your `.gitignore` is
+untouched. Set `$env:NETSCOOT_JOURNAL_HOME` to relocate the store (for example a roaming or managed
+path).
 
 To opt out, turn it off per repository (or for every repository) with `Set-NetscootJournal`, which
 writes the `netscoot.journal` git setting:
@@ -251,9 +243,9 @@ after, so a move interrupted by a crash is detectable (and recoverable with `Rep
 Writes are append-only; the journal prunes lazily, only once it outgrows its caps, dropping entries
 older than 180 days and, oldest first, anything beyond a 1 MB cap, always keeping the newest move.
 
-The journal is local, per-user, and disposable: it is safe to delete (`Clear-NetscootJournal`) at any
-time. Each entry is schema-versioned, so a newer netscoot reads an older journal, and an older
-netscoot ignores (does not misread) entries written by a newer one.
+It is safe to delete at any time (`Clear-NetscootJournal`). Each entry is schema-versioned, so a
+newer netscoot reads an older journal, and an older netscoot ignores (never misreads) entries
+written by a newer one.
 
 ### Inspecting
 
@@ -351,7 +343,8 @@ The full journaling precedence and how to turn it off live under [Undoing](#undo
 > [!NOTE]
 > **For sysadmins / managed fleets.** The update policy is Manual by default, so nothing checks or
 > updates on its own; set `NETSCOOT_AUTOUPDATE` (Group Policy / Intune) to `false` to force Disabled
-> fleet-wide (blocks `Update-Netscoot`) or `true` for Enabled. See [Updating](#updating). Journaling
+> fleet-wide or `true` for Enabled. A machine-scope Disabled blocks `Update-Netscoot` and `-Force`
+> cannot override it. See [Updating](#updating). Journaling
 > is controllable per repository or globally
 > (`git config [--global] netscoot.journal`), and the `NETSCOOT_JOURNAL` env var trumps that setting
 > so you can force the choice fleet-wide; the journal sits in the standard per-user data dir,
@@ -476,15 +469,9 @@ therefore prepared on `develop` and `master` is fast-forwarded to it. Run both f
    runs on the push; run `platforms.yml` for Linux and macOS (`tools/Invoke-PlatformCI.ps1`).
 3. **Finalize:** `./build.ps1 -Task Release -Version X.Y.Z -Publish`. It fast-forwards `master` to
    that commit (the protected push is accepted only because the checks passed on it), tags, pushes,
-   creates the GitHub release, and returns you to `develop`.
-
-The requirements, restated:
-
-- **From `master`, always** - never tag `develop`. The tooling enforces it: `master` is protected
-  and rejects any commit whose CI checks are not green, admins included.
-- **All three platforms green** (Windows, Linux, macOS) **plus static analysis**, before the tag.
-  GitHub enforces the `ci.yml` checks; the Linux/macOS `platforms.yml` run is the manual step in 2.
-- **Version equals the tag** - `ModuleVersion` in every manifest matches `vX.Y.Z`.
+   creates the GitHub release, and returns you to `develop`. `master` is protected and rejects any
+   commit whose CI checks are not green (admins included), so a tag can only ever sit on a
+   CI-passed commit, with `ModuleVersion` in every manifest equal to it.
 
 The PowerShell Gallery is a separate step: `./build.ps1 -Task Publish -ApiKey <key>` assembles and
 publishes the single bundled package (a dry run without `-ApiKey`).
@@ -1057,7 +1044,7 @@ surfaced as a Warning (or, with `-Strict`, a non- terminating error honoring `-E
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `‑Project` | String | true | true (ByValue, ByPropertyName) | Path to the project file (`.csproj/.fsproj/.vbproj`). Accepts pipeline input - pipe a path string or any object with a FullName/Path property (e.g. Get-Item output). |
-| `‑Destination` | String | true | false | Where to move the project folder, following `git mv` rules: if Destination is an existing directory the folder moves into it (keeping its name, e.g. './libs' -&gt; './libs/Tarragon'); otherwise Destination is the project's new folder path (a rename, './libs/Tarragon'). The project file and its sibling contents move as one. Errors if the resulting folder exists. |
+| `‑Destination` | String | true | false | Where to move the project folder, following `git mv` rules: if Destination is an existing directory the folder moves into it (keeping its name, e.g. './libs' -&gt; './libs/Tarragon'); otherwise Destination is the project's new folder path (a rename, './libs/Tarragon'). The project file and its sibling contents move as one. |
 | `‑RepositoryRoot` | String | false | false | Root to scan for solutions/consumers. Defaults to the enclosing git repository root. |
 | `‑Strict` | SwitchParameter | false | false | Escalate solution-divergence warnings to non-terminating errors. |
 | `‑NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build' at the end. |
@@ -1134,7 +1121,7 @@ ShouldContinue); supports `-WhatIf`.
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `‑Path` | String | true | true (ByValue, ByPropertyName) | The folder to move. Accepts pipeline input. |
-| `‑Destination` | String | true | false | Where to move the folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the folder's new path. Errors if the result exists. |
+| `‑Destination` | String | true | false | Where to move the folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the folder's new path. |
 | `‑RepositoryRoot` | String | false | false | Root to scan. Defaults to the enclosing git repository root. |
 | `‑NoBuild` | SwitchParameter | false | false | Skip the verifying build of the moved projects. |
 | `‑Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
@@ -1321,7 +1308,7 @@ automatically.
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `‑ModulePath` | String | true | true (ByValue, ByPropertyName) | Path to the module folder, or directly to its `.psd1` manifest. |
-| `‑Destination` | String | true | false | Where to move the module folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the module's new folder path. Errors if it exists. |
+| `‑Destination` | String | true | false | Where to move the module folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the module's new folder path. |
 | `‑Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `‑NoJournal` | SwitchParameter | false | false | Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-Netscoot will not see this move). |
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
@@ -2195,7 +2182,7 @@ surfacing them beats silently mis-editing them.
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `‑Project` | String | true | true (ByValue, ByPropertyName) | Path to the `.vcxproj`. Accepts pipeline input. |
-| `‑Destination` | String | true | false | Where to move the project folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the new folder path. Errors if it exists. |
+| `‑Destination` | String | true | false | Where to move the project folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the new folder path. |
 | `‑RepositoryRoot` | String | false | false | Root to scan for solutions. Defaults to the enclosing git repository root. |
 | `‑Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `‑NoJournal` | SwitchParameter | false | false | Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-Netscoot will not see this move). |
@@ -2260,7 +2247,7 @@ preserved.
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `‑AssetPath` | String | true | true (ByValue, ByPropertyName) | Asset file or folder to move (under Assets/ or a package). Accepts pipeline input. |
-| `‑Destination` | String | true | false | Where to move the asset/folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the new path. Errors if it exists. |
+| `‑Destination` | String | true | false | Where to move the asset/folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the new path. |
 | `‑RepositoryRoot` | String | false | false | Root to scan for asmdef referencers. Defaults to the enclosing git repository root. |
 | `‑Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `‑NoJournal` | SwitchParameter | false | false | Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-Netscoot will not see this move). |

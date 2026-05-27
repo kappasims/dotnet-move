@@ -23,7 +23,7 @@ function Move-UnityAsset {
 
     .PARAMETER Destination
         Where to move the asset/folder, following `git mv` rules: An existing directory means move
-        into it (keeping the name); otherwise it is the new path. Errors if it exists.
+        into it (keeping the name); otherwise it is the new path.
 
     .PARAMETER RepositoryRoot
         Root to scan for asmdef referencers. Defaults to the enclosing git repository root.

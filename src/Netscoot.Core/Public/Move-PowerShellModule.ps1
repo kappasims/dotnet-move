@@ -17,7 +17,7 @@ function Move-PowerShellModule {
 
     .PARAMETER Destination
         Where to move the module folder, following `git mv` rules: An existing directory means move
-        into it (keeping the name); otherwise it is the module's new folder path. Errors if it exists.
+        into it (keeping the name); otherwise it is the module's new folder path.
 
     .PARAMETER Force
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
