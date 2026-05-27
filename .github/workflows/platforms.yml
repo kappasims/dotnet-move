@@ -29,10 +29,20 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      # Ubuntu/macOS runners ship pwsh; build.ps1 no longer auto-installs Pester.
+      # Cache the CurrentUser module dir so Pester is not re-pulled from PSGallery every run.
+      # pwsh on Linux/macOS installs CurrentUser modules under ~/.local/share/powershell/Modules.
+      - name: Cache Pester
+        id: cache-pester
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/powershell/Modules/Pester/5.7.1
+          key: pester-5.7.1-${{ matrix.os }}
+
+      # Ubuntu/macOS runners ship pwsh; build.ps1 no longer auto-installs Pester (cache miss only).
       - name: Install Pester
+        if: steps.cache-pester.outputs.cache-hit != 'true'
         shell: pwsh
-        run: Install-Module Pester -MinimumVersion 5.0 -Scope CurrentUser -Force -SkipPublisherCheck
+        run: Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck
 
       - name: Run tests
         shell: pwsh
