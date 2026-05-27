@@ -202,6 +202,11 @@ function Invoke-DocsTask {
             $ext = 'csproj|fsproj|vbproj|sln|slnx|props|targets|ps1|psd1|psm1|vcxproj|meta'
             $s = [regex]::Replace($s, '(?<![\w' + $bt + './-])\.?[\w][\w./-]*\.(' + $ext + ')\b', { param($mm) '`' + $mm.Value + '`' })
             $s = [regex]::Replace($s, '(?<![\w' + $bt + './])\.(' + $ext + ')\b', { param($mm) '`' + $mm.Value + '`' })
+            # A literal backslash immediately before a backtick we just inserted (e.g. a Windows
+            # path "$dir\x.ps1" -> `$dir`\`x.ps1`) reads as a markdown-escaped backtick, which
+            # unbalances code-span pairing for the rest of the paragraph (a phantom MD038). Double
+            # the backslash so it stays literal and the backtick keeps its delimiter role.
+            $s = $s -replace '\\(?=`)', '\\'
             # Escape < > so they are not read as HTML tags.
             $s.Replace('<', '&lt;').Replace('>', '&gt;')
         }
@@ -214,6 +219,32 @@ function Invoke-DocsTask {
         }
         if ($pos -lt $Text.Length) { [void]$sb.Append((& $prose $Text.Substring($pos))) }
         $sb.ToString()
+    }
+
+    # Re-wrap prose to <= $Width columns so generated lines satisfy markdownlint MD013. Markdown
+    # links ([text](url)) and inline code spans (`code`) are treated as atomic tokens, so a wrap
+    # never lands inside one (a break in [Output types] or a URL would corrupt the link). Existing
+    # newlines (paragraph structure, blank lines) are preserved; only overlong lines re-flow, and a
+    # soft break renders as a space, so the output reads identically to the unwrapped text.
+    function Format-Wrap {
+        param([string]$Text, [int]$Width = 120)
+        # A "word" is a maximal run of non-space characters, except whitespace inside a markdown
+        # link ([text](url)) or a code span (`code`) does not split it - so punctuation that abuts a
+        # span (`-Force`).) stays attached and no spurious space is introduced when words rejoin.
+        $tokenRe = [regex]'(?:\[[^\]]*\]\([^)]*\)|`[^`]*`|\S)+'
+        $out = [System.Collections.Generic.List[string]]::new()
+        foreach ($line in ($Text -split "`n", -1)) {
+            if ($line.Length -le $Width) { $out.Add($line); continue }
+            $cur = ''
+            foreach ($m in $tokenRe.Matches($line)) {
+                $tok = $m.Value
+                if (-not $cur) { $cur = $tok }
+                elseif (($cur.Length + 1 + $tok.Length) -le $Width) { $cur = $cur + ' ' + $tok }
+                else { $out.Add($cur); $cur = $tok }
+            }
+            if ($cur) { $out.Add($cur) }
+        }
+        $out -join "`n"
     }
 
     # Output-type registry (typedefs). Each cmdlet declares the type(s) it emits via
@@ -312,7 +343,7 @@ function Invoke-DocsTask {
     $emittedBy = @{}   # type name -> @(command names) that declare it via [OutputType]
 
     # Two subsections under the hand-written "# Reference": the commands, then the output types.
-    [void]$sb.AppendLine('## Command reference')
+    [void]$sb.AppendLine('### Command reference')
     [void]$sb.AppendLine()
 
     # One-sentence "what it does" blurb per command, from its synopsis (first sentence). Built once
@@ -345,15 +376,15 @@ function Invoke-DocsTask {
     # bold name and a blurb paragraph, then a command table; Manage splits into italic-headed
     # sub-tables (Reconcile, Undo & journal, ...). Driven by docs/command-categories.psd1.
     foreach ($cat in $commandCategories.Categories) {
-        [void]$sb.AppendLine("**$($cat.Name)**")
+        [void]$sb.AppendLine("#### $($cat.Name)")
         [void]$sb.AppendLine()
-        if ($cat.Blurb) { [void]$sb.AppendLine((ConvertTo-MdText $cat.Blurb)); [void]$sb.AppendLine() }
+        if ($cat.Blurb) { [void]$sb.AppendLine((Format-Wrap (ConvertTo-MdText $cat.Blurb))); [void]$sb.AppendLine() }
         if ($cat.Commands) {
             Add-IndexTable -Commands $cat.Commands
         }
         if ($cat.Subcategories) {
             foreach ($sub in $cat.Subcategories) {
-                [void]$sb.AppendLine("*$($sub.Name)*")
+                [void]$sb.AppendLine("##### $($sub.Name)")
                 [void]$sb.AppendLine()
                 Add-IndexTable -Commands $sub.Commands
             }
@@ -369,12 +400,12 @@ function Invoke-DocsTask {
             # Horizontal rule before each command so the entries read as distinct blocks.
             [void]$sb.AppendLine('---')
             [void]$sb.AppendLine()
-            [void]$sb.AppendLine("### $($c.Name)")
+            [void]$sb.AppendLine("#### $($c.Name)")
             [void]$sb.AppendLine()
             $syn = "$($h.Synopsis)".Trim()
-            if ($syn) { [void]$sb.AppendLine((ConvertTo-MdText $syn)); [void]$sb.AppendLine() }
+            if ($syn) { [void]$sb.AppendLine((Format-Wrap (ConvertTo-MdText $syn))); [void]$sb.AppendLine() }
 
-            [void]$sb.AppendLine('**Syntax**')
+            [void]$sb.AppendLine('##### Syntax')
             [void]$sb.AppendLine()
             [void]$sb.AppendLine('```powershell')
             [void]$sb.AppendLine((Get-Command $c.Name -Syntax).Trim())
@@ -382,11 +413,11 @@ function Invoke-DocsTask {
             [void]$sb.AppendLine()
 
             $desc = Format-HelpText $h.description
-            if ($desc) { [void]$sb.AppendLine((ConvertTo-MdText $desc)); [void]$sb.AppendLine() }
+            if ($desc) { [void]$sb.AppendLine((Format-Wrap (ConvertTo-MdText $desc))); [void]$sb.AppendLine() }
 
             $params = @($h.parameters.parameter | Where-Object { $_.name })
             if ($params.Count) {
-                [void]$sb.AppendLine('**Parameters**')
+                [void]$sb.AppendLine('##### Parameters')
                 [void]$sb.AppendLine()
                 $hdr = @('Name', 'Type', 'Required', 'Pipeline', 'Description') | ForEach-Object { Format-Small $_ }
                 [void]$sb.AppendLine('| ' + ($hdr -join ' | ') + ' |')
@@ -413,7 +444,7 @@ function Invoke-DocsTask {
             foreach ($t in $registered) { $emittedBy[$t] = @($emittedBy[$t]) + $c.Name | Where-Object { $_ } }
 
             if ($registered.Count -or $outRaw) {
-                [void]$sb.AppendLine('**Output**')
+                [void]$sb.AppendLine('##### Output')
                 [void]$sb.AppendLine()
                 if ($dispatchDiagrams.ContainsKey($c.Name)) {
                     # Routes by extension/type: show the mapping as a diagram, not a sentence.
@@ -427,19 +458,19 @@ function Invoke-DocsTask {
                     } else {
                         "Returns a single $(Format-TypeLink $t)."
                     }
-                    [void]$sb.AppendLine($lead)
-                    if ($outNote) { [void]$sb.AppendLine((ConvertTo-MdText $outNote)) }
+                    [void]$sb.AppendLine((Format-Wrap $lead))
+                    if ($outNote) { [void]$sb.AppendLine((Format-Wrap (ConvertTo-MdText $outNote))) }
                     [void]$sb.AppendLine()
                     [void]$sb.AppendLine('```text')
                     [void]$sb.AppendLine((Format-TypeCodeView $t $def))
                     [void]$sb.AppendLine('```')
                 } elseif ($registered.Count -gt 1) {
-                    [void]$sb.AppendLine((ConvertTo-MdText ($(if ($outNote) { $outNote } else { 'The result object from the command it routes to; the concrete type varies.' }))))
+                    [void]$sb.AppendLine((Format-Wrap (ConvertTo-MdText ($(if ($outNote) { $outNote } else { 'The result object from the command it routes to; the concrete type varies.' })))))
                     [void]$sb.AppendLine()
                     foreach ($t in $registered) { [void]$sb.AppendLine("- $(Format-TypeLink $t)") }
                 } else {
                     # No registered typedef (e.g. a plain string, or None) - render the prose as-is.
-                    [void]$sb.AppendLine((ConvertTo-MdText $outRaw))
+                    [void]$sb.AppendLine((Format-Wrap (ConvertTo-MdText $outRaw)))
                 }
                 # When a command emits several types, say whether they are related or heterogeneous.
                 if ($registered.Count -gt 1) {
@@ -447,9 +478,9 @@ function Invoke-DocsTask {
                     [void]$sb.AppendLine()
                     if ($common.Count) {
                         $shared = ($common | ForEach-Object { $_.Name }) -join ', '
-                        [void]$sb.AppendLine("These share a common shape ($shared) and each adds its own fields; they are plain pscustomobjects with no shared base type. See [Output types](#output-types).")
+                        [void]$sb.AppendLine((Format-Wrap "These share a common shape ($shared) and each adds its own fields; they are plain pscustomobjects with no shared base type. See [Output types](#output-types)."))
                     } else {
-                        [void]$sb.AppendLine('These result types are heterogeneous - they share no common fields. See [Output types](#output-types).')
+                        [void]$sb.AppendLine((Format-Wrap 'These result types are heterogeneous - they share no common fields. See [Output types](#output-types).'))
                     }
                 }
                 [void]$sb.AppendLine()
@@ -457,14 +488,14 @@ function Invoke-DocsTask {
 
             $examples = @($h.examples.example | Where-Object { $_ -and -not [string]::IsNullOrWhiteSpace("$($_.code)") })
             if ($examples.Count) {
-                [void]$sb.AppendLine('**Examples**')
+                [void]$sb.AppendLine('##### Examples')
                 [void]$sb.AppendLine()
                 foreach ($e in $examples) {
                     [void]$sb.AppendLine('```powershell')
                     [void]$sb.AppendLine((Format-ExampleCode "$($e.code)"))
                     [void]$sb.AppendLine('```')
                     $rem = Format-HelpText $e.remarks
-                    if ($rem) { [void]$sb.AppendLine(); [void]$sb.AppendLine((ConvertTo-MdText $rem)) }
+                    if ($rem) { [void]$sb.AppendLine(); [void]$sb.AppendLine((Format-Wrap (ConvertTo-MdText $rem))) }
                     [void]$sb.AppendLine()
                 }
             }
@@ -488,9 +519,9 @@ function Invoke-DocsTask {
             if ($typeDefs.ContainsKey($ft)) { $nestedIn[$ft] = @($nestedIn[$ft]) + $name | Where-Object { $_ } }
         }
     }
-    [void]$sb.AppendLine('## Output types')
+    [void]$sb.AppendLine('### Output types')
     [void]$sb.AppendLine()
-    [void]$sb.AppendLine('Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several (and some types are also used as a field on another); whether a given command returns one or a collection is stated in that command''s Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `Netscoot.*` field is itself one of these types.')
+    [void]$sb.AppendLine((Format-Wrap 'Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several (and some types are also used as a field on another); whether a given command returns one or a collection is stated in that command''s Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `Netscoot.*` field is itself one of these types.'))
     [void]$sb.AppendLine()
     $sortedTypes = @($typeDefs.Keys | Sort-Object)
     [void]$sb.AppendLine('| ' + (Format-Small 'Type') + ' | ' + (Format-Small 'Represents') + ' |')
@@ -502,15 +533,15 @@ function Invoke-DocsTask {
     [void]$sb.AppendLine()
     foreach ($name in $sortedTypes) {
         $def = $typeDefs[$name]
-        [void]$sb.AppendLine("### $name")
+        [void]$sb.AppendLine("#### $name")
         [void]$sb.AppendLine()
         # Cross-references as a compact bracketed list (no label), one font size down. The link
         # text - a command name or a Netscoot.* type - is self-describing.
         $refs = @()
         if ($emittedBy[$name]) { $refs += @(@($emittedBy[$name]) | Sort-Object -Unique | ForEach-Object { "[$_](#$($_.ToLower()))" }) }
         if ($nestedIn[$name]) { $refs += @(@($nestedIn[$name]) | Sort-Object -Unique | ForEach-Object { Format-TypeLink $_ }) }
-        if ($refs.Count) { [void]$sb.AppendLine((Format-Small ('[ ' + ($refs -join ' | ') + ' ]'))); [void]$sb.AppendLine() }
-        if ($def.Summary) { [void]$sb.AppendLine((ConvertTo-MdText $def.Summary)); [void]$sb.AppendLine() }
+        if ($refs.Count) { [void]$sb.AppendLine((Format-Wrap ('[ ' + ($refs -join ' | ') + ' ]'))); [void]$sb.AppendLine() }
+        if ($def.Summary) { [void]$sb.AppendLine((Format-Wrap (ConvertTo-MdText $def.Summary))); [void]$sb.AppendLine() }
         [void]$sb.AppendLine('```text')
         [void]$sb.AppendLine((Format-TypeCodeView $name $def))
         [void]$sb.AppendLine('```')
@@ -524,7 +555,9 @@ function Invoke-DocsTask {
     # section if the markers are not present yet).
     $begin = '<!-- BEGIN GENERATED REFERENCE -->'
     $end = '<!-- END GENERATED REFERENCE -->'
-    $note = "<!-- Regenerate with ./build.ps1 -Task Docs. Generated from the cmdlets' comment-based help in src/; do not hand-edit between these markers. -->"
+    # Split across two lines so the comment itself stays within the MD013 line-length budget.
+    $note = "<!-- Regenerate with ./build.ps1 -Task Docs. Generated from the cmdlets' comment-based`n" +
+            'help in src/; do not hand-edit between these markers. -->'
     $section = "$begin`n$note`n`n" + $sb.ToString().TrimEnd() + "`n`n$end"
 
     $readmePath = [System.IO.Path]::Combine($root, 'README.md')
