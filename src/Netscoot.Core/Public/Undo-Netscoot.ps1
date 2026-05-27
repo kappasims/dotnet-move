@@ -6,7 +6,7 @@ function Undo-Netscoot {
     .DESCRIPTION
         Each move is recorded in the journal (a per-user data directory: LocalAppData on Windows,
         ~/Library/Application Support on macOS, ~/.local/share on Linux; one file per repository) with
-        its inverse: the same mover run with source and destination
+        its inverse: The same mover run with source and destination
         swapped. Undo-Netscoot replays that inverse, re-reconciling the solutions, references, and
         GUIDs from the CURRENT state (more robust than restoring a stale snapshot). By default it
         undoes the most recent move and pops it from the journal, so calling again walks further back
@@ -19,7 +19,7 @@ function Undo-Netscoot {
         moves made after it, so prefer undoing in reverse order.
 
         -All reverses every journaled move (newest first) in one operation. Because that walks back
-        the entire history at once it is high-impact: it prompts for a yes/no confirmation that is not
+        the entire history at once it is high-impact: It prompts for a yes/no confirmation that is not
         silenced by -Confirm:$false; pass -Force to bypass the prompt (for automation) or -WhatIf to
         preview each reversal without making changes.
 

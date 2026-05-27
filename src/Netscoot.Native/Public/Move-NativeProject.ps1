@@ -11,7 +11,7 @@ function Move-NativeProject {
         <Import> of shared .props/.targets, $(SolutionDir)-relative OutDir, and the paired
         .vcxproj.filters. C++/CLI is Windows-only, so this cmdlet refuses to run elsewhere.
 
-        It will: update .sln/.slnx membership via 'dotnet sln' (which understands .vcxproj),
+        It will: Update .sln/.slnx membership via 'dotnet sln' (which understands .vcxproj),
         move the folder (git mv when tracked), move the paired .vcxproj.filters alongside,
         and then emit a report of every relative/SolutionDir-relative native setting that a
         human (or a future native engine) must verify. It deliberately does not rewrite those
@@ -21,7 +21,7 @@ function Move-NativeProject {
         Path to the .vcxproj. Accepts pipeline input.
 
     .PARAMETER Destination
-        Where to move the project folder, following `git mv` rules: an existing directory means
+        Where to move the project folder, following `git mv` rules: An existing directory means
         move into it (keeping the name); otherwise it is the new folder path. Errors if it exists.
 
     .PARAMETER RepoRoot
