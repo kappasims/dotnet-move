@@ -55,6 +55,7 @@ plain fields untouched by a move, so platform layouts are preserved.
 Test-UnityMetaIntegrity -Root ./Assets            # warns on problems
 Test-UnityMetaIntegrity -Root ./Assets -Strict    # non-terminating errors
 ```
+
 Reports `MissingMeta` (asset with no `.meta`) and `OrphanMeta` (`.meta` with no asset) - the
 Unity analog of dangling references.
 
@@ -65,7 +66,8 @@ Unity analog of dangling references.
 
 ## Undoing a move
 
-Every move is journaled to a per-user data directory (LocalAppData on Windows, ~/Library/Application Support on macOS, ~/.local/share on Linux), so you can reverse it later -
+Every move is journaled to a per-user data directory (LocalAppData on Windows,
+~/Library/Application Support on macOS, ~/.local/share on Linux), so you can reverse it later -
 even in a new session - with `Undo-Netscoot`. It replays the inverse (the asset and its `.meta`
 move back together).
 
@@ -93,5 +95,6 @@ you update. Check with `Test-NetscootUpdate` (it compares the installed module t
 GitHub release). Update in place with `Update-Netscoot` (no git), or re-run the installer:
 `irm https://raw.githubusercontent.com/kappasims/netscoot/master/install.ps1 | iex`. From a dev
 clone instead, `git pull` then `./build.ps1 -Task Install`. For automatic reminders, consider a
-Claude Code SessionStart hook that runs `Test-NetscootUpdate -Auto` (gated: it checks only when the update policy is Enabled, and never updates); ask the user before adding it,
+Claude Code SessionStart hook that runs `Test-NetscootUpdate -Auto` (gated: it checks only when
+the update policy is Enabled, and never updates); ask the user before adding it,
 since it edits their settings.json.
