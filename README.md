@@ -54,6 +54,9 @@ If you cannot reach the Gallery, want to read the installer first, or need to pi
 from the [GitHub release](https://github.com/kappasims/netscoot/releases) instead (it copies the
 module folders onto your module path). To update an installed copy, see [Updating](#updating).
 
+netscoot keeps a per-user undo journal so you can reverse a move later (on by default). To install or
+run with it off, see [Turning the journal off](#turning-the-journal-off).
+
 ## Usage
 
 netscoot exposes the same moves through three front ends. The PowerShell module is the core: after
@@ -264,20 +267,27 @@ a1b2c3d4 2026-05-27 14:02 Move-DotnetProject src/Tarragon  libs/Tarragon
 `-Confirm:$false` does not silence; pass `-Force` to bypass it (for automation) or `-WhatIf` to list
 the reversals first.
 
-To opt out, turn it off per repository (or for every repository) with `Set-NetscootJournal`, which
-writes the `netscoot.journal` git setting:
+#### Turning the journal off
+
+The journal is **on by default** because undo is broadly useful, but it is fully opt-out. Turn it off
+if you would rather netscoot keep no out-of-tree per-user state (privacy or a clean machine), on
+ephemeral or CI agents where you will never undo, or in a locked-down/managed environment. It is a
+git/env setting, not an install option, so the same controls work no matter how you installed -
+**including the PowerShell Gallery**:
 
 ```powershell
-Set-NetscootJournal -Enabled $false           # this repository only
-Set-NetscootJournal -Enabled $false -Global    # every repository on the machine
-Clear-NetscootJournal                          # also discard the existing undo history
+# From the Gallery (or any install): turn it off for every repository on the machine
+Install-Module Netscoot -Scope CurrentUser
+Set-NetscootJournal -Enabled $false -Global
+
+Set-NetscootJournal -Enabled $false      # just this repository
+$env:NETSCOOT_JOURNAL = 0                 # this session only (or fleet-wide via Group Policy / Intune)
+./install.ps1 -NoJournal                  # GitHub-release installer: sets the global git setting for you
+Clear-NetscootJournal                     # also discard an existing journal
 ```
 
-The journal is **on by default**, and this opt-out works the same no matter how you installed
-(PowerShell Gallery included) - it is a git/env setting, not an install option. (`install.ps1
--NoJournal` is just a shortcut that writes the global git setting for you during a GitHub-release
-install.) For where it lives, the on-disk format, crash recovery, pruning, and the full opt-out
-precedence, see [How the journal works](#how-the-journal-works).
+For where it lives, the on-disk format, crash recovery, pruning, and the full opt-out precedence, see
+[How the journal works](#how-the-journal-works).
 
 ### Updating
 
