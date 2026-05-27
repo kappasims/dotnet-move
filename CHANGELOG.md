@@ -6,6 +6,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-05-28
+
+### Fixed
+
+- `Move-DotnetProject` aborted under Windows PowerShell 5.1 (StrictMode) when a repository project
+  had a single non-literal or conditional `ProjectReference`. PowerShell 7 was unaffected.
+
 ## [2.1.0] - 2026-05-28
 
 ### Added
@@ -37,6 +44,7 @@ See the release notes for the full pull-request list.
 
 DotnetMove 1.x history predates the rename; see the legacy DotnetMove releases.
 
-[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.1.1...HEAD
+[2.1.1]: https://github.com/kappasims/netscoot/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/kappasims/netscoot/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/kappasims/netscoot/releases/tag/v2.0.0
