@@ -6,18 +6,20 @@ BeforeAll {
 
     function New-DivergentRepo {
         # Two solutions: Both.sln lists Lib+App; Partial.slnx lists App only -> Lib diverges.
-        $root = New-TempRoot -Prefix 'netscoot_div'
-        Push-Location $root
-        try {
-            & git init -q
-            New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
-            New-StubConsole -Name App -Directory (Join-Path $root 'App') | Out-Null
-            & dotnet new sln -n Both --format sln | Out-Null
-            & dotnet sln Both.sln add (Join-Path $root (Join-Path 'Lib' ('Lib.csproj'))) (Join-Path $root (Join-Path 'App' ('App.csproj'))) | Out-Null
-            & dotnet new sln -n Partial --format slnx | Out-Null
-            & dotnet sln Partial.slnx add (Join-Path $root (Join-Path 'App' ('App.csproj'))) | Out-Null
-        } finally { Pop-Location }
-        return $root
+        Copy-FixtureTemplate -Key 'divergent-both-partial' -Prefix 'netscoot_div' -Build {
+            $root = New-TempRoot -Prefix 'netscoot_div'
+            Push-Location $root
+            try {
+                & git init -q
+                New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
+                New-StubConsole -Name App -Directory (Join-Path $root 'App') | Out-Null
+                & dotnet new sln -n Both --format sln | Out-Null
+                & dotnet sln Both.sln add (Join-Path $root (Join-Path 'Lib' ('Lib.csproj'))) (Join-Path $root (Join-Path 'App' ('App.csproj'))) | Out-Null
+                & dotnet new sln -n Partial --format slnx | Out-Null
+                & dotnet sln Partial.slnx add (Join-Path $root (Join-Path 'App' ('App.csproj'))) | Out-Null
+            } finally { Pop-Location }
+            return $root
+        }
     }
 }
 

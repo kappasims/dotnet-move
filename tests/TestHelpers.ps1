@@ -72,3 +72,54 @@ function New-StubConsole {
     Set-Content -LiteralPath (Join-Path $Directory 'Program.cs') -Encoding UTF8 -Value 'System.Console.WriteLine("ok");'
     return $csproj
 }
+
+# `dotnet new sln` + `dotnet sln add` + `dotnet add reference` cost ~1-2s of CLI startup EACH, and a
+# fixture runs several of them; multiplied across the suite that is the dominant test cost. The trees
+# they build are deterministic and `dotnet sln`/git store only repo-relative paths, so a fixture
+# copied to a fresh temp root is byte-for-byte valid with no rewriting. Copy-FixtureTemplate builds a
+# given shape exactly ONCE per session (lazily, the first time a Key is requested), keeps that as an
+# immutable template, then hands every caller a fast directory COPY in its own throwaway root. The
+# template is parked in its own session dir so per-test `Remove-Item $root` never touches it. This
+# keeps each test fully independent (its own working tree + .git), so it is safe under CI sharding.
+
+$script:FixtureTemplateRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('dnm-fixtpl-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+$script:FixtureTemplates = @{}
+
+function Copy-Directory {
+    # Fast, faithful recursive copy. robocopy (Windows) is dramatically quicker than Copy-Item for a
+    # tree of small files; elsewhere fall back to Copy-Item. Both copy the whole subtree (incl. .git).
+    param([Parameter(Mandatory)][string]$Source, [Parameter(Mandatory)][string]$Destination)
+    if ($IsWindows -or $PSVersionTable.PSEdition -eq 'Desktop') {
+        New-Item -ItemType Directory -Path $Destination -Force | Out-Null
+        # /E all subdirs incl. empty, /NFL /NDL /NJH /NJS /NP quiet, /R:0 /W:0 no retries.
+        & robocopy $Source $Destination /E /NFL /NDL /NJH /NJS /NP /R:0 /W:0 | Out-Null
+        # robocopy exit codes 0-7 are success (8+ is failure); normalise so callers see no error.
+        if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($LASTEXITCODE) copying $Source -> $Destination" }
+        $global:LASTEXITCODE = 0
+    } else {
+        New-Item -ItemType Directory -Path $Destination -Force | Out-Null
+        Copy-Item -LiteralPath (Join-Path $Source '*') -Destination $Destination -Recurse -Force
+    }
+}
+
+function Copy-FixtureTemplate {
+    # Return a fresh, independent copy of the fixture identified by -Key, building it once via -Build.
+    # -Build is a scriptblock that creates the fixture and returns its repo-root path (the same
+    # contract the old New-*Fixture bodies already had); it runs at most once per Key per session.
+    # -Prefix names the per-test temp root.
+    param(
+        [Parameter(Mandatory)][string]$Key,
+        [Parameter(Mandatory)][scriptblock]$Build,
+        [string]$Prefix = 'netscoot'
+    )
+    if (-not $script:FixtureTemplates.ContainsKey($Key)) {
+        $built = & $Build
+        $tpl = Join-Path $script:FixtureTemplateRoot $Key
+        Copy-Directory -Source $built -Destination $tpl
+        Remove-Item -LiteralPath $built -Recurse -Force -ErrorAction SilentlyContinue
+        $script:FixtureTemplates[$Key] = $tpl
+    }
+    $dest = New-TempRoot -Prefix $Prefix
+    Copy-Directory -Source $script:FixtureTemplates[$Key] -Destination $dest
+    return $dest
+}

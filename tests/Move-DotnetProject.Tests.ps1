@@ -7,20 +7,22 @@ BeforeAll {
     function New-Fixture {
         # Build a throwaway 2-project solution: App -> Lib, in a fresh temp git repo.
         param([ValidateSet('sln', 'slnx')][string]$Format = 'slnx')
-        $root = New-TempRoot -Prefix 'netscoot'
-        Push-Location $root
-        try {
-            & git init -q
-            New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'src' ('Lib'))) | Out-Null
-            New-StubConsole -Name App -Directory (Join-Path $root (Join-Path 'src' ('App'))) | Out-Null
-            & dotnet new sln -n Demo --format $Format | Out-Null
-            $sln = (Get-ChildItem -LiteralPath $root -File -Include '*.sln', '*.slnx').FullName
-            & dotnet sln $sln add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
-            & dotnet sln $sln add (Join-Path $root (Join-Path 'src' (Join-Path 'App' ('App.csproj')))) | Out-Null
-            & dotnet add (Join-Path $root (Join-Path 'src' (Join-Path 'App' ('App.csproj')))) reference (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
-            & git add -A; & git commit -qm "fixture" | Out-Null
-        } finally { Pop-Location }
-        return $root
+        Copy-FixtureTemplate -Key "applib-$Format" -Prefix 'netscoot' -Build {
+            $root = New-TempRoot -Prefix 'netscoot'
+            Push-Location $root
+            try {
+                & git init -q
+                New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'src' ('Lib'))) | Out-Null
+                New-StubConsole -Name App -Directory (Join-Path $root (Join-Path 'src' ('App'))) | Out-Null
+                & dotnet new sln -n Demo --format $Format | Out-Null
+                $sln = (Get-ChildItem -LiteralPath $root -File -Include '*.sln', '*.slnx').FullName
+                & dotnet sln $sln add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
+                & dotnet sln $sln add (Join-Path $root (Join-Path 'src' (Join-Path 'App' ('App.csproj')))) | Out-Null
+                & dotnet add (Join-Path $root (Join-Path 'src' (Join-Path 'App' ('App.csproj')))) reference (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
+                & git add -A; & git commit -qm "fixture" | Out-Null
+            } finally { Pop-Location }
+            return $root
+        }
     }
 }
 

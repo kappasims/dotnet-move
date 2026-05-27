@@ -6,17 +6,19 @@ BeforeAll {
 
     function New-RepairFixtureBase {
         # App -> Lib in a solution. Returns the repo root with Lib still in place.
-        $root = New-TempRoot -Prefix 'netscoot_rep'
-        Push-Location $root
-        try {
-            & git init -q
-            New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
-            New-StubConsole -Name App -Directory (Join-Path $root 'App') | Out-Null
-            & dotnet add (Join-Path $root (Join-Path 'App' 'App.csproj')) reference (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) | Out-Null
-            & dotnet new sln -n Demo --format slnx | Out-Null
-            & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) (Join-Path $root (Join-Path 'App' 'App.csproj')) | Out-Null
-        } finally { Pop-Location }
-        return $root
+        Copy-FixtureTemplate -Key 'repair-base' -Prefix 'netscoot_rep' -Build {
+            $root = New-TempRoot -Prefix 'netscoot_rep'
+            Push-Location $root
+            try {
+                & git init -q
+                New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
+                New-StubConsole -Name App -Directory (Join-Path $root 'App') | Out-Null
+                & dotnet add (Join-Path $root (Join-Path 'App' 'App.csproj')) reference (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) | Out-Null
+                & dotnet new sln -n Demo --format slnx | Out-Null
+                & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) (Join-Path $root (Join-Path 'App' 'App.csproj')) | Out-Null
+            } finally { Pop-Location }
+            return $root
+        }
     }
 
     function New-MovedFixture {
@@ -39,19 +41,21 @@ BeforeAll {
         # App -> Widgets (at src/Widgets), in a solution. A second, unrelated project also named
         # Widgets.csproj lives at $DecoyDir, so the leaf name 'Widgets.csproj' is not unique.
         param([Parameter(Mandatory)][string]$DecoyDir)
-        $root = New-TempRoot -Prefix 'netscoot_amb'
-        $srcWidgets = Join-Path $root (Join-Path 'src' 'Widgets')
-        Push-Location $root
-        try {
-            & git init -q
-            New-StubClassLib -Name Widgets -Directory $srcWidgets | Out-Null
-            New-StubConsole -Name App -Directory (Join-Path $root 'App') | Out-Null
-            & dotnet add (Join-Path $root (Join-Path 'App' 'App.csproj')) reference (Join-Path $srcWidgets 'Widgets.csproj') | Out-Null
-            New-StubClassLib -Name Widgets -Directory (Join-Path $root $DecoyDir) | Out-Null   # decoy, same leaf
-            & dotnet new sln -n Demo --format slnx | Out-Null
-            & dotnet sln Demo.slnx add (Join-Path $srcWidgets 'Widgets.csproj') (Join-Path $root (Join-Path 'App' 'App.csproj')) | Out-Null
-        } finally { Pop-Location }
-        return $root
+        Copy-FixtureTemplate -Key "dupleaf-$($DecoyDir -replace '[^A-Za-z0-9]', '_')" -Prefix 'netscoot_amb' -Build {
+            $root = New-TempRoot -Prefix 'netscoot_amb'
+            $srcWidgets = Join-Path $root (Join-Path 'src' 'Widgets')
+            Push-Location $root
+            try {
+                & git init -q
+                New-StubClassLib -Name Widgets -Directory $srcWidgets | Out-Null
+                New-StubConsole -Name App -Directory (Join-Path $root 'App') | Out-Null
+                & dotnet add (Join-Path $root (Join-Path 'App' 'App.csproj')) reference (Join-Path $srcWidgets 'Widgets.csproj') | Out-Null
+                New-StubClassLib -Name Widgets -Directory (Join-Path $root $DecoyDir) | Out-Null   # decoy, same leaf
+                & dotnet new sln -n Demo --format slnx | Out-Null
+                & dotnet sln Demo.slnx add (Join-Path $srcWidgets 'Widgets.csproj') (Join-Path $root (Join-Path 'App' 'App.csproj')) | Out-Null
+            } finally { Pop-Location }
+            return $root
+        }
     }
 }
 

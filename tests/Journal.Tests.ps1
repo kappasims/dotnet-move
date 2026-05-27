@@ -5,17 +5,19 @@ BeforeAll {
     Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Core' ('Netscoot.Core.psd1'))))) -Force
 
     function New-JournalFixture {
-        $root = New-TempRoot -Prefix 'journal'
-        Push-Location $root
-        try {
-            & git init -q
-            New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'src' ('Lib'))) | Out-Null
-            & dotnet new sln -n Demo | Out-Null
-            $sln = (Get-ChildItem -LiteralPath $root -File -Filter '*.sln').FullName
-            & dotnet sln $sln add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
-            & git add -A; & git commit -qm fixture | Out-Null
-        } finally { Pop-Location }
-        return $root
+        Copy-FixtureTemplate -Key 'journal-lib-sln' -Prefix 'journal' -Build {
+            $root = New-TempRoot -Prefix 'journal'
+            Push-Location $root
+            try {
+                & git init -q
+                New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'src' ('Lib'))) | Out-Null
+                & dotnet new sln -n Demo | Out-Null
+                $sln = (Get-ChildItem -LiteralPath $root -File -Filter '*.sln').FullName
+                & dotnet sln $sln add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
+                & git add -A; & git commit -qm fixture | Out-Null
+            } finally { Pop-Location }
+            return $root
+        }
     }
 }
 
