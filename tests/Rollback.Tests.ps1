@@ -5,17 +5,19 @@ BeforeAll {
     Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'Netscoot.Core', 'Netscoot.Core.psd1')) -Force
 
     function New-AppLibFixture {
-        $root = New-TempRoot -Prefix 'netscoot_rb'
-        Push-Location $root
-        try {
-            & git init -q
-            New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'src' 'Lib')) | Out-Null
-            New-StubConsole -Name App -Directory (Join-Path $root (Join-Path 'src' 'App')) | Out-Null
-            & dotnet add (Join-Path $root (Join-Path 'src' (Join-Path 'App' 'App.csproj'))) reference (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) | Out-Null
-            & dotnet new sln -n Demo --format slnx | Out-Null
-            & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) (Join-Path $root (Join-Path 'src' (Join-Path 'App' 'App.csproj'))) | Out-Null
-        } finally { Pop-Location }
-        return $root
+        Copy-FixtureTemplate -Key 'rollback-applib' -Prefix 'netscoot_rb' -Build {
+            $root = New-TempRoot -Prefix 'netscoot_rb'
+            Push-Location $root
+            try {
+                & git init -q
+                New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'src' 'Lib')) | Out-Null
+                New-StubConsole -Name App -Directory (Join-Path $root (Join-Path 'src' 'App')) | Out-Null
+                & dotnet add (Join-Path $root (Join-Path 'src' (Join-Path 'App' 'App.csproj'))) reference (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) | Out-Null
+                & dotnet new sln -n Demo --format slnx | Out-Null
+                & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) (Join-Path $root (Join-Path 'src' (Join-Path 'App' 'App.csproj'))) | Out-Null
+            } finally { Pop-Location }
+            return $root
+        }
     }
 }
 

@@ -5,16 +5,18 @@ BeforeAll {
     Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Core' ('Netscoot.Core.psd1'))))) -Force
 
     function New-RepoFixture {
-        $root = New-TempRoot -Prefix 'netscoot_git'
-        Push-Location $root
-        try {
-            & git init -q
-            New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'src' ('Lib'))) | Out-Null
-            & dotnet new sln -n Demo --format slnx | Out-Null
-            & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
-            & git add -A; & git commit -qm fixture | Out-Null
-        } finally { Pop-Location }
-        return $root
+        Copy-FixtureTemplate -Key 'gitalias-lib' -Prefix 'netscoot_git' -Build {
+            $root = New-TempRoot -Prefix 'netscoot_git'
+            Push-Location $root
+            try {
+                & git init -q
+                New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'src' ('Lib'))) | Out-Null
+                & dotnet new sln -n Demo --format slnx | Out-Null
+                & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
+                & git add -A; & git commit -qm fixture | Out-Null
+            } finally { Pop-Location }
+            return $root
+        }
     }
 }
 

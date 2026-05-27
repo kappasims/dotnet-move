@@ -6,17 +6,19 @@ BeforeAll {
 
     function New-SlnFixture {
         param([ValidateSet('sln', 'slnx')][string]$Format = 'slnx')
-        $root = New-TempRoot -Prefix 'netscoot_sln'
-        Push-Location $root
-        try {
-            & git init -q
-            New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'src' ('Lib'))) | Out-Null
-            & dotnet new sln -n Demo --format $Format | Out-Null
-            $sln = (Get-ChildItem -LiteralPath $root -File | Where-Object { $_.Extension -in '.sln', '.slnx' }).FullName
-            & dotnet sln $sln add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
-            & git add -A; & git commit -qm fixture | Out-Null
-        } finally { Pop-Location }
-        return $root
+        Copy-FixtureTemplate -Key "movesln-$Format" -Prefix 'netscoot_sln' -Build {
+            $root = New-TempRoot -Prefix 'netscoot_sln'
+            Push-Location $root
+            try {
+                & git init -q
+                New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'src' ('Lib'))) | Out-Null
+                & dotnet new sln -n Demo --format $Format | Out-Null
+                $sln = (Get-ChildItem -LiteralPath $root -File | Where-Object { $_.Extension -in '.sln', '.slnx' }).FullName
+                & dotnet sln $sln add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
+                & git add -A; & git commit -qm fixture | Out-Null
+            } finally { Pop-Location }
+            return $root
+        }
     }
 }
 

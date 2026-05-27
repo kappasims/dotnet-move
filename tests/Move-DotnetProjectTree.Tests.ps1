@@ -6,20 +6,22 @@ BeforeAll {
 
     function New-TreeFixture {
         # group/{Lib, Lib2->Lib (internal)}, plus App outside group -> Lib (external). One solution.
-        $root = New-TempRoot -Prefix 'netscoot_tree'
-        Push-Location $root
-        try {
-            & git init -q
-            New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'group' ('Lib')))  | Out-Null
-            New-StubClassLib -Name Lib2 -Directory (Join-Path $root (Join-Path 'group' ('Lib2'))) | Out-Null
-            New-StubConsole -Name App -Directory (Join-Path $root 'App')          | Out-Null
-            & dotnet add (Join-Path $root (Join-Path 'group' (Join-Path 'Lib2' ('Lib2.csproj')))) reference (Join-Path $root (Join-Path 'group' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
-            & dotnet add (Join-Path $root (Join-Path 'App' ('App.csproj')))           reference (Join-Path $root (Join-Path 'group' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
-            & dotnet new sln -n Demo --format slnx | Out-Null
-            & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'group' (Join-Path 'Lib' ('Lib.csproj')))) (Join-Path $root (Join-Path 'group' (Join-Path 'Lib2' ('Lib2.csproj')))) (Join-Path $root (Join-Path 'App' ('App.csproj'))) | Out-Null
-            & git add -A; & git commit -qm fixture | Out-Null
-        } finally { Pop-Location }
-        return $root
+        Copy-FixtureTemplate -Key 'tree-group' -Prefix 'netscoot_tree' -Build {
+            $root = New-TempRoot -Prefix 'netscoot_tree'
+            Push-Location $root
+            try {
+                & git init -q
+                New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'group' ('Lib')))  | Out-Null
+                New-StubClassLib -Name Lib2 -Directory (Join-Path $root (Join-Path 'group' ('Lib2'))) | Out-Null
+                New-StubConsole -Name App -Directory (Join-Path $root 'App')          | Out-Null
+                & dotnet add (Join-Path $root (Join-Path 'group' (Join-Path 'Lib2' ('Lib2.csproj')))) reference (Join-Path $root (Join-Path 'group' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
+                & dotnet add (Join-Path $root (Join-Path 'App' ('App.csproj')))           reference (Join-Path $root (Join-Path 'group' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
+                & dotnet new sln -n Demo --format slnx | Out-Null
+                & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'group' (Join-Path 'Lib' ('Lib.csproj')))) (Join-Path $root (Join-Path 'group' (Join-Path 'Lib2' ('Lib2.csproj')))) (Join-Path $root (Join-Path 'App' ('App.csproj'))) | Out-Null
+                & git add -A; & git commit -qm fixture | Out-Null
+            } finally { Pop-Location }
+            return $root
+        }
     }
 }
 

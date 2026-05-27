@@ -5,14 +5,16 @@ BeforeAll {
     Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Core' ('Netscoot.Core.psd1'))))) -Force
 
     function New-SoloFixture {
-        $root = New-TempRoot -Prefix 'netscoot_cap'
-        Push-Location $root
-        try {
-            New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
-            & dotnet new sln -n Demo --format slnx | Out-Null
-            & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'Lib' ('Lib.csproj'))) | Out-Null
-        } finally { Pop-Location }
-        return $root
+        Copy-FixtureTemplate -Key 'solo-lib-sln' -Prefix 'netscoot_cap' -Build {
+            $root = New-TempRoot -Prefix 'netscoot_cap'
+            Push-Location $root
+            try {
+                New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
+                & dotnet new sln -n Demo --format slnx | Out-Null
+                & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'Lib' ('Lib.csproj'))) | Out-Null
+            } finally { Pop-Location }
+            return $root
+        }
     }
 }
 
