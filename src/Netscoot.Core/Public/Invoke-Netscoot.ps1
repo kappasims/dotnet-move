@@ -92,7 +92,6 @@ function Invoke-Netscoot {
         $isContainer = Test-Path -LiteralPath $full -PathType Container
         $engine = Resolve-MoveEngine $full
 
-        Write-Verbose "Invoke-Netscoot: engine=$engine container=$isContainer target=$full"
         # Per-engine forwarding via New-ForwardArgs: every dispatcher's bound param flows through to
         # the specialist by default. -Drop strips things the target cmdlet does not accept (e.g.
         # NoBuild for the PowerShell / Unity movers, RepositoryRoot for Unity); -Add substitutes the
@@ -102,14 +101,23 @@ function Invoke-Netscoot {
         # this matters because $ConfirmPreference / $WhatIfPreference do not reliably inherit into
         # cmdlets in the sibling engine modules (Unity / Native), and $PSCmdlet.WriteVerbose inside
         # Write-MovePlan honors the cmdlet's bound -Verbose more strictly than ambient preference.
+        # Each arm emits a "Routing -> <target>" trace matching the inner dispatchers, so the
+        # verbose chain reads uniformly: Invoke-Netscoot -> Move-DotnetFile -> Move-DotnetProject.
         switch ($engine) {
             'dotnet' {
                 $fwd = New-ForwardArgs $PSBoundParameters -Add @{ Path = $full }
-                if ($isContainer) { Move-DotnetFolder @fwd } else { Move-DotnetFile @fwd }
+                if ($isContainer) {
+                    Write-Verbose 'Routing -> Move-DotnetFolder'
+                    Move-DotnetFolder @fwd
+                } else {
+                    Write-Verbose 'Routing -> Move-DotnetFile'
+                    Move-DotnetFile @fwd
+                }
             }
             { $_ -in 'ps-script', 'ps-module' } {
                 # Move-PowerShell does not accept NoBuild.
                 $fwd = New-ForwardArgs $PSBoundParameters -Drop 'NoBuild' -Add @{ Path = $full }
+                Write-Verbose 'Routing -> Move-PowerShell'
                 Move-PowerShell @fwd
             }
             'unity' {
@@ -121,6 +129,7 @@ function Invoke-Netscoot {
                 }
                 # Move-UnityAsset uses -AssetPath and accepts neither -RepositoryRoot nor -NoBuild.
                 $fwd = New-ForwardArgs $PSBoundParameters -Drop 'Path', 'RepositoryRoot', 'NoBuild' -Add @{ AssetPath = $full }
+                Write-Verbose 'Routing -> Move-UnityAsset'
                 Move-UnityAsset @fwd
             }
             'native' {
@@ -132,6 +141,7 @@ function Invoke-Netscoot {
                 }
                 # Move-NativeProject uses -Project.
                 $fwd = New-ForwardArgs $PSBoundParameters -Drop 'Path' -Add @{ Project = $full }
+                Write-Verbose 'Routing -> Move-NativeProject'
                 Move-NativeProject @fwd
             }
             default {
