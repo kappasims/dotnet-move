@@ -1,5 +1,5 @@
 @{
-    RootModule           = 'Netscoot.Shared.psm1'
+    RootModule           = 'NetscootShared.psm1'
     ModuleVersion        = '2.3.0'
     GUID                 = 'f0448d52-8cf4-4e39-a620-1d4b4c3503f5'
     Author               = 'kappasims'

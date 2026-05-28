@@ -14,7 +14,7 @@ function Write-MovePlan {
     #
     # Why -Cmdlet: PowerShell does NOT auto-propagate $VerbosePreference across module boundaries -
     # a Netscoot.Core mover with -Verbose has $VerbosePreference='Continue', but a plain Write-Verbose
-    # called from inside this Netscoot.Shared function runs against Shared's own (default) preference.
+    # called from inside this NetscootShared function runs against Shared's own (default) preference.
     # Threading the caller's $PSCmdlet through and using $Cmdlet.WriteVerbose routes the records into
     # the CALLER's stream, so -Verbose at the mover level lights up these lines as the user expects.
     param(

@@ -56,8 +56,13 @@ one bundled Gallery package: the engines declare no `RequiredModules`; the `nets
 loads Shared first, then each available engine, with `-Global` so all their commands surface
 together.
 
-- `Netscoot.Shared`: cross-platform path/git/MSBuild/solution helpers used by the engines. Not
-  imported directly.
+- `NetscootShared`: cross-platform path/git/MSBuild/solution helpers used by the engines. Not
+  imported directly. **Naming asymmetry on purpose**: the public engines all use `Netscoot.<X>`,
+  while the internal helpers module is `NetscootShared` (no dot), so `Get-Command -Module Netscoot.*`
+  returns just the public engine surface (30 cmdlets) and never the 54 internal helpers. The
+  alternative would be `Get-Command -Module <explicit-list>` every time, since `-Module Netscoot*`
+  (no literal dot) still matches `NetscootShared` because the wildcard `*` matches the missing dot.
+  Pick the right query: `Netscoot.*` for the public surface, `NetscootShared` to opt-in to plumbing.
 - `Netscoot.Core`: cross-platform (PowerShell 7 and Windows PowerShell 5.1). The .NET and
   PowerShell engines, the `Invoke-Netscoot` dispatcher, and the utilities.
 - `Netscoot.Unity`: cross-platform Unity engine.
@@ -69,7 +74,7 @@ together.
 ```text
 build.ps1                Test / Analyze / Install / Docs / Release / Publish tasks
 .github/workflows/      ci.yml (push: Windows + PS 5.1 + lint); platforms.yml (on-demand: Linux + macOS)
-src/Netscoot.Shared/   shared helpers module (Common/ + Dotnet/); loaded by the umbrella first
+src/NetscootShared/   shared helpers module (Common/ + Dotnet/); loaded by the umbrella first
 src/Netscoot/          umbrella module (loads Shared + every available engine)
 src/Netscoot.Core/     cross-platform module; Private/ = helpers, Public/ = cmdlets
 src/Netscoot.Native/   Windows-only native module

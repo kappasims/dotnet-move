@@ -6,6 +6,16 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Internal helpers module renamed from `Netscoot.Shared` to `NetscootShared` (no dot). The
+  literal-dot wildcard `Get-Command -Module Netscoot.*` now returns exactly the 30 public cmdlets
+  (the four `Netscoot.X` engines) and never the 54 internal helpers; previously it included them
+  too because `Netscoot.Shared` matched the wildcard. Use `Get-Command -Module NetscootShared`
+  to opt-in to the plumbing. Caveat: `Get-Command -Module Netscoot*` (no literal dot) still
+  matches `NetscootShared` because `*` matches the missing dot - that's a wildcard quirk, not a
+  bug, and the canonical query for the public surface is the literal-dot form.
+
 ## [2.3.0] - 2026-05-28
 
 ### Fixed
