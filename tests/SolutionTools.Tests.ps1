@@ -4,11 +4,12 @@ BeforeAll {
     . (Join-Path $PSScriptRoot TestHelpers.ps1)
     Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'Netscoot.Core', 'Netscoot.Core.psd1')) -Force
 
-    function New-TempDir {
-        $d = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_st_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
-        New-Item -ItemType Directory -Path $d | Out-Null
-        return $d
-    }
+    # Delegate to the canonical New-TempRoot (TestHelpers) so the template build uses paths in the
+    # canonical /private/var/... form on macOS. Without that, dotnet sln add cannot compute a
+    # relative path (cwd canonical, arg in /var/... symlink form) and stores an ABSOLUTE /var/...
+    # path inside .slnx; that absolute path then survives the copy to a canonical per-test root and
+    # Sync-Solution fails with a path-mismatch on `dotnet sln add`.
+    function New-TempDir { New-TempRoot -Prefix 'netscoot_st' }
 
     function New-InventoryFixture {
         # A .slnx that lists a .csproj, a non-CLI .pssproj, a solution folder, and a solution item;
