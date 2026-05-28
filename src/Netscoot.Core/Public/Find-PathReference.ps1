@@ -2,7 +2,7 @@ function Find-PathReference {
     <#
     .SYNOPSIS
         Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/
-        container scripts) that no first-party tool reconciles. report-only.
+        container scripts) that no first-party tool reconciles. Report-only.
 
     .DESCRIPTION
         Moving a project/folder breaks any path hardcoded in build.ps1, CI YAML, git hooks,

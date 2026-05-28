@@ -2,7 +2,7 @@ function Test-NetscootUpdate {
     <#
     .SYNOPSIS
         Check GitHub for a newer netscoot release and report whether the installed version is
-        behind. On-demand and read-only: It never updates anything itself.
+        behind. On-demand and read-only: it never updates anything itself.
 
     .DESCRIPTION
         netscoot does not update automatically, however it is installed (PowerShell Gallery,

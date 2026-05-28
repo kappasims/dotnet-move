@@ -1,9 +1,9 @@
 function Move-NativeProject {
     <#
     .SYNOPSIS
-        Move a native / C++/CLI project (.vcxproj). Windows-only. Does the parts the
-        dotnet CLI can delegate (solution membership, the move itself) and reports the
-        native path-bearing settings it cannot reconcile so they are never silently broken.
+        Move a native or C++/CLI project (.vcxproj) and reconcile the parts the dotnet CLI can
+        delegate (solution membership, the move itself), reporting the native path-bearing
+        settings it cannot reconcile so they are never silently broken. Windows-only.
 
     .DESCRIPTION
         Native projects link through MSBuild settings the dotnet CLI does not touch:

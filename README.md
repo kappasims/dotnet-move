@@ -466,7 +466,7 @@ Relocate a project, folder, file, module, or asset and reconcile what the move w
 | [Move-PowerShell](#move-powershell) | Move a PowerShell item and reconcile references, routing by type to the right specialist. |
 | [Move-PowerShellScript](#move-powershellscript) | Move a standalone `.ps1` script and fix the relative paths in scripts that dot-source or call it (and the moved script's own dot-source/call paths). |
 | [Move-PowerShellModule](#move-powershellmodule) | Move a PowerShell module folder and reconcile its manifest, delegating manifest edits to Update-ModuleManifest rather than hand-editing the `.psd1`. |
-| [Move-NativeProject](#move-nativeproject) | Move a native / C++/CLI project (`.vcxproj`). |
+| [Move-NativeProject](#move-nativeproject) | Move a native or C++/CLI project (`.vcxproj`) and reconcile the parts the dotnet CLI can delegate (solution membership, the move itself), reporting the native path-bearing settings it cannot reconcile so they are never silently broken. |
 | [Move-UnityAsset](#move-unityasset) | Move a Unity asset or folder while keeping its paired `.meta` file(s), so the GUIDs that scene/prefab/asmdef references depend on survive the move. |
 
 #### Inspect
@@ -574,7 +574,7 @@ Clear-NetscootJournal -WhatIf
 #### Find-PathReference
 
 Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party
-tool reconciles. report-only.
+tool reconciles. Report-only.
 
 ##### Syntax
 
@@ -1816,7 +1816,7 @@ Sync-Solution -RepositoryRoot .
 #### Test-NetscootUpdate
 
 Check GitHub for a newer netscoot release and report whether the installed version is behind. On-demand and read-only:
-It never updates anything itself.
+it never updates anything itself.
 
 ##### Syntax
 
@@ -2104,9 +2104,9 @@ Update-Netscoot -Force
 
 #### Move-NativeProject
 
-Move a native / C++/CLI project (`.vcxproj`). Windows-only. Does the parts the dotnet CLI can delegate (solution
-membership, the move itself) and reports the native path-bearing settings it cannot reconcile so they are never silently
-broken.
+Move a native or C++/CLI project (`.vcxproj`) and reconcile the parts the dotnet CLI can delegate (solution membership,
+the move itself), reporting the native path-bearing settings it cannot reconcile so they are never silently broken.
+Windows-only.
 
 ##### Syntax
 
