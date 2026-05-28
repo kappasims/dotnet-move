@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-05-29
+
 ### Fixed
 
 - `Invoke-Netscoot -WhatIf -Verbose` (and `Move-DotnetFile`/`Move-DotnetFolder`/`Move-PowerShell`
@@ -131,7 +133,8 @@ See the release notes for the full pull-request list.
 
 DotnetMove 1.x history predates the rename; see the legacy DotnetMove releases.
 
-[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.3.0...HEAD
+[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.3.1...HEAD
+[2.3.1]: https://github.com/kappasims/netscoot/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/kappasims/netscoot/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/kappasims/netscoot/compare/v2.1.1...v2.2.0
 [2.1.1]: https://github.com/kappasims/netscoot/compare/v2.1.0...v2.1.1
