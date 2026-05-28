@@ -6,6 +6,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Read and analysis commands (project/solution moves, `Get-SolutionInventory`, `Repair-SolutionReferences`,
+  and the consistency/sync checks) now parse the repository once per invocation instead of re-scanning it
+  for each project. Large repositories see multi-times-faster moves and inventories, with the gap widening
+  as the project count grows.
+
 ## [2.1.1] - 2026-05-28
 
 ### Fixed
