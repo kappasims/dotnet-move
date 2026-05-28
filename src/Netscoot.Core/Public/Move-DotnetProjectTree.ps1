@@ -191,10 +191,10 @@ function Move-DotnetProjectTree {
         }
 
         New-MoveResult -TypeName 'Netscoot.TreeMoveResult' -Engine 'dotnet' -Source $srcDir -Destination $newDir `
-            -Performed $performed -SkippedCount $skippedCount -Extra @{
-            ProjectsMoved = $moved.Count
-            ConsumerCount = $totalConsumers
-            Built         = $built
-        }
+            -Performed $performed -SkippedCount $skippedCount -Extra ([ordered]@{
+                ProjectsMoved = $moved.Count
+                ConsumerCount = $totalConsumers
+                Built         = $built
+            })
     }
 }

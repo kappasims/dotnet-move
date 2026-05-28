@@ -8,7 +8,47 @@
   the default table and remain on the object for Format-List / Select-Object.
 -->
 <Configuration>
+  <SelectionSets>
+    <!-- The eight move-result types share one base shape, so one table view covers them all. -->
+    <SelectionSet>
+      <Name>Netscoot.MoveResults</Name>
+      <Types>
+        <TypeName>Netscoot.MoveResult</TypeName>
+        <TypeName>Netscoot.TreeMoveResult</TypeName>
+        <TypeName>Netscoot.SolutionMoveResult</TypeName>
+        <TypeName>Netscoot.ImportMoveResult</TypeName>
+        <TypeName>Netscoot.ScriptMoveResult</TypeName>
+        <TypeName>Netscoot.PSModuleMoveResult</TypeName>
+        <TypeName>Netscoot.NativeMoveResult</TypeName>
+        <TypeName>Netscoot.UnityMoveResult</TypeName>
+      </Types>
+    </SelectionSet>
+  </SelectionSets>
   <ViewDefinitions>
+
+    <View>
+      <Name>Netscoot.MoveResults</Name>
+      <ViewSelectedBy><SelectionSetName>Netscoot.MoveResults</SelectionSetName></ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>Engine</Label><Width>11</Width></TableColumnHeader>
+          <TableColumnHeader><Label>Performed</Label><Width>9</Width></TableColumnHeader>
+          <TableColumnHeader><Label>Source</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Destination</Label></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>Engine</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Performed</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Source</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Destination</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+
 
     <View>
       <Name>Netscoot.JournalEntry</Name>

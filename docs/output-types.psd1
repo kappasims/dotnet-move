@@ -70,13 +70,13 @@
         Array   = $false
         Fields  = @(
             @{ Name = 'Engine';        Type = 'string';   Note = '' }
-            @{ Name = 'Source';        Type = 'string';   Note = '' }
-            @{ Name = 'Destination';   Type = 'string';   Note = '' }
+            @{ Name = 'Source';        Type = 'string';   Note = 'absolute path' }
+            @{ Name = 'Destination';   Type = 'string';   Note = 'absolute path' }
             @{ Name = 'Performed';     Type = 'bool';     Note = 'false under -WhatIf' }
             @{ Name = 'SkippedCount';  Type = 'int';      Note = '' }
+            @{ Name = 'Solutions';     Type = 'string[]'; Note = 'solution names updated' }
             @{ Name = 'ConsumerCount'; Type = 'int';      Note = 'external references repointed' }
             @{ Name = 'OwnRefCount';   Type = 'int';      Note = "the moved project's own references rebased" }
-            @{ Name = 'Solutions';     Type = 'string[]'; Note = 'solution names updated' }
             @{ Name = 'Built';         Type = 'bool?';    Note = '$null with -NoBuild' }
         )
     }
@@ -86,8 +86,8 @@
         Array   = $false
         Fields  = @(
             @{ Name = 'Engine';        Type = 'string'; Note = '' }
-            @{ Name = 'Source';        Type = 'string'; Note = '' }
-            @{ Name = 'Destination';   Type = 'string'; Note = '' }
+            @{ Name = 'Source';        Type = 'string'; Note = 'absolute path' }
+            @{ Name = 'Destination';   Type = 'string'; Note = 'absolute path' }
             @{ Name = 'Performed';     Type = 'bool';   Note = 'false under -WhatIf' }
             @{ Name = 'SkippedCount';  Type = 'int';    Note = '' }
             @{ Name = 'ProjectsMoved'; Type = 'int';    Note = '' }
@@ -101,8 +101,8 @@
         Array   = $false
         Fields  = @(
             @{ Name = 'Engine';         Type = 'string'; Note = '' }
-            @{ Name = 'Source';         Type = 'string'; Note = '' }
-            @{ Name = 'Destination';    Type = 'string'; Note = '' }
+            @{ Name = 'Source';         Type = 'string'; Note = 'absolute path' }
+            @{ Name = 'Destination';    Type = 'string'; Note = 'absolute path' }
             @{ Name = 'Performed';      Type = 'bool';   Note = 'false under -WhatIf' }
             @{ Name = 'SkippedCount';   Type = 'int';    Note = '' }
             @{ Name = 'ImportersFixed'; Type = 'int';    Note = 'files whose <Import> was rewritten' }
@@ -116,8 +116,8 @@
         Array   = $false
         Fields  = @(
             @{ Name = 'Engine';       Type = 'string'; Note = '' }
-            @{ Name = 'Source';       Type = 'string'; Note = '' }
-            @{ Name = 'Destination';  Type = 'string'; Note = '' }
+            @{ Name = 'Source';       Type = 'string'; Note = 'absolute path' }
+            @{ Name = 'Destination';  Type = 'string'; Note = 'absolute path' }
             @{ Name = 'Performed';    Type = 'bool';   Note = 'false under -WhatIf' }
             @{ Name = 'SkippedCount'; Type = 'int';    Note = '' }
             @{ Name = 'Manifest';     Type = 'string'; Note = 'the manifest file name' }
@@ -129,8 +129,8 @@
         Array   = $false
         Fields  = @(
             @{ Name = 'Engine';          Type = 'string'; Note = '' }
-            @{ Name = 'Source';          Type = 'string'; Note = '' }
-            @{ Name = 'Destination';     Type = 'string'; Note = '' }
+            @{ Name = 'Source';          Type = 'string'; Note = 'absolute path' }
+            @{ Name = 'Destination';     Type = 'string'; Note = 'absolute path' }
             @{ Name = 'Performed';       Type = 'bool';   Note = 'false under -WhatIf' }
             @{ Name = 'SkippedCount';    Type = 'int';    Note = '' }
             @{ Name = 'ReferencersFixed';Type = 'int';    Note = 'scripts whose path to the moved file was rewritten' }
@@ -144,8 +144,8 @@
         Array   = $false
         Fields  = @(
             @{ Name = 'Engine';          Type = 'string'; Note = '' }
-            @{ Name = 'Source';          Type = 'string'; Note = '' }
-            @{ Name = 'Destination';     Type = 'string'; Note = '' }
+            @{ Name = 'Source';          Type = 'string'; Note = 'absolute path' }
+            @{ Name = 'Destination';     Type = 'string'; Note = 'absolute path' }
             @{ Name = 'Performed';       Type = 'bool';   Note = 'false under -WhatIf' }
             @{ Name = 'SkippedCount';    Type = 'int';    Note = '' }
             @{ Name = 'ProjectsRebased'; Type = 'int';    Note = 'stored paths rewritten' }
@@ -156,14 +156,23 @@
         Summary = 'Result of moving a native / C++/CLI project (.vcxproj).'
         Array   = $false
         Fields  = @(
-            @{ Name = 'Engine';               Type = 'string';   Note = '' }
-            @{ Name = 'Source';               Type = 'string';   Note = '' }
-            @{ Name = 'Destination';          Type = 'string';   Note = '' }
-            @{ Name = 'Performed';            Type = 'bool';     Note = 'false under -WhatIf' }
-            @{ Name = 'SkippedCount';         Type = 'int';      Note = '' }
-            @{ Name = 'HadFilters';           Type = 'bool';     Note = 'a paired .vcxproj.filters moved too' }
-            @{ Name = 'Solutions';            Type = 'string[]'; Note = 'solution names updated' }
-            @{ Name = 'UnreconciledSettings'; Type = 'object[]'; Note = 'one per native path setting to verify by hand; each has the setting name and value' }
+            @{ Name = 'Engine';               Type = 'string';                 Note = '' }
+            @{ Name = 'Source';               Type = 'string';                 Note = 'absolute path' }
+            @{ Name = 'Destination';          Type = 'string';                 Note = 'absolute path' }
+            @{ Name = 'Performed';            Type = 'bool';                   Note = 'false under -WhatIf' }
+            @{ Name = 'SkippedCount';         Type = 'int';                    Note = '' }
+            @{ Name = 'Solutions';            Type = 'string[]';               Note = 'solution names updated' }
+            @{ Name = 'UnreconciledSettings'; Type = 'Netscoot.NativeSetting[]'; Note = 'native path settings to verify by hand' }
+            @{ Name = 'HadFilters';           Type = 'bool';                   Note = 'a paired .vcxproj.filters moved too' }
+        )
+    }
+
+    'Netscoot.NativeSetting' = @{
+        Summary = 'One path-bearing MSBuild setting in a moved .vcxproj that the dotnet CLI cannot reconcile.'
+        Array   = $false
+        Fields  = @(
+            @{ Name = 'Kind';  Type = 'string'; Note = 'e.g. AdditionalIncludeDirectories, OutDir, Import' }
+            @{ Name = 'Value'; Type = 'string'; Note = 'the stored path expression to verify by hand' }
         )
     }
 
@@ -172,8 +181,8 @@
         Array   = $false
         Fields  = @(
             @{ Name = 'Engine';       Type = 'string';   Note = '' }
-            @{ Name = 'Source';       Type = 'string';   Note = '' }
-            @{ Name = 'Destination';  Type = 'string';   Note = '' }
+            @{ Name = 'Source';       Type = 'string';   Note = 'absolute path' }
+            @{ Name = 'Destination';  Type = 'string';   Note = 'absolute path' }
             @{ Name = 'Performed';    Type = 'bool';     Note = 'false under -WhatIf' }
             @{ Name = 'SkippedCount'; Type = 'int';      Note = '' }
             @{ Name = 'MetaMoved';    Type = 'bool';     Note = 'the paired .meta moved too' }

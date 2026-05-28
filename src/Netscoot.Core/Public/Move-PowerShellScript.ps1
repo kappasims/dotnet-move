@@ -149,10 +149,10 @@ function Move-PowerShellScript {
         }
 
         New-MoveResult -TypeName 'Netscoot.ScriptMoveResult' -Engine 'powershell' -Source $src -Destination $newPath `
-            -Performed $performed -SkippedCount $skippedCount -Extra @{
-            ReferencersFixed = $referencers.Count
-            OwnRefsFixed     = $ownRefs.Count
-            UnresolvedRefs   = $unresolvedRefs.Count
-        }
+            -Performed $performed -SkippedCount $skippedCount -Extra ([ordered]@{
+                ReferencersFixed = $referencers.Count
+                OwnRefsFixed     = $ownRefs.Count
+                UnresolvedRefs   = $unresolvedRefs.Count
+            })
     }
 }

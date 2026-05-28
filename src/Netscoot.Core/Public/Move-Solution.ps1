@@ -118,8 +118,8 @@ function Move-Solution {
         }
 
         New-MoveResult -TypeName 'Netscoot.SolutionMoveResult' -Engine 'dotnet' -Source $src -Destination $newPath `
-            -Performed $performed -SkippedCount $skippedCount -Extra @{
-            ProjectsRebased = $rebased
-        }
+            -Performed $performed -SkippedCount $skippedCount -Extra ([ordered]@{
+                ProjectsRebased = $rebased
+            })
     }
 }

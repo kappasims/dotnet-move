@@ -106,6 +106,6 @@ function Move-PowerShellModule {
     }
 
     New-MoveResult -TypeName 'Netscoot.PSModuleMoveResult' -Engine 'powershell' -Source $moduleDir -Destination $newDir `
-        -Performed $performed -SkippedCount $skippedCount -Extra @{ Manifest = $manifestName }
+        -Performed $performed -SkippedCount $skippedCount -Extra ([ordered]@{ Manifest = $manifestName })
     }
 }

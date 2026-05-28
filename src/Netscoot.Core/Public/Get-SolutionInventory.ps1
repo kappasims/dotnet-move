@@ -44,6 +44,18 @@ function Get-SolutionInventory {
         if (-not $RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath (Get-Location).Path }
         $RepositoryRoot = Resolve-FullPath $RepositoryRoot
         function _rel([string]$p) { (Get-RelativePathSafe -From $RepositoryRoot -To $p) }
+        # One builder for every row, so the Netscoot.SolutionItem shape (property set and order) is
+        # defined in a single place rather than repeated at each call site.
+        function _item([string]$Solution, [Netscoot.SolutionItemKind]$Kind, [string]$Name, [string]$Path = '', [string]$Type = '') {
+            [pscustomobject]@{
+                PSTypeName = 'Netscoot.SolutionItem'
+                Solution   = $Solution
+                Kind       = $Kind
+                Type       = $Type
+                Name       = $Name
+                Path       = $Path
+            }
+        }
 
         # One repository parse for this invocation: solutions (each already parsed via Read-Solution)
         # and the project glob both come from the workspace, so no file is read twice.
@@ -58,20 +70,14 @@ function Get-SolutionInventory {
             $content = $sln
             foreach ($p in $content.Projects) {
                 $seen.Add($p.Abs)
-                [pscustomobject]@{
-                    PSTypeName = 'Netscoot.SolutionItem'
-                    Solution = $rel
-                    Kind     = [Netscoot.SolutionItemKind]::Project
-                    Type     = $p.Ext.TrimStart('.')
-                    Name     = Split-Path -Leaf $p.Abs
-                    Path     = $p.Stored
-                }
+                _item -Solution $rel -Kind ([Netscoot.SolutionItemKind]::Project) `
+                    -Name (Split-Path -Leaf $p.Abs) -Path $p.Stored -Type $p.Ext.TrimStart('.')
             }
             foreach ($f in $content.Folders) {
-                [pscustomobject]@{ PSTypeName = 'Netscoot.SolutionItem'; Solution = $rel; Kind = [Netscoot.SolutionItemKind]::SolutionFolder; Type = ''; Name = $f; Path = '' }
+                _item -Solution $rel -Kind ([Netscoot.SolutionItemKind]::SolutionFolder) -Name $f
             }
             foreach ($i in $content.Items) {
-                [pscustomobject]@{ PSTypeName = 'Netscoot.SolutionItem'; Solution = $rel; Kind = [Netscoot.SolutionItemKind]::SolutionItem; Type = ''; Name = (Split-Path -Leaf $i); Path = $i }
+                _item -Solution $rel -Kind ([Netscoot.SolutionItemKind]::SolutionItem) -Name (Split-Path -Leaf $i) -Path $i
             }
         }
 
@@ -79,14 +85,8 @@ function Get-SolutionInventory {
         foreach ($disk in (Get-WorkspaceProjectFiles -Workspace $workspace -IncludeNative)) {
             $abs = Resolve-FullPath $disk.FullName
             if (-not (Test-PathInList -Path $abs -List $seen)) {
-                [pscustomobject]@{
-                    PSTypeName = 'Netscoot.SolutionItem'
-                    Solution = '(none)'
-                    Kind     = [Netscoot.SolutionItemKind]::UnreferencedProject
-                    Type     = $disk.Extension.TrimStart('.')
-                    Name     = $disk.Name
-                    Path     = _rel $abs
-                }
+                _item -Solution '(none)' -Kind ([Netscoot.SolutionItemKind]::UnreferencedProject) `
+                    -Name $disk.Name -Path (_rel $abs) -Type $disk.Extension.TrimStart('.')
             }
         }
     }

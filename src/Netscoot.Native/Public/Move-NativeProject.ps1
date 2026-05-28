@@ -152,10 +152,10 @@ function Move-NativeProject {
         }
 
         New-MoveResult -TypeName 'Netscoot.NativeMoveResult' -Engine 'native' -Source $projFull -Destination $newProj `
-            -Performed $performed -SkippedCount $skippedCount -Extra @{
-            Solutions            = $slnNames
-            UnreconciledSettings = $nativeSettings
-            HadFilters           = $hasFilters
-        }
+            -Performed $performed -SkippedCount $skippedCount -Extra ([ordered]@{
+                Solutions            = $slnNames
+                UnreconciledSettings = $nativeSettings
+                HadFilters           = $hasFilters
+            })
     }
 }
