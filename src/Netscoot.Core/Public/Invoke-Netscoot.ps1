@@ -101,7 +101,7 @@ function Invoke-Netscoot {
         # inherit into cmdlets in the sibling engine modules (Unity/Native), so an unforwarded
         # High-impact ShouldProcess would prompt - and hang a non-interactive caller such as the
         # git alias, which passes -Confirm:$false.
-        foreach ($sw in 'WhatIf', 'Confirm') {
+        foreach ($sw in 'WhatIf', 'Confirm', 'Verbose', 'Debug') {
             if ($PSBoundParameters.ContainsKey($sw)) { $common[$sw] = $PSBoundParameters[$sw] }
         }
 
@@ -125,7 +125,7 @@ function Invoke-Netscoot {
                 $u = @{ Destination = $Destination }
                 if ($Force) { $u.Force = $true }
                 if ($NoJournal) { $u.NoJournal = $true }
-                foreach ($sw in 'WhatIf', 'Confirm') { if ($common.ContainsKey($sw)) { $u[$sw] = $common[$sw] } }
+                foreach ($sw in 'WhatIf', 'Confirm', 'Verbose', 'Debug') { if ($common.ContainsKey($sw)) { $u[$sw] = $common[$sw] } }
                 Move-UnityAsset -AssetPath $full @u
             }
             'native' {

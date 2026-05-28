@@ -75,6 +75,7 @@ function Move-DotnetFolder {
         if ($Force) { $fwd.Force = $true }
         if ($NoBuild) { $fwd.NoBuild = $true }
         if ($NoJournal) { $fwd.NoJournal = $true }
+        foreach ($sw in 'WhatIf', 'Confirm', 'Verbose', 'Debug') { if ($PSBoundParameters.ContainsKey($sw)) { $fwd[$sw] = $PSBoundParameters[$sw] } }
         Write-Verbose "Routing folder -> Move-DotnetProjectTree"
         Move-DotnetProjectTree -Path $full @fwd
     }

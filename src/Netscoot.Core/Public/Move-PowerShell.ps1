@@ -79,6 +79,7 @@ function Move-PowerShell {
             if ($PSBoundParameters.ContainsKey('RepositoryRoot')) { $fwd.RepositoryRoot = $RepositoryRoot }
             if ($Force) { $fwd.Force = $true }
             if ($NoJournal) { $fwd.NoJournal = $true }
+            foreach ($sw in 'WhatIf', 'Confirm', 'Verbose', 'Debug') { if ($PSBoundParameters.ContainsKey($sw)) { $fwd[$sw] = $PSBoundParameters[$sw] } }
             Write-Verbose 'Routing .ps1 -> Move-PowerShellScript'
             Move-PowerShellScript -Path $full @fwd
         }
@@ -86,6 +87,7 @@ function Move-PowerShell {
             $fwd = @{ Destination = $Destination }
             if ($Force) { $fwd.Force = $true }
             if ($NoJournal) { $fwd.NoJournal = $true }
+            foreach ($sw in 'WhatIf', 'Confirm', 'Verbose', 'Debug') { if ($PSBoundParameters.ContainsKey($sw)) { $fwd[$sw] = $PSBoundParameters[$sw] } }
             Write-Verbose 'Routing module -> Move-PowerShellModule'
             Move-PowerShellModule -ModulePath $full @fwd
         }

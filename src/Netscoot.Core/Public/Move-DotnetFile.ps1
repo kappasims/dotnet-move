@@ -80,6 +80,7 @@ function Move-DotnetFile {
                 if ($Force) { $fwd.Force = $true }
                 if ($NoBuild) { $fwd.NoBuild = $true }
                 if ($NoJournal) { $fwd.NoJournal = $true }
+                foreach ($sw in 'WhatIf', 'Confirm', 'Verbose', 'Debug') { if ($PSBoundParameters.ContainsKey($sw)) { $fwd[$sw] = $PSBoundParameters[$sw] } }
                 Write-Verbose "Routing $ext -> Move-DotnetProject"
                 Move-DotnetProject -Project $full @fwd
             }
@@ -87,6 +88,7 @@ function Move-DotnetFile {
                 $fwd = @{ Destination = $Destination }
                 if ($Force) { $fwd.Force = $true }
                 if ($NoJournal) { $fwd.NoJournal = $true }
+                foreach ($sw in 'WhatIf', 'Confirm', 'Verbose', 'Debug') { if ($PSBoundParameters.ContainsKey($sw)) { $fwd[$sw] = $PSBoundParameters[$sw] } }
                 Write-Verbose "Routing $ext -> Move-Solution"
                 Move-Solution -Path $full @fwd
             }
@@ -95,6 +97,7 @@ function Move-DotnetFile {
                 if ($PSBoundParameters.ContainsKey('RepositoryRoot')) { $fwd.RepositoryRoot = $RepositoryRoot }
                 if ($Force) { $fwd.Force = $true }
                 if ($NoJournal) { $fwd.NoJournal = $true }
+                foreach ($sw in 'WhatIf', 'Confirm', 'Verbose', 'Debug') { if ($PSBoundParameters.ContainsKey($sw)) { $fwd[$sw] = $PSBoundParameters[$sw] } }
                 Write-Verbose "Routing $ext -> Move-MSBuildImport"
                 Move-MSBuildImport -Path $full @fwd
             }

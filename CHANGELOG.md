@@ -6,6 +6,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- `Invoke-Netscoot -WhatIf -Verbose` (and `Move-DotnetFile`/`Move-DotnetFolder`/`Move-PowerShell`
+  routed the same way) now actually emit the planned reconciliation under `-Verbose` - the solutions
+  to update, consumers to repoint, and references to rebase. In 2.3.0 the dispatch chain only
+  forwarded `-WhatIf` and `-Confirm`, not `-Verbose`/`-Debug`, so the verbose plan emitted by the
+  inner mover silently disappeared and only the engine-routing trace remained. Direct invocation
+  (`Move-DotnetProject -WhatIf -Verbose ...`) was always fine.
+
 ### Changed
 
 - Internal helpers module renamed from `Netscoot.Shared` to `NetscootShared` (no dot). The
