@@ -616,7 +616,6 @@ Netscoot.Capability
                         Present  bool    # found on PATH
                         Version  string
                         Path     string
-
   Dotnet              Netscoot.ToolInfo
                         Present  bool    # found on PATH
                         Version  string
@@ -2101,7 +2100,6 @@ Netscoot.NativeMoveResult
   UnreconciledSettings  Netscoot.NativeSetting[]  # native path settings to verify by hand
                           Kind   string  # e.g. AdditionalIncludeDirectories, OutDir, Import
                           Value  string  # the stored path expression to verify by hand
-
   HadFilters            bool                      # a paired .vcxproj.filters moved too
 ```
 
@@ -2232,6 +2230,8 @@ Reports MissingMeta and OrphanMeta under Assets, one non-terminating error each.
 
 [Back to Command reference](#command-reference)
 
+---
+
 ### Output types
 
 Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several (and some
@@ -2263,6 +2263,8 @@ of these types.
 | [Netscoot.Update](#netscootupdate) | Whether the installed Netscoot is behind the latest GitHub release. |
 | [Netscoot.UpdatePolicy](#netscootupdatepolicy) | The effective auto-update policy and where it was resolved from. |
 
+---
+
 #### Netscoot.Capability
 
 [ [Get-NetscootCapability](#get-netscootcapability) ]
@@ -2278,7 +2280,6 @@ Netscoot.Capability
                         Present  bool    # found on PATH
                         Version  string
                         Path     string
-
   Dotnet              Netscoot.ToolInfo
                         Present  bool    # found on PATH
                         Version  string
@@ -2286,6 +2287,8 @@ Netscoot.Capability
 ```
 
 [Back to Output types](#output-types)
+
+---
 
 #### Netscoot.ConsistencyResult
 
@@ -2302,6 +2305,8 @@ Netscoot.ConsistencyResult
 
 [Back to Output types](#output-types)
 
+---
+
 #### Netscoot.GitAlias
 
 [ [Register-NetscootGitAlias](#register-netscootgitalias) ]
@@ -2317,6 +2322,8 @@ Netscoot.GitAlias
 ```
 
 [Back to Output types](#output-types)
+
+---
 
 #### Netscoot.ImportMoveResult
 
@@ -2339,6 +2346,8 @@ Netscoot.ImportMoveResult
 
 [Back to Output types](#output-types)
 
+---
+
 #### Netscoot.JournalEntry
 
 [ [Repair-NetscootJournal](#repair-netscootjournal) ]
@@ -2358,6 +2367,8 @@ Netscoot.JournalEntry
 
 [Back to Output types](#output-types)
 
+---
+
 #### Netscoot.MetaIntegrity
 
 [ [Test-UnityMetaIntegrity](#test-unitymetaintegrity) ]
@@ -2371,6 +2382,8 @@ Netscoot.MetaIntegrity
 ```
 
 [Back to Output types](#output-types)
+
+---
 
 #### Netscoot.MoveResult
 
@@ -2394,6 +2407,8 @@ Netscoot.MoveResult
 
 [Back to Output types](#output-types)
 
+---
+
 #### Netscoot.NativeMoveResult
 
 [ [Invoke-Netscoot](#invoke-netscoot) | [Move-NativeProject](#move-nativeproject) ]
@@ -2411,11 +2426,12 @@ Netscoot.NativeMoveResult
   UnreconciledSettings  Netscoot.NativeSetting[]  # native path settings to verify by hand
                           Kind   string  # e.g. AdditionalIncludeDirectories, OutDir, Import
                           Value  string  # the stored path expression to verify by hand
-
   HadFilters            bool                      # a paired .vcxproj.filters moved too
 ```
 
 [Back to Output types](#output-types)
+
+---
 
 #### Netscoot.NativeSetting
 
@@ -2430,6 +2446,8 @@ Netscoot.NativeSetting
 ```
 
 [Back to Output types](#output-types)
+
+---
 
 #### Netscoot.PathReference
 
@@ -2446,6 +2464,8 @@ Netscoot.PathReference
 ```
 
 [Back to Output types](#output-types)
+
+---
 
 #### Netscoot.PSModuleMoveResult
 
@@ -2466,6 +2486,8 @@ Netscoot.PSModuleMoveResult
 
 [Back to Output types](#output-types)
 
+---
+
 #### Netscoot.RepairResult
 
 [ [Repair-SolutionReferences](#repair-solutionreferences) ]
@@ -2484,6 +2506,8 @@ Netscoot.RepairResult
 ```
 
 [Back to Output types](#output-types)
+
+---
 
 #### Netscoot.ScriptMoveResult
 
@@ -2506,6 +2530,8 @@ Netscoot.ScriptMoveResult
 
 [Back to Output types](#output-types)
 
+---
+
 #### Netscoot.SolutionItem
 
 [ [Get-SolutionInventory](#get-solutioninventory) ]
@@ -2522,6 +2548,8 @@ Netscoot.SolutionItem
 ```
 
 [Back to Output types](#output-types)
+
+---
 
 #### Netscoot.SolutionMoveResult
 
@@ -2541,6 +2569,8 @@ Netscoot.SolutionMoveResult
 
 [Back to Output types](#output-types)
 
+---
+
 #### Netscoot.SyncResult
 
 [ [Sync-Solution](#sync-solution) ]
@@ -2554,6 +2584,8 @@ Netscoot.SyncResult
 ```
 
 [Back to Output types](#output-types)
+
+---
 
 #### Netscoot.ToolInfo
 
@@ -2569,6 +2601,8 @@ Netscoot.ToolInfo
 ```
 
 [Back to Output types](#output-types)
+
+---
 
 #### Netscoot.TreeMoveResult
 
@@ -2591,6 +2625,8 @@ Netscoot.TreeMoveResult
 
 [Back to Output types](#output-types)
 
+---
+
 #### Netscoot.UnityMoveResult
 
 [ [Invoke-Netscoot](#invoke-netscoot) | [Move-UnityAsset](#move-unityasset) ]
@@ -2611,6 +2647,8 @@ Netscoot.UnityMoveResult
 
 [Back to Output types](#output-types)
 
+---
+
 #### Netscoot.Update
 
 [ [Test-NetscootUpdate](#test-netscootupdate) | [Update-Netscoot](#update-netscoot) ]
@@ -2628,6 +2666,8 @@ Netscoot.Update
 
 [Back to Output types](#output-types)
 
+---
+
 #### Netscoot.UpdatePolicy
 
 [ [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) | [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) ]
@@ -2643,9 +2683,9 @@ Netscoot.UpdatePolicy
 
 [Back to Output types](#output-types)
 
-<!-- END GENERATED REFERENCE -->
-
 ---
+
+<!-- END GENERATED REFERENCE -->
 
 netscoot is an independent, community-maintained project, not affiliated with, sponsored by, or
 endorsed by Microsoft. ".NET," "dotnet," and related marks are trademarks of Microsoft Corporation,
