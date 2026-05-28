@@ -895,8 +895,8 @@ From Move-DotnetProjectTree.
 ```text
 Netscoot.TreeMoveResult
   Engine         string
-  Source         string
-  Destination    string
+  Source         string  # absolute path
+  Destination    string  # absolute path
   Performed      bool    # false under -WhatIf
   SkippedCount   int
   ProjectsMoved  int
@@ -957,13 +957,13 @@ Returns a single [Netscoot.MoveResult](#netscootmoveresult).
 ```text
 Netscoot.MoveResult
   Engine         string
-  Source         string
-  Destination    string
+  Source         string    # absolute path
+  Destination    string    # absolute path
   Performed      bool      # false under -WhatIf
   SkippedCount   int
+  Solutions      string[]  # solution names updated
   ConsumerCount  int       # external references repointed
   OwnRefCount    int       # the moved project's own references rebased
-  Solutions      string[]  # solution names updated
   Built          bool?     # $null with -NoBuild
 ```
 
@@ -1033,8 +1033,8 @@ Returns a single [Netscoot.TreeMoveResult](#netscoottreemoveresult).
 ```text
 Netscoot.TreeMoveResult
   Engine         string
-  Source         string
-  Destination    string
+  Source         string  # absolute path
+  Destination    string  # absolute path
   Performed      bool    # false under -WhatIf
   SkippedCount   int
   ProjectsMoved  int
@@ -1103,8 +1103,8 @@ Returns a single [Netscoot.ImportMoveResult](#netscootimportmoveresult).
 ```text
 Netscoot.ImportMoveResult
   Engine           string
-  Source           string
-  Destination      string
+  Source           string  # absolute path
+  Destination      string  # absolute path
   Performed        bool    # false under -WhatIf
   SkippedCount     int
   ImportersFixed   int     # files whose <Import> was rewritten
@@ -1218,8 +1218,8 @@ Returns a single [Netscoot.PSModuleMoveResult](#netscootpsmodulemoveresult).
 ```text
 Netscoot.PSModuleMoveResult
   Engine        string
-  Source        string
-  Destination   string
+  Source        string  # absolute path
+  Destination   string  # absolute path
   Performed     bool    # false under -WhatIf
   SkippedCount  int
   Manifest      string  # the manifest file name
@@ -1281,8 +1281,8 @@ Returns a single [Netscoot.ScriptMoveResult](#netscootscriptmoveresult).
 ```text
 Netscoot.ScriptMoveResult
   Engine            string
-  Source            string
-  Destination       string
+  Source            string  # absolute path
+  Destination       string  # absolute path
   Performed         bool    # false under -WhatIf
   SkippedCount      int
   ReferencersFixed  int     # scripts whose path to the moved file was rewritten
@@ -1343,8 +1343,8 @@ Returns a single [Netscoot.SolutionMoveResult](#netscootsolutionmoveresult).
 ```text
 Netscoot.SolutionMoveResult
   Engine           string
-  Source           string
-  Destination      string
+  Source           string  # absolute path
+  Destination      string  # absolute path
   Performed        bool    # false under -WhatIf
   SkippedCount     int
   ProjectsRebased  int     # stored paths rewritten
@@ -2093,13 +2093,16 @@ Returns a single [Netscoot.NativeMoveResult](#netscootnativemoveresult).
 ```text
 Netscoot.NativeMoveResult
   Engine                string
-  Source                string
-  Destination           string
-  Performed             bool      # false under -WhatIf
+  Source                string                    # absolute path
+  Destination           string                    # absolute path
+  Performed             bool                      # false under -WhatIf
   SkippedCount          int
-  HadFilters            bool      # a paired .vcxproj.filters moved too
-  Solutions             string[]  # solution names updated
-  UnreconciledSettings  object[]  # one per native path setting to verify by hand; each has the setting name and value
+  Solutions             string[]                  # solution names updated
+  UnreconciledSettings  Netscoot.NativeSetting[]  # native path settings to verify by hand
+                          Kind   string  # e.g. AdditionalIncludeDirectories, OutDir, Import
+                          Value  string  # the stored path expression to verify by hand
+
+  HadFilters            bool                      # a paired .vcxproj.filters moved too
 ```
 
 ##### Examples
@@ -2158,8 +2161,8 @@ Returns a single [Netscoot.UnityMoveResult](#netscootunitymoveresult).
 ```text
 Netscoot.UnityMoveResult
   Engine        string
-  Source        string
-  Destination   string
+  Source        string    # absolute path
+  Destination   string    # absolute path
   Performed     bool      # false under -WhatIf
   SkippedCount  int
   MetaMoved     bool      # the paired .meta moved too
@@ -2246,6 +2249,7 @@ of these types.
 | [Netscoot.MetaIntegrity](#netscootmetaintegrity) | One Unity `.meta` integrity problem: An asset missing a `.meta`, or an orphan `.meta`. |
 | [Netscoot.MoveResult](#netscootmoveresult) | Result of moving a .NET project folder and reconciling solutions and project references. |
 | [Netscoot.NativeMoveResult](#netscootnativemoveresult) | Result of moving a native / C++/CLI project (`.vcxproj`). |
+| [Netscoot.NativeSetting](#netscootnativesetting) | One path-bearing MSBuild setting in a moved `.vcxproj` that the dotnet CLI cannot reconcile. |
 | [Netscoot.PathReference](#netscootpathreference) | One build/CI/hook/container line that hardcodes a moved path and that no first-party tool reconciles. |
 | [Netscoot.PSModuleMoveResult](#netscootpsmodulemoveresult) | Result of moving a PowerShell module folder and reconciling its manifest. |
 | [Netscoot.RepairResult](#netscootrepairresult) | One dangling solution-membership or ProjectReference entry that was (or would be) repaired. |
@@ -2324,8 +2328,8 @@ Result of moving a shared MSBuild `.props/.targets` file and fixing its importer
 ```text
 Netscoot.ImportMoveResult
   Engine           string
-  Source           string
-  Destination      string
+  Source           string  # absolute path
+  Destination      string  # absolute path
   Performed        bool    # false under -WhatIf
   SkippedCount     int
   ImportersFixed   int     # files whose <Import> was rewritten
@@ -2378,13 +2382,13 @@ Result of moving a .NET project folder and reconciling solutions and project ref
 ```text
 Netscoot.MoveResult
   Engine         string
-  Source         string
-  Destination    string
+  Source         string    # absolute path
+  Destination    string    # absolute path
   Performed      bool      # false under -WhatIf
   SkippedCount   int
+  Solutions      string[]  # solution names updated
   ConsumerCount  int       # external references repointed
   OwnRefCount    int       # the moved project's own references rebased
-  Solutions      string[]  # solution names updated
   Built          bool?     # $null with -NoBuild
 ```
 
@@ -2399,13 +2403,30 @@ Result of moving a native / C++/CLI project (`.vcxproj`).
 ```text
 Netscoot.NativeMoveResult
   Engine                string
-  Source                string
-  Destination           string
-  Performed             bool      # false under -WhatIf
+  Source                string                    # absolute path
+  Destination           string                    # absolute path
+  Performed             bool                      # false under -WhatIf
   SkippedCount          int
-  HadFilters            bool      # a paired .vcxproj.filters moved too
-  Solutions             string[]  # solution names updated
-  UnreconciledSettings  object[]  # one per native path setting to verify by hand; each has the setting name and value
+  Solutions             string[]                  # solution names updated
+  UnreconciledSettings  Netscoot.NativeSetting[]  # native path settings to verify by hand
+                          Kind   string  # e.g. AdditionalIncludeDirectories, OutDir, Import
+                          Value  string  # the stored path expression to verify by hand
+
+  HadFilters            bool                      # a paired .vcxproj.filters moved too
+```
+
+[Back to Output types](#output-types)
+
+#### Netscoot.NativeSetting
+
+[ [Netscoot.NativeMoveResult](#netscootnativemoveresult) ]
+
+One path-bearing MSBuild setting in a moved `.vcxproj` that the dotnet CLI cannot reconcile.
+
+```text
+Netscoot.NativeSetting
+  Kind   string  # e.g. AdditionalIncludeDirectories, OutDir, Import
+  Value  string  # the stored path expression to verify by hand
 ```
 
 [Back to Output types](#output-types)
@@ -2436,8 +2457,8 @@ Result of moving a PowerShell module folder and reconciling its manifest.
 ```text
 Netscoot.PSModuleMoveResult
   Engine        string
-  Source        string
-  Destination   string
+  Source        string  # absolute path
+  Destination   string  # absolute path
   Performed     bool    # false under -WhatIf
   SkippedCount  int
   Manifest      string  # the manifest file name
@@ -2474,8 +2495,8 @@ Result of moving a standalone `.ps1` and fixing dot-source/call paths.
 ```text
 Netscoot.ScriptMoveResult
   Engine            string
-  Source            string
-  Destination       string
+  Source            string  # absolute path
+  Destination       string  # absolute path
   Performed         bool    # false under -WhatIf
   SkippedCount      int
   ReferencersFixed  int     # scripts whose path to the moved file was rewritten
@@ -2511,8 +2532,8 @@ Result of moving a solution file and rebasing the relative project paths it stor
 ```text
 Netscoot.SolutionMoveResult
   Engine           string
-  Source           string
-  Destination      string
+  Source           string  # absolute path
+  Destination      string  # absolute path
   Performed        bool    # false under -WhatIf
   SkippedCount     int
   ProjectsRebased  int     # stored paths rewritten
@@ -2559,8 +2580,8 @@ Result of moving a folder of one or more .NET projects in one operation.
 ```text
 Netscoot.TreeMoveResult
   Engine         string
-  Source         string
-  Destination    string
+  Source         string  # absolute path
+  Destination    string  # absolute path
   Performed      bool    # false under -WhatIf
   SkippedCount   int
   ProjectsMoved  int
@@ -2579,8 +2600,8 @@ Result of moving a Unity asset/folder while keeping its paired `.meta` file(s).
 ```text
 Netscoot.UnityMoveResult
   Engine        string
-  Source        string
-  Destination   string
+  Source        string    # absolute path
+  Destination   string    # absolute path
   Performed     bool      # false under -WhatIf
   SkippedCount  int
   MetaMoved     bool      # the paired .meta moved too

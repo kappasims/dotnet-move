@@ -205,11 +205,11 @@ function Move-DotnetProject {
         }
 
         New-MoveResult -TypeName 'Netscoot.MoveResult' -Engine 'dotnet' -Source $projFull -Destination $newProj `
-            -Performed $performed -SkippedCount $skippedCount -Extra @{
-            Solutions     = $slnNames
-            ConsumerCount = $consumers.Count
-            OwnRefCount   = $ownRefs.Count
-            Built         = $built
-        }
+            -Performed $performed -SkippedCount $skippedCount -Extra ([ordered]@{
+                Solutions     = $slnNames
+                ConsumerCount = $consumers.Count
+                OwnRefCount   = $ownRefs.Count
+                Built         = $built
+            })
     }
 }

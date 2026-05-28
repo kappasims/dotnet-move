@@ -39,3 +39,27 @@ Describe 'Invoke-MovePlan (transaction engine)' {
         }
     }
 }
+
+Describe 'New-MoveResult' {
+    It 'keeps the engine-specific extras in the order the caller wrote them' {
+        InModuleScope Netscoot.Shared {
+            # An [ordered] -Extra must preserve insertion order so the emitted shape matches the
+            # documented one (docs/output-types.psd1). A plain [hashtable] would enumerate by hash.
+            $r = New-MoveResult -TypeName 'Netscoot.MoveResult' -Engine 'dotnet' -Source 'a' -Destination 'b' `
+                -Performed $true -Extra ([ordered]@{ Solutions = @('S'); ConsumerCount = 1; OwnRefCount = 2; Built = $true })
+            ($r.PSObject.Properties.Name -join ',') |
+                Should -Be 'Engine,Source,Destination,Performed,SkippedCount,Solutions,ConsumerCount,OwnRefCount,Built'
+            $r.PSObject.TypeNames[0] | Should -Be 'Netscoot.MoveResult'
+        }
+    }
+
+    It 'always emits the uniform base shape first' {
+        InModuleScope Netscoot.Shared {
+            $r = New-MoveResult -TypeName 'Netscoot.SolutionMoveResult' -Engine 'dotnet' -Source 'a' -Destination 'b' `
+                -Performed $false -SkippedCount 3 -Extra ([ordered]@{ ProjectsRebased = 4 })
+            $names = $r.PSObject.Properties.Name
+            $names[0..4] | Should -Be @('Engine', 'Source', 'Destination', 'Performed', 'SkippedCount')
+            $r.SkippedCount | Should -Be 3
+        }
+    }
+}

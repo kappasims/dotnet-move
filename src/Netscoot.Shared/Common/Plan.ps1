@@ -9,6 +9,14 @@ function New-MoveResult {
     # Build a move cmdlet's result object with a uniform base shape (Engine, Source,
     # Destination, Performed, SkippedCount) plus engine-specific extras, and stamp the
     # given PSTypeName for formatting/filtering. Every move cmdlet emits one of these.
+    #
+    # Source/Destination are ABSOLUTE paths (the concrete on-disk locations the move acted on),
+    # unlike the repository-relative paths the inventory/analysis result types emit.
+    #
+    # $Extra is typed [System.Collections.IDictionary] (not [hashtable]) and callers pass an
+    # [ordered] dictionary, so the engine-specific properties keep their written order. A plain
+    # [hashtable] enumerates by hash, which would scramble the property order against the documented
+    # shape (docs/output-types.psd1) and the default Format-List output.
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$TypeName,
@@ -17,7 +25,7 @@ function New-MoveResult {
         [Parameter(Mandatory)][string]$Destination,
         [bool]$Performed,
         [int]$SkippedCount = 0,
-        [hashtable]$Extra = @{}
+        [System.Collections.IDictionary]$Extra = [ordered]@{}
     )
     $ordered = [ordered]@{
         Engine       = $Engine

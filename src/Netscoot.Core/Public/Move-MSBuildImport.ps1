@@ -159,10 +159,10 @@ function Move-MSBuildImport {
         }
 
         New-MoveResult -TypeName 'Netscoot.ImportMoveResult' -Engine 'dotnet' -Source $src -Destination $newPath `
-            -Performed $performed -SkippedCount $skippedCount -Extra @{
-            ImportersFixed  = $importers.Count
-            OwnImportsFixed = $ownImports.Count
-            AutoImported    = $autoImported
-        }
+            -Performed $performed -SkippedCount $skippedCount -Extra ([ordered]@{
+                ImportersFixed  = $importers.Count
+                OwnImportsFixed = $ownImports.Count
+                AutoImported    = $autoImported
+            })
     }
 }

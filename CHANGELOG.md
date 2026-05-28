@@ -15,6 +15,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Commands that take a path or repository root from the pipeline now accept a path string or a file/directory
   item (`Get-Item` / `Get-ChildItem`); piping any other kind of object reports a clear input error instead
   of binding an unexpected property. This makes one consistent pipeline contract across the module.
+- Move results now have a default table view (engine, performed, source, destination), so a pipeline of
+  moves renders as a table like the other result types instead of a long list.
+
+### Fixed
+
+- Move result objects now expose their properties in a stable, documented order; the engine-specific
+  fields were previously emitted in an unpredictable order.
 
 ## [2.1.1] - 2026-05-28
 

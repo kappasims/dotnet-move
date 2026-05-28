@@ -126,10 +126,10 @@ function Move-UnityAsset {
         }
 
         New-MoveResult -TypeName 'Netscoot.UnityMoveResult' -Engine 'unity' -Source $src -Destination $dst `
-            -Performed $performed -SkippedCount 0 -Extra @{
-            MetaMoved    = ($performed -and $hasMeta)
-            IsAsmdef     = $isAsmdef
-            ReferencedBy = $referencers
-        }
+            -Performed $performed -SkippedCount 0 -Extra ([ordered]@{
+                MetaMoved    = ($performed -and $hasMeta)
+                IsAsmdef     = $isAsmdef
+                ReferencedBy = $referencers
+            })
     }
 }
