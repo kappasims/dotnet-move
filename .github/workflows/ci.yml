@@ -44,9 +44,20 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      # build.ps1 no longer auto-installs Pester; CI provisions it (pinned), retrying so a transient
-      # PSGallery/NuGet hiccup does not fail the gate.
+      # Cache the pinned Pester so the install step is skipped on a hit (the version is immutable, so
+      # the key never needs to change until we bump it). This removes a slow, PSGallery-dependent step
+      # from every run after the first.
+      - name: Cache Pester
+        id: cache-pester
+        uses: actions/cache@v4
+        with:
+          path: ~\Documents\PowerShell\Modules\Pester
+          key: pester-pwsh-5.7.1-${{ runner.os }}
+
+      # build.ps1 no longer auto-installs Pester; CI provisions it (pinned) on a cache miss, retrying
+      # so a transient PSGallery/NuGet hiccup does not fail the gate.
       - name: Install Pester
+        if: steps.cache-pester.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -81,7 +92,18 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+      # Cache Pester for Desktop too. This is the bigger win: the 5.1 install bootstraps the NuGet
+      # provider and pulls Pester through the older PowerShellGet, ~90-120s vs ~20s on PS7. A cache hit
+      # skips the whole step (provider bootstrap included). The WindowsPowerShell module path differs
+      # from PS7's, so this is a separate cache entry.
+      - name: Cache Pester (Windows PowerShell 5.1)
+        id: cache-pester
+        uses: actions/cache@v4
+        with:
+          path: ~\Documents\WindowsPowerShell\Modules\Pester
+          key: pester-winps-5.7.1-${{ runner.os }}
       - name: Install Pester (Windows PowerShell 5.1)
+        if: steps.cache-pester.outputs.cache-hit != 'true'
         shell: powershell
         run: |
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
