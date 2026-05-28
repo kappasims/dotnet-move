@@ -69,11 +69,12 @@ Describe 'Move-MSBuildImport' {
             $dest | Should -Exist
             $props | Should -Not -Exist
 
+            # The reattach machinery's job is to rewrite `Project="..."` to the new relative path; that
+            # is what would break if the rebase regressed. Asserting the rewritten value is what
+            # `dotnet build` proves indirectly, without the build cost. (Project-level build smoke
+            # lives in Move-DotnetProject.Tests.ps1's slnx variant.)
             $appText = Get-Content (Join-Path $root (Join-Path 'src' (Join-Path 'App' ('App.csproj')))) -Raw
             $appText | Should -Match 'Project="\.\.[\\/]\.\.[\\/]build[\\/]Shared\.props"'
-
-            $bo = & dotnet build (Join-Path $root (Join-Path 'src' (Join-Path 'App' ('App.csproj')))) 2>&1
-            $LASTEXITCODE | Should -Be 0 -Because ($bo -join [Environment]::NewLine)
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 

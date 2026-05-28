@@ -12,6 +12,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   solutions. Previously the comparison filter only matched `.csproj` / `.fsproj` / `.vbproj` / `.vcxproj`,
   so a `.pssproj` listed in one solution but not another silently read as "all solutions agree" even
   though `Get-SolutionInventory` clearly showed the divergence.
+- The PowerShell Gallery listing now lists `Get-NetscootUpdatePolicy`, `Set-NetscootUpdatePolicy`,
+  and `Repair-NetscootJournal` by name. These commands shipped in 2.2.0 and worked at runtime, but
+  were absent from the umbrella manifest, so a Gallery search by cmdlet name didn't surface Netscoot.
+- `Remove-Module Netscoot` now also unloads the nested engines (`Netscoot.Core`, `Netscoot.Unity`,
+  `Netscoot.Native`, `Netscoot.Shared`). Previously they were left resident, since the umbrella
+  loaded them globally, leaving the session in a half-removed state.
 
 ### Changed
 

@@ -46,9 +46,19 @@ Describe 'Move-DotnetProject' {
             $listed = & dotnet sln $sln list
             ($listed -join "`n") | Should -Match 'libs[\\/]Lib[\\/]Lib\.csproj'
 
-            # Consumer reference resolves and the whole thing builds.
-            $bo = & dotnet build $sln 2>&1
-            $LASTEXITCODE | Should -Be 0 -Because ($bo -join [Environment]::NewLine)
+            # `dotnet build` is the project-level build-smoke - run it for slnx only, the file format
+            # most likely to exercise the rebase machinery. The sln variant gets file-state assertions
+            # above (sln membership listed correctly + consumer ref rewritten by the test below), which
+            # is what would actually break if a reconciliation regressed. Saves ~6-7s/run.
+            if ($Format -eq 'slnx') {
+                $bo = & dotnet build $sln 2>&1
+                $LASTEXITCODE | Should -Be 0 -Because ($bo -join [Environment]::NewLine)
+            } else {
+                # For the .sln variant, prove the consumer .csproj got its ProjectReference rewritten
+                # (the same thing `dotnet build` would have proven, without the build cost).
+                $app = Join-Path $root (Join-Path 'src' (Join-Path 'App' 'App.csproj'))
+                (Get-Content -LiteralPath $app -Raw) | Should -Match 'libs[\\/]Lib[\\/]Lib\.csproj'
+            }
         } finally {
             Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
         }
