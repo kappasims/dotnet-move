@@ -6,6 +6,36 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-05-29
+
+### Changed
+
+- `Repair-SolutionReferences -Fix` / `-Prune` and `Sync-Solution` now prompt by default
+  (`ConfirmImpact = 'High'`), matching `Move-Solution` and `Move-MSBuildImport`, which mutate
+  the same kind of file. Pass `-Confirm:$false` to suppress; the report-only path (no
+  `-Fix` / `-Prune`) is unaffected. Callers that relied on the previous no-prompt default
+  need to start passing `-Confirm:$false` explicitly.
+- `Undo-Netscoot -Id` and `Repair-NetscootJournal -Id` now validate the id format at
+  parameter bind (`^[a-zA-Z0-9]{8}$`). A typo (wrong length, stray whitespace, punctuation)
+  now fails at the call site instead of at the journal-lookup error.
+
+### Added
+
+- `Undo-Netscoot` and `Unregister-NetscootGitAlias` now declare their output types via
+  `[OutputType()]`. Undo-Netscoot returns the nine move-result / journal-entry types it
+  produces depending on parameters; Unregister-NetscootGitAlias returns nothing (`[void]`).
+  The generated Command reference now renders an Output section for both, and `Get-Command`
+  / tab-completion see the declared types.
+
+### Fixed
+
+- The Command reference's "These share a common shape" line on `Undo-Netscoot` is no
+  longer misleading. The docs generator's field-name comparison was case-insensitive,
+  which collapsed `Netscoot.JournalEntry.engine` with `Netscoot.MoveResult.Engine` and
+  claimed both as shared. The line now correctly reports the types as heterogeneous when
+  field casing differs, while move-result-only commands (`Invoke-Netscoot`,
+  `Move-DotnetFile`) continue to show the correct common shape.
+
 ## [2.3.2] - 2026-05-29
 
 ### Added
@@ -161,7 +191,8 @@ See the release notes for the full pull-request list.
 
 DotnetMove 1.x history predates the rename; see the legacy DotnetMove releases.
 
-[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.3.2...HEAD
+[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.4.0...HEAD
+[2.4.0]: https://github.com/kappasims/netscoot/compare/v2.3.2...v2.4.0
 [2.3.2]: https://github.com/kappasims/netscoot/compare/v2.3.1...v2.3.2
 [2.3.1]: https://github.com/kappasims/netscoot/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/kappasims/netscoot/compare/v2.2.0...v2.3.0
