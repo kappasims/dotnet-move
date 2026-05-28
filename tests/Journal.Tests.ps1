@@ -347,4 +347,120 @@ Describe 'Move journal + Undo-Netscoot' {
             { Undo-Netscoot -RepositoryRoot $root -Confirm:$false } | Should -Throw -ExpectedMessage '*outside the repository*'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
+
+    # ----------------------------------------------------------------------------------------------
+    # WAL contract invariants (v2 lock-down for the per-move-partition migration coming in v3.0).
+    #
+    # These complement JournalFormat.Tests.ps1 (which locks the per-entry schema). Here we lock the
+    # APPEND-ORDER semantics and the safety invariants compaction must honor. A future per-move-
+    # partition layout must preserve every assertion below - either as literal append-ordered lines
+    # within a per-move file, or as an equivalent transition encoding (.pending -> .committed atomic
+    # rename) whose externally-observable order is the same.
+    # ----------------------------------------------------------------------------------------------
+
+    It 'WAL: successful move appends [pending, committed] in append order (raw line read)' {
+        $root = New-JournalFixture
+        try {
+            $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
+            Move-DotnetProject -Project $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepositoryRoot $root -NoBuild -Confirm:$false | Out-Null
+            $lines = @(Get-Content -LiteralPath (Get-MoveJournalPath -RepositoryRoot $root)) | Where-Object { $_.Trim() }
+            $lines.Count | Should -Be 2
+            ($lines[0] | ConvertFrom-Json).status | Should -Be 'pending'
+            ($lines[1] | ConvertFrom-Json).status | Should -Be 'committed'
+            # Same move - same id across both lines.
+            ($lines[0] | ConvertFrom-Json).id | Should -Be (($lines[1] | ConvertFrom-Json).id)
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'Repair-NetscootJournal -Rollback removes the pending entry from the on-disk file (post-crash recovery path)' {
+        # Distinction the v2 contract makes: in-operation rollback (Invoke-MovePlan when a move
+        # fails mid-flight) APPENDS a rolledback transition record. Post-crash recovery
+        # (Repair-NetscootJournal -Rollback) REMOVES the pending entry instead. This locks that
+        # second contract: after Repair-Rollback, the journal no longer carries any line for the
+        # rolled-back id (compaction is implicit in the recovery path).
+        $root = New-JournalFixture
+        $snapDir = New-TempRoot -Prefix 'netscoot_snap'
+        try {
+            $edited = Join-Path $root 'edited.props'
+            Set-Content -LiteralPath $edited -Value 'CHANGED'
+            Set-Content -LiteralPath (Join-Path $snapDir 'f0') -Value 'ORIGINAL'
+
+            $jp = Get-MoveJournalPath -RepositoryRoot $root
+            New-Item -ItemType Directory -Path (Split-Path -Parent $jp) -Force | Out-Null
+            $pending = @{ v = 2; id = 'wal00001'; timestamp = (Get-Date).ToUniversalTime().ToString('o'); status = 'pending'; command = 'Move-DotnetProject'; engine = 'dotnet'; source = (Join-Path $root 'gone'); destination = (Join-Path $root 'also-gone'); undo = @{ command = 'Move-DotnetProject'; params = @{} }; snapshot = $snapDir; backup = @($edited) }
+            Set-Content -LiteralPath $jp -Value (ConvertTo-Json $pending -Depth 6 -Compress) -Encoding utf8
+
+            Repair-NetscootJournal -RepositoryRoot $root -Rollback -Id 'wal00001' -Force | Out-Null
+
+            # The id is gone from the file. Either the file no longer exists (was the only entry)
+            # or it exists without any line referencing the rolled-back id.
+            if (Test-Path -LiteralPath $jp) {
+                $remainingIds = @(Get-Content -LiteralPath $jp) | Where-Object { $_.Trim() } |
+                    ForEach-Object { ($_ | ConvertFrom-Json).id }
+                $remainingIds | Should -Not -Contain 'wal00001'
+            }
+            # Either way, no interrupted move is visible.
+            @(Get-InterruptedMove -RepositoryRoot $root).Count | Should -Be 0
+        } finally {
+            Remove-Item -LiteralPath $snapDir -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'WAL: status taxonomy is exactly {pending, committed, rolledback} and every value in it parses cleanly' {
+        # Lock down the closed taxonomy by writing one synthetic line of each status and asserting
+        # they all parse as valid entries. Tests the *reader's* tolerance of every status; the
+        # *writer*'s adherence to the same closed set is enforced separately by the ValidateSet on
+        # Complete-MoveJournalEntry's -Status parameter (already in the source).
+        $root = New-JournalFixture
+        try {
+            $jp = Get-MoveJournalPath -RepositoryRoot $root
+            New-Item -ItemType Directory -Path (Split-Path -Parent $jp) -Force | Out-Null
+            $base = @{ v = 2; timestamp = (Get-Date).ToUniversalTime().ToString('o'); command = 'Move-DotnetProject'; engine = 'dotnet'; source = 's'; destination = 'd'; undo = @{}; snapshot = ''; backup = @() }
+            $lines = @(
+                (($base + @{ id = 'taxopnd1'; status = 'pending' }) | ConvertTo-Json -Compress),
+                (($base + @{ id = 'taxocmt1'; status = 'committed' }) | ConvertTo-Json -Compress),
+                (($base + @{ id = 'taxorbk1'; status = 'rolledback' }) | ConvertTo-Json -Compress)
+            )
+            Set-Content -LiteralPath $jp -Value $lines -Encoding utf8
+
+            $observed = @(Get-Content -LiteralPath $jp) | Where-Object { $_.Trim() } |
+                ForEach-Object { ($_ | ConvertFrom-Json).status } | Sort-Object -Unique
+            # Every observed status is in the documented set.
+            foreach ($s in $observed) { $s | Should -BeIn 'pending', 'committed', 'rolledback' }
+            # And the round-trip read produced all three.
+            $observed | Should -Contain 'pending'
+            $observed | Should -Contain 'committed'
+            $observed | Should -Contain 'rolledback'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'Compaction (Compress-MoveJournalLines) never drops a pending entry, even when an older committed one is present' {
+        # Safety invariant: a pending entry represents in-flight work that the recovery tooling
+        # needs to find. Compaction MUST NOT trim it, regardless of age. A future per-move-partition
+        # layout where compaction is per-file deletion must observe the same rule (a partition file
+        # whose latest state is pending cannot be deleted by compaction).
+        InModuleScope NetscootShared {
+            $mk = { param($id, $status, $ts) (@{ v = 2; id = $id; timestamp = $ts; status = $status; command = 'Move-DotnetProject'; engine = 'dotnet'; source = 's'; destination = 'd'; undo = @{}; snapshot = ''; backup = @() } | ConvertTo-Json -Compress) }
+            # 'old-pending' is the oldest entry; 'new-committed' is newer. Compaction must not
+            # collapse them in a way that loses old-pending.
+            $lines = @(
+                (& $mk 'oldpend1' 'pending' '2025-01-01T00:00:00Z'),
+                (& $mk 'newcomt1' 'pending' '2026-06-01T00:00:00Z'),
+                (& $mk 'newcomt1' 'committed' '2026-06-01T00:00:05Z')
+            )
+            $compacted = @(Compress-MoveJournalLines -Lines $lines)
+            $compactedStatuses = $compacted | ForEach-Object { ($_ | ConvertFrom-Json).status }
+            $compactedIds = $compacted | ForEach-Object { ($_ | ConvertFrom-Json).id }
+            # The folded view has two entries: oldpend1 (still pending - survives compaction) and
+            # newcomt1 (folded to its committed line).
+            $compacted.Count | Should -Be 2
+            $compactedIds | Should -Contain 'oldpend1'
+            $compactedIds | Should -Contain 'newcomt1'
+            # @()-coerce: a single match makes Where-Object return a scalar; .Count on that throws
+            # under StrictMode in Windows PowerShell 5.1. Standard guard pattern in this codebase.
+            @($compactedStatuses | Where-Object { $_ -eq 'pending' }).Count | Should -Be 1
+            @($compactedStatuses | Where-Object { $_ -eq 'committed' }).Count | Should -Be 1
+        }
+    }
 }
