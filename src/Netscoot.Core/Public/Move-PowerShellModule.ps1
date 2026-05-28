@@ -61,14 +61,24 @@ function Move-PowerShellModule {
     } else {
         $moduleDir = $src
         $manifest  = Get-ChildItem -LiteralPath $moduleDir -Filter '*.psd1' | Select-Object -First 1
-        if (-not $manifest) { throw "No .psd1 manifest found in $moduleDir" }
+        if (-not $manifest) {
+            $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
+                    [System.IO.FileNotFoundException]::new("No .psd1 manifest found in $moduleDir"),
+                    'ManifestNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, $moduleDir))
+            return
+        }
         $manifestName = $manifest.Name
     }
 
     # git mv semantics: an existing destination directory means "move the module folder into it";
     # otherwise Destination is the module's new folder path.
     $newDir = Resolve-MoveTarget -Source $moduleDir -Destination $Destination
-    if (Test-Path -LiteralPath $newDir) { throw "Destination already exists: $newDir" }
+    if (Test-Path -LiteralPath $newDir) {
+        $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
+                [System.IO.IOException]::new("Destination already exists: $newDir"),
+                'DestinationExists', [System.Management.Automation.ErrorCategory]::ResourceExists, $newDir))
+        return
+    }
 
     Write-MovePlan -Cmdlet $PSCmdlet -Caption "Move-PowerShellModule $manifestName  $moduleDir -> $newDir" -Items ([ordered]@{
             'manifest to update' = $manifestName

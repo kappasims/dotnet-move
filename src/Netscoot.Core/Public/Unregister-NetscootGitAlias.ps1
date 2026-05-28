@@ -24,7 +24,7 @@ function Unregister-NetscootGitAlias {
     if (-not (Test-GitAvailable)) {
         Write-CapabilityGuidance -Tool git
         $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
-                [System.InvalidOperationException]::new('git is required but was not found.'),
+                [System.InvalidOperationException]::new('git is required to remove a git alias but was not found.'),
                 'GitMissing', [System.Management.Automation.ErrorCategory]::NotInstalled, $null))
         return
     }
@@ -37,7 +37,7 @@ function Unregister-NetscootGitAlias {
             Write-Host "Unregistered 'git netscoot' ($Scope)." -ForegroundColor Green
         } else {
             $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
-                    [System.InvalidOperationException]::new("git config --unset failed (exit $LASTEXITCODE)."),
+                    [System.InvalidOperationException]::new("git config --unset failed (exit $LASTEXITCODE). For -Scope Local you must be inside a git repository."),
                     'GitConfigFailed', [System.Management.Automation.ErrorCategory]::InvalidOperation, $null))
         }
     }
