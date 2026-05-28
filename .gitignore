@@ -4,6 +4,7 @@ test-subjects/
 # PowerShell / dotnet test artifacts
 *.log
 TestResults/
+testResults.xml
 .vs/
 bin/
 obj/
