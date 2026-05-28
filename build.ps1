@@ -311,8 +311,6 @@ function Invoke-DocsTask {
             $bare = $f.Type -replace '[\[\]?]', ''
             if ($typeDefs.ContainsKey($bare) -and ($bare -notin $ancestorsNow)) {
                 $lines += (Format-TypeCodeView -Name $bare -Def $typeDefs[$bare] -Indent ($Indent + $nameW + 4) -Ancestors $ancestorsNow)
-                # Separate a displayed nested block from the next sibling property with a blank line.
-                if ($i -lt $fields.Count - 1) { $lines += '' }
             }
         }
         $lines -join "`n"
@@ -509,6 +507,10 @@ function Invoke-DocsTask {
             [void]$sb.AppendLine()
         }
     }
+    # Trailing rule so the last command is closed by a separator too, matching the leading rule
+    # each command opens with.
+    [void]$sb.AppendLine('---')
+    [void]$sb.AppendLine()
 
     # Output types: the second subsection under "# Reference", one entry per typedef with the same
     # code-view the commands link to. Back-references (which commands emit it, which types nest it)
@@ -536,6 +538,10 @@ function Invoke-DocsTask {
     [void]$sb.AppendLine()
     foreach ($name in $sortedTypes) {
         $def = $typeDefs[$name]
+        # Horizontal rule before each type so the entries read as distinct blocks, mirroring the
+        # per-command detail above.
+        [void]$sb.AppendLine('---')
+        [void]$sb.AppendLine()
         [void]$sb.AppendLine("#### $name")
         [void]$sb.AppendLine()
         # Cross-references as a compact bracketed list (no label), one font size down. The link
@@ -553,6 +559,9 @@ function Invoke-DocsTask {
         [void]$sb.AppendLine((Format-Small '[Back to Output types](#output-types)'))
         [void]$sb.AppendLine()
     }
+    # Trailing rule so the last type is closed by a separator too, matching the leading rule.
+    [void]$sb.AppendLine('---')
+    [void]$sb.AppendLine()
 
     # Inject into the marked section of README.md (replacing it in place, or appending the
     # section if the markers are not present yet).
