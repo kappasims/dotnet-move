@@ -26,9 +26,12 @@ function Test-UnityMetaIntegrity {
         Netscoot.MetaIntegrity - one per problem.
 
     .EXAMPLE
+        # Report MissingMeta and OrphanMeta under Assets as warnings
+        Test-UnityMetaIntegrity -Root ./Assets
+        # Same scan, but escalate each problem to a non-terminating error (e.g. to gate CI)
         Test-UnityMetaIntegrity -Root ./Assets -Strict
-
-        Reports MissingMeta and OrphanMeta under Assets, one non-terminating error each.
+        # Run from the pipeline
+        Get-Item ./Assets | Test-UnityMetaIntegrity
     #>
     [CmdletBinding()]
     [OutputType('Netscoot.MetaIntegrity')]

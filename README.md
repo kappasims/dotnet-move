@@ -666,10 +666,9 @@ Netscoot.Capability
 ##### Examples
 
 ```powershell
+# Probe machine capabilities (returns an object with Platform, PSEdition, Git, Dotnet, DotnetSupportsSlnx)
 Get-NetscootCapability
 ```
-
-Returns an object with Platform, PSEdition, Git, Dotnet, and DotnetSupportsSlnx.
 
 [Back to Command reference](#command-reference)
 
@@ -2272,10 +2271,15 @@ Netscoot.MetaIntegrity
 ##### Examples
 
 ```powershell
-Test-UnityMetaIntegrity -Root ./Assets -Strict
-```
+# Report MissingMeta and OrphanMeta under Assets as warnings
+Test-UnityMetaIntegrity -Root ./Assets
 
-Reports MissingMeta and OrphanMeta under Assets, one non-terminating error each.
+# Same scan, but escalate each problem to a non-terminating error (e.g. to gate CI)
+Test-UnityMetaIntegrity -Root ./Assets -Strict
+
+# Run from the pipeline
+Get-Item ./Assets | Test-UnityMetaIntegrity
+```
 
 [Back to Command reference](#command-reference)
 

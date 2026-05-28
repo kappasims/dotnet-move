@@ -13,9 +13,8 @@ function Get-NetscootCapability {
         Netscoot.Capability
 
     .EXAMPLE
+        # Probe machine capabilities (returns an object with Platform, PSEdition, Git, Dotnet, DotnetSupportsSlnx)
         Get-NetscootCapability
-
-        Returns an object with Platform, PSEdition, Git, Dotnet, and DotnetSupportsSlnx.
     #>
     [CmdletBinding()]
     [OutputType('Netscoot.Capability')]
