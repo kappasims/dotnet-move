@@ -70,6 +70,15 @@ function Undo-Netscoot {
         Undo-Netscoot -After (Get-Date).AddHours(-1)
         # Reverse every recorded move (prompts; -Force to skip the prompt)
         Undo-Netscoot -All
+
+    .LINK
+        Repair-NetscootJournal
+
+    .LINK
+        Set-NetscootJournal
+
+    .LINK
+        Clear-NetscootJournal
     #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '', Justification = 'Delegates to a mover cmdlet that calls ShouldProcess')]
     [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = 'Last')]

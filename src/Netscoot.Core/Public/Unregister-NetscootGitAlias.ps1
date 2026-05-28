@@ -14,6 +14,9 @@ function Unregister-NetscootGitAlias {
         Unregister-NetscootGitAlias
         # Remove the global alias from ~/.gitconfig
         Unregister-NetscootGitAlias -Scope Global
+
+    .LINK
+        Register-NetscootGitAlias
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     param(

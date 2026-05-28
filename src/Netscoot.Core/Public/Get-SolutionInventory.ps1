@@ -31,6 +31,15 @@ function Get-SolutionInventory {
         Get-SolutionInventory | Where-Object Kind -eq 'SolutionItem'
         # Kind is the [Netscoot.SolutionItemKind] enum, so this also works
         Get-SolutionInventory | Where-Object Kind -eq ([Netscoot.SolutionItemKind]::UnreferencedProject)
+
+    .LINK
+        Test-SolutionConsistency
+
+    .LINK
+        Sync-Solution
+
+    .LINK
+        Repair-SolutionReferences
     #>
     [CmdletBinding()]
     [OutputType('Netscoot.SolutionItem')]

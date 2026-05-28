@@ -21,6 +21,15 @@ function Clear-NetscootJournal {
         Clear-NetscootJournal
         # Preview without deleting
         Clear-NetscootJournal -WhatIf
+
+    .LINK
+        Set-NetscootJournal
+
+    .LINK
+        Undo-Netscoot
+
+    .LINK
+        Repair-NetscootJournal
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([void])]

@@ -31,6 +31,15 @@ function Test-SolutionConsistency {
         Test-SolutionConsistency -RepositoryRoot . -Strict
         # Check several repositories from the pipeline
         Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
+
+    .LINK
+        Get-SolutionInventory
+
+    .LINK
+        Sync-Solution
+
+    .LINK
+        Repair-SolutionReferences
     #>
     [CmdletBinding()]
     [OutputType('Netscoot.ConsistencyResult')]

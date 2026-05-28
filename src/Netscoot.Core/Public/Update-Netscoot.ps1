@@ -36,6 +36,15 @@ function Update-Netscoot {
         Update-Netscoot -WhatIf
         # Reinstall the latest even if already up to date
         Update-Netscoot -Force
+
+    .LINK
+        Test-NetscootUpdate
+
+    .LINK
+        Get-NetscootUpdatePolicy
+
+    .LINK
+        Set-NetscootUpdatePolicy
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     [OutputType('Netscoot.Update')]

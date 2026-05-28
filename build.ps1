@@ -531,6 +531,23 @@ function Invoke-DocsTask {
                 }
             }
 
+            # Related cmdlets (from .LINK blocks). Only emit when at least one link points at a
+            # documented cmdlet in $blurbs (so a stray external .LINK target is dropped quietly
+            # instead of producing a broken anchor). Renders one font size down as a compact
+            # bracketed list, matching the type-page cross-ref style.
+            $related = @()
+            foreach ($l in @($h.relatedLinks.navigationLink)) {
+                $name = ("$($l.linkText)").Trim()
+                if ($name -and $blurbs.ContainsKey($name) -and $name -ne $c.Name) { $related += $name }
+            }
+            if ($related.Count) {
+                [void]$sb.AppendLine('##### Related')
+                [void]$sb.AppendLine()
+                $links = $related | ForEach-Object { '[' + $_ + '](#' + $_.ToLower() + ')' }
+                [void]$sb.AppendLine((Format-Small ('[ ' + ($links -join ' | ') + ' ]')))
+                [void]$sb.AppendLine()
+            }
+
             # Back-link to the index, so a reader who jumped to one command can return without
             # scrolling. Anchor matches the "## Command reference" heading.
             [void]$sb.AppendLine((Format-Small '[Back to Command reference](#command-reference)'))

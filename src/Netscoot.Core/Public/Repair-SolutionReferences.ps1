@@ -40,6 +40,18 @@ function Repair-SolutionReferences {
         Repair-SolutionReferences -RepositoryRoot . -Fix
         # Also remove entries whose project is gone for good - preview the whole thing first
         Repair-SolutionReferences -RepositoryRoot . -Fix -Prune -WhatIf
+
+    .LINK
+        Get-SolutionInventory
+
+    .LINK
+        Test-SolutionConsistency
+
+    .LINK
+        Sync-Solution
+
+    .LINK
+        Find-PathReference
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType('Netscoot.RepairResult')]

@@ -33,6 +33,15 @@ function Set-NetscootJournal {
         Set-NetscootJournal -Enabled $true
         # Turn journaling off for every repository on the machine
         Set-NetscootJournal -Enabled $false -Global
+
+    .LINK
+        Clear-NetscootJournal
+
+    .LINK
+        Undo-Netscoot
+
+    .LINK
+        Repair-NetscootJournal
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([void])]

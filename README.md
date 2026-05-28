@@ -567,6 +567,10 @@ Clear-NetscootJournal
 Clear-NetscootJournal -WhatIf
 ```
 
+##### Related
+
+[ [Set-NetscootJournal](#set-netscootjournal) | [Undo-Netscoot](#undo-netscoot) | [Repair-NetscootJournal](#repair-netscootjournal) ]
+
 [Back to Command reference](#command-reference)
 
 ---
@@ -712,6 +716,10 @@ Netscoot.UpdatePolicy
 Get-NetscootUpdatePolicy
 ```
 
+##### Related
+
+[ [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) | [Test-NetscootUpdate](#test-netscootupdate) | [Update-Netscoot](#update-netscoot) ]
+
 [Back to Command reference](#command-reference)
 
 ---
@@ -769,6 +777,10 @@ Get-SolutionInventory | Where-Object Kind -eq 'SolutionItem'
 # Kind is the [Netscoot.SolutionItemKind] enum, so this also works
 Get-SolutionInventory | Where-Object Kind -eq ([Netscoot.SolutionItemKind]::UnreferencedProject)
 ```
+
+##### Related
+
+[ [Test-SolutionConsistency](#test-solutionconsistency) | [Sync-Solution](#sync-solution) | [Repair-SolutionReferences](#repair-solutionreferences) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1462,6 +1474,10 @@ Register-NetscootGitAlias
 Register-NetscootGitAlias -Scope Global
 ```
 
+##### Related
+
+[ [Unregister-NetscootGitAlias](#unregister-netscootgitalias) ]
+
 [Back to Command reference](#command-reference)
 
 ---
@@ -1535,6 +1551,10 @@ Repair-NetscootJournal -Discard -Id a1b2c3d4
 Repair-NetscootJournal -ClearOrphanSnapshots
 ```
 
+##### Related
+
+[ [Undo-Netscoot](#undo-netscoot) | [Set-NetscootJournal](#set-netscootjournal) | [Clear-NetscootJournal](#clear-netscootjournal) ]
+
 [Back to Command reference](#command-reference)
 
 ---
@@ -1599,6 +1619,10 @@ Repair-SolutionReferences -RepositoryRoot . -Fix
 # Also remove entries whose project is gone for good - preview the whole thing first
 Repair-SolutionReferences -RepositoryRoot . -Fix -Prune -WhatIf
 ```
+
+##### Related
+
+[ [Get-SolutionInventory](#get-solutioninventory) | [Test-SolutionConsistency](#test-solutionconsistency) | [Sync-Solution](#sync-solution) | [Find-PathReference](#find-pathreference) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1701,6 +1725,10 @@ Set-NetscootJournal -Enabled $true
 Set-NetscootJournal -Enabled $false -Global
 ```
 
+##### Related
+
+[ [Clear-NetscootJournal](#clear-netscootjournal) | [Undo-Netscoot](#undo-netscoot) | [Repair-NetscootJournal](#repair-netscootjournal) ]
+
 [Back to Command reference](#command-reference)
 
 ---
@@ -1757,6 +1785,10 @@ Set-NetscootUpdatePolicy -State Disabled -Scope Machine
 Set-NetscootUpdatePolicy -State Manual
 ```
 
+##### Related
+
+[ [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) | [Test-NetscootUpdate](#test-netscootupdate) | [Update-Netscoot](#update-netscoot) ]
+
 [Back to Command reference](#command-reference)
 
 ---
@@ -1807,6 +1839,10 @@ Sync-Solution -RepositoryRoot . -WhatIf
 # Add each divergent project to the solutions missing it (only adds, never removes)
 Sync-Solution -RepositoryRoot .
 ```
+
+##### Related
+
+[ [Get-SolutionInventory](#get-solutioninventory) | [Test-SolutionConsistency](#test-solutionconsistency) | [Repair-SolutionReferences](#repair-solutionreferences) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1868,6 +1904,10 @@ Test-NetscootUpdate -Repository myfork/netscoot
 Test-NetscootUpdate -Auto
 ```
 
+##### Related
+
+[ [Update-Netscoot](#update-netscoot) | [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) | [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) ]
+
 [Back to Command reference](#command-reference)
 
 ---
@@ -1924,6 +1964,10 @@ Test-SolutionConsistency -RepositoryRoot . -Strict
 # Check several repositories from the pipeline
 Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
 ```
+
+##### Related
+
+[ [Get-SolutionInventory](#get-solutioninventory) | [Sync-Solution](#sync-solution) | [Repair-SolutionReferences](#repair-solutionreferences) ]
 
 [Back to Command reference](#command-reference)
 
@@ -2000,6 +2044,10 @@ Undo-Netscoot -After (Get-Date).AddHours(-1)
 Undo-Netscoot -All
 ```
 
+##### Related
+
+[ [Repair-NetscootJournal](#repair-netscootjournal) | [Set-NetscootJournal](#set-netscootjournal) | [Clear-NetscootJournal](#clear-netscootjournal) ]
+
 [Back to Command reference](#command-reference)
 
 ---
@@ -2035,6 +2083,10 @@ Unregister-NetscootGitAlias
 # Remove the global alias from ~/.gitconfig
 Unregister-NetscootGitAlias -Scope Global
 ```
+
+##### Related
+
+[ [Register-NetscootGitAlias](#register-netscootgitalias) ]
 
 [Back to Command reference](#command-reference)
 
@@ -2096,6 +2148,10 @@ Update-Netscoot -WhatIf
 # Reinstall the latest even if already up to date
 Update-Netscoot -Force
 ```
+
+##### Related
+
+[ [Test-NetscootUpdate](#test-netscootupdate) | [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) | [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) ]
 
 [Back to Command reference](#command-reference)
 

@@ -33,6 +33,15 @@ function Set-NetscootUpdatePolicy {
         Set-NetscootUpdatePolicy -State Disabled -Scope Machine
         # Back to the default: no auto-check, manual Update-Netscoot still works
         Set-NetscootUpdatePolicy -State Manual
+
+    .LINK
+        Get-NetscootUpdatePolicy
+
+    .LINK
+        Test-NetscootUpdate
+
+    .LINK
+        Update-Netscoot
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType('Netscoot.UpdatePolicy')]

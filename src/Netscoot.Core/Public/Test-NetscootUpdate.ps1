@@ -38,6 +38,15 @@ function Test-NetscootUpdate {
         Test-NetscootUpdate -Repository myfork/netscoot
         # SessionStart hook: checks only when the update policy is Enabled
         Test-NetscootUpdate -Auto
+
+    .LINK
+        Update-Netscoot
+
+    .LINK
+        Get-NetscootUpdatePolicy
+
+    .LINK
+        Set-NetscootUpdatePolicy
     #>
     [CmdletBinding()]
     [OutputType('Netscoot.Update')]

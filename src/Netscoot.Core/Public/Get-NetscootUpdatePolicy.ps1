@@ -21,6 +21,15 @@ function Get-NetscootUpdatePolicy {
     .EXAMPLE
         # See the current policy and where it came from
         Get-NetscootUpdatePolicy
+
+    .LINK
+        Set-NetscootUpdatePolicy
+
+    .LINK
+        Test-NetscootUpdate
+
+    .LINK
+        Update-Netscoot
     #>
     [CmdletBinding()]
     [OutputType('Netscoot.UpdatePolicy')]

@@ -27,6 +27,15 @@ function Sync-Solution {
         Sync-Solution -RepositoryRoot . -WhatIf
         # Add each divergent project to the solutions missing it (only adds, never removes)
         Sync-Solution -RepositoryRoot .
+
+    .LINK
+        Get-SolutionInventory
+
+    .LINK
+        Test-SolutionConsistency
+
+    .LINK
+        Repair-SolutionReferences
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType('Netscoot.SyncResult')]

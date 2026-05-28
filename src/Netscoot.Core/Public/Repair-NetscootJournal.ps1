@@ -49,6 +49,15 @@ function Repair-NetscootJournal {
         Repair-NetscootJournal -Discard -Id a1b2c3d4
         # Clean up leftover recovery snapshots
         Repair-NetscootJournal -ClearOrphanSnapshots
+
+    .LINK
+        Undo-Netscoot
+
+    .LINK
+        Set-NetscootJournal
+
+    .LINK
+        Clear-NetscootJournal
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High', DefaultParameterSetName = 'Report')]
     [OutputType('Netscoot.JournalEntry')]

@@ -25,6 +25,9 @@ function Register-NetscootGitAlias {
         Register-NetscootGitAlias
         # Register globally, in ~/.gitconfig
         Register-NetscootGitAlias -Scope Global
+
+    .LINK
+        Unregister-NetscootGitAlias
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     [OutputType('Netscoot.GitAlias')]
