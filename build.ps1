@@ -544,7 +544,9 @@ function Invoke-DocsTask {
                 [void]$sb.AppendLine('##### Related')
                 [void]$sb.AppendLine()
                 $links = $related | ForEach-Object { '[' + $_ + '](#' + $_.ToLower() + ')' }
-                [void]$sb.AppendLine((Format-Small ('[ ' + ($links -join ' | ') + ' ]')))
+                # Format-Wrap breaks at the pipe-space boundaries when the line exceeds 120 chars
+                # (a 4-way cluster does), keeping each [text](url) atomic so links never split.
+                [void]$sb.AppendLine((Format-Wrap (Format-Small ('[ ' + ($links -join ' | ') + ' ]'))))
                 [void]$sb.AppendLine()
             }
 

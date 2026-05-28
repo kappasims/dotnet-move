@@ -8,7 +8,7 @@ function Clear-NetscootJournal {
         ~/Library/Application Support on macOS, ~/.local/share on Linux). The journal prunes itself on every write (entries older than the age
         cap, then oldest-first past the size cap), so this is rarely needed; use it to wipe the undo
         history outright. After clearing, Undo-Netscoot has nothing to reverse until the next move.
-        It does not change whether journaling is on - use Set-NetscootJournal for that.
+        It does not change whether journaling is on; use Set-NetscootJournal for that.
 
     .PARAMETER RepositoryRoot
         Repository whose journal to delete. Defaults to the enclosing git repository root.

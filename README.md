@@ -542,8 +542,8 @@ Clear-NetscootJournal [[-RepositoryRoot] <string>] [-WhatIf] [-Confirm] [<Common
 Removes this repository's journal file from the per-user store (LocalAppData on Windows, ~/Library/Application Support
 on macOS, ~/.local/share on Linux). The journal prunes itself on every write (entries older than the age cap, then
 oldest-first past the size cap), so this is rarely needed; use it to wipe the undo history outright. After clearing,
-[Undo-Netscoot](#undo-netscoot) has nothing to reverse until the next move. It does not change whether journaling is on
-- use [Set-NetscootJournal](#set-netscootjournal) for that.
+[Undo-Netscoot](#undo-netscoot) has nothing to reverse until the next move. It does not change whether journaling is on;
+use [Set-NetscootJournal](#set-netscootjournal) for that.
 
 ##### Parameters
 
@@ -569,7 +569,8 @@ Clear-NetscootJournal -WhatIf
 
 ##### Related
 
-[ [Set-NetscootJournal](#set-netscootjournal) | [Undo-Netscoot](#undo-netscoot) | [Repair-NetscootJournal](#repair-netscootjournal) ]
+[ [Set-NetscootJournal](#set-netscootjournal) | [Undo-Netscoot](#undo-netscoot) |
+[Repair-NetscootJournal](#repair-netscootjournal) ]
 
 [Back to Command reference](#command-reference)
 
@@ -718,7 +719,8 @@ Get-NetscootUpdatePolicy
 
 ##### Related
 
-[ [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) | [Test-NetscootUpdate](#test-netscootupdate) | [Update-Netscoot](#update-netscoot) ]
+[ [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) | [Test-NetscootUpdate](#test-netscootupdate) |
+[Update-Netscoot](#update-netscoot) ]
 
 [Back to Command reference](#command-reference)
 
@@ -780,7 +782,8 @@ Get-SolutionInventory | Where-Object Kind -eq ([Netscoot.SolutionItemKind]::Unre
 
 ##### Related
 
-[ [Test-SolutionConsistency](#test-solutionconsistency) | [Sync-Solution](#sync-solution) | [Repair-SolutionReferences](#repair-solutionreferences) ]
+[ [Test-SolutionConsistency](#test-solutionconsistency) | [Sync-Solution](#sync-solution) |
+[Repair-SolutionReferences](#repair-solutionreferences) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1553,7 +1556,8 @@ Repair-NetscootJournal -ClearOrphanSnapshots
 
 ##### Related
 
-[ [Undo-Netscoot](#undo-netscoot) | [Set-NetscootJournal](#set-netscootjournal) | [Clear-NetscootJournal](#clear-netscootjournal) ]
+[ [Undo-Netscoot](#undo-netscoot) | [Set-NetscootJournal](#set-netscootjournal) |
+[Clear-NetscootJournal](#clear-netscootjournal) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1622,7 +1626,8 @@ Repair-SolutionReferences -RepositoryRoot . -Fix -Prune -WhatIf
 
 ##### Related
 
-[ [Get-SolutionInventory](#get-solutioninventory) | [Test-SolutionConsistency](#test-solutionconsistency) | [Sync-Solution](#sync-solution) | [Find-PathReference](#find-pathreference) ]
+[ [Get-SolutionInventory](#get-solutioninventory) | [Test-SolutionConsistency](#test-solutionconsistency) |
+[Sync-Solution](#sync-solution) | [Find-PathReference](#find-pathreference) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1727,7 +1732,8 @@ Set-NetscootJournal -Enabled $false -Global
 
 ##### Related
 
-[ [Clear-NetscootJournal](#clear-netscootjournal) | [Undo-Netscoot](#undo-netscoot) | [Repair-NetscootJournal](#repair-netscootjournal) ]
+[ [Clear-NetscootJournal](#clear-netscootjournal) | [Undo-Netscoot](#undo-netscoot) |
+[Repair-NetscootJournal](#repair-netscootjournal) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1787,7 +1793,8 @@ Set-NetscootUpdatePolicy -State Manual
 
 ##### Related
 
-[ [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) | [Test-NetscootUpdate](#test-netscootupdate) | [Update-Netscoot](#update-netscoot) ]
+[ [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) | [Test-NetscootUpdate](#test-netscootupdate) |
+[Update-Netscoot](#update-netscoot) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1842,7 +1849,8 @@ Sync-Solution -RepositoryRoot .
 
 ##### Related
 
-[ [Get-SolutionInventory](#get-solutioninventory) | [Test-SolutionConsistency](#test-solutionconsistency) | [Repair-SolutionReferences](#repair-solutionreferences) ]
+[ [Get-SolutionInventory](#get-solutioninventory) | [Test-SolutionConsistency](#test-solutionconsistency) |
+[Repair-SolutionReferences](#repair-solutionreferences) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1906,7 +1914,8 @@ Test-NetscootUpdate -Auto
 
 ##### Related
 
-[ [Update-Netscoot](#update-netscoot) | [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) | [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) ]
+[ [Update-Netscoot](#update-netscoot) | [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) |
+[Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1967,7 +1976,8 @@ Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
 
 ##### Related
 
-[ [Get-SolutionInventory](#get-solutioninventory) | [Sync-Solution](#sync-solution) | [Repair-SolutionReferences](#repair-solutionreferences) ]
+[ [Get-SolutionInventory](#get-solutioninventory) | [Sync-Solution](#sync-solution) |
+[Repair-SolutionReferences](#repair-solutionreferences) ]
 
 [Back to Command reference](#command-reference)
 
@@ -2046,7 +2056,8 @@ Undo-Netscoot -All
 
 ##### Related
 
-[ [Repair-NetscootJournal](#repair-netscootjournal) | [Set-NetscootJournal](#set-netscootjournal) | [Clear-NetscootJournal](#clear-netscootjournal) ]
+[ [Repair-NetscootJournal](#repair-netscootjournal) | [Set-NetscootJournal](#set-netscootjournal) |
+[Clear-NetscootJournal](#clear-netscootjournal) ]
 
 [Back to Command reference](#command-reference)
 
@@ -2151,7 +2162,8 @@ Update-Netscoot -Force
 
 ##### Related
 
-[ [Test-NetscootUpdate](#test-netscootupdate) | [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) | [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) ]
+[ [Test-NetscootUpdate](#test-netscootupdate) | [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) |
+[Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) ]
 
 [Back to Command reference](#command-reference)
 
