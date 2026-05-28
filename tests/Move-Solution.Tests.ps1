@@ -36,11 +36,12 @@ Describe 'Move-Solution' {
             $dest | Should -Exist
             $sln | Should -Not -Exist
 
-            # The moved solution still resolves its project and builds.
+            # The moved solution still resolves its project. `dotnet sln list` is what would fail if
+            # the rebase produced a wrong relative path; the build smoke is covered by
+            # Move-DotnetProject.Tests.ps1's slnx variant, so we skip the per-format build here
+            # (saves ~3s per format = ~6s total across both ForEach iterations).
             $listed = & dotnet sln $dest list
             ($listed -join "`n") | Should -Match 'Lib\.csproj'
-            $bo = & dotnet build $dest 2>&1
-            $LASTEXITCODE | Should -Be 0 -Because ($bo -join [Environment]::NewLine)
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 }

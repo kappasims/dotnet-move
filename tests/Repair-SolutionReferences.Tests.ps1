@@ -70,18 +70,18 @@ Describe 'Repair-SolutionReferences' {
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
-    It 're-points dangling entries at the moved project with -Fix (and it builds)' {
+    It 're-points dangling entries at the moved project with -Fix' {
         $root = New-MovedFixture
         try {
             Repair-SolutionReferences -RepositoryRoot $root -Fix -Confirm:$false | Out-Null
+            # `dotnet sln list` is what would fail if the rewrite produced a wrong path; build smoke
+            # lives in Move-DotnetProject's slnx variant.
             $list = (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n"
             $list | Should -Match 'libs[\\/]Lib[\\/]Lib\.csproj'
-            $bo = & dotnet build (Join-Path $root 'Demo.slnx') 2>&1
-            $LASTEXITCODE | Should -Be 0 -Because ($bo -join [Environment]::NewLine)
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
-    It 'disambiguates duplicate leaf names by path proximity and relocates (and it builds)' {
+    It 'disambiguates duplicate leaf names by path proximity and relocates' {
         # src/Widgets moves to tools/Widgets (its folder name 'Widgets' survives); a decoy
         # Widgets.csproj sits at legacy/Widgets.csproj. The moved copy shares more trailing
         # path with the old reference, so it wins uniquely.
@@ -98,8 +98,8 @@ Describe 'Repair-SolutionReferences' {
 
             Repair-SolutionReferences -RepositoryRoot $root -Fix -Confirm:$false | Out-Null
             (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n" | Should -Match 'tools[\\/]Widgets[\\/]Widgets\.csproj'
-            $bo = & dotnet build (Join-Path $root 'Demo.slnx') 2>&1
-            $LASTEXITCODE | Should -Be 0 -Because ($bo -join [Environment]::NewLine)
+            # No dotnet build here either; the slnx list assertion proves the rewrite, and the
+            # project-level build smoke is in Move-DotnetProject.Tests.ps1.
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
