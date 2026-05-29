@@ -2831,4 +2831,4 @@ used here only to describe the projects and tooling netscoot works with.
 [ci]: https://github.com/kappasims/netscoot/actions/workflows/ci.yml
 [ci-badge]: https://github.com/kappasims/netscoot/actions/workflows/ci.yml/badge.svg?branch=develop
 [license]: https://github.com/kappasims/netscoot/blob/master/LICENSE
-[license-badge]: https://img.shields.io/github/license/kappasims/netscoot
+[license-badge]: https://img.shields.io/github/license/kappasims/netscoot?cacheSeconds=300
